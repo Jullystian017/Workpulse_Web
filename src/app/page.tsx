@@ -35,7 +35,7 @@ export default function Home() {
         <p className="mt-8 max-w-2xl text-lg font-semibold leading-relaxed text-black-600 dark:text-zinc-400">
           Kelola aktivitas kerja, pantau progres, dan catat kehadiran dalam satu workspace yang sederhana dan terorganisir.
         </p>
-        
+
         {/* Action Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-6 relative z-20">
           <Link 
@@ -46,7 +46,7 @@ export default function Home() {
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
-            href="/design-system"
+            href="/login"
             className="group flex items-center gap-2 rounded-full bg-red-600 px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-red-700 hover:scale-105 hover:shadow-red-600/20 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
           >
             Masuk Sebagai Staff
