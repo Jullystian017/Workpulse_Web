@@ -1,0 +1,168 @@
+"use client"
+
+import * as React from "react"
+import Link from "next/link"
+
+import { NavDocuments } from "@/components/dashboard/nav-documents"
+import { NavMain } from "@/components/dashboard/nav-main"
+import { NavSecondary } from "@/components/dashboard/nav-secondary"
+import { NavUser } from "@/components/dashboard/nav-user"
+import { useAiPanel } from "@/components/dashboard/ai-panel-context"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from "@/components/ui/sidebar"
+import {
+  LayoutDashboardIcon,
+  CalendarCheckIcon,
+  CalendarRangeIcon,
+  CheckSquareIcon,
+  UsersIcon,
+  Settings2Icon,
+  CircleHelpIcon,
+  BookOpenIcon,
+  FileBarChartIcon,
+  FileTextIcon,
+  ActivityIcon,
+  SparklesIcon,
+  PanelRightOpenIcon,
+  ShieldCheckIcon,
+  CpuIcon,
+} from "lucide-react"
+
+const data = {
+  user: {
+    name: "Budi Admin",
+    email: "admin@telkomakses.co.id",
+    avatar: "",
+  },
+  navMain: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboardIcon,
+    },
+    {
+      title: "Presensi & Kehadiran",
+      url: "/dashboard/presensi",
+      icon: CalendarCheckIcon,
+    },
+    {
+      title: "Task Management",
+      url: "/dashboard/tasks",
+      icon: CheckSquareIcon,
+    },
+    {
+      title: "Karyawan",
+      url: "/dashboard/karyawan",
+      icon: UsersIcon,
+    },
+  ],
+  documents: [
+    {
+      name: "Laporan Kinerja",
+      url: "/dashboard/laporan/kinerja",
+      icon: FileBarChartIcon,
+    },
+    {
+      name: "Rekap Kehadiran",
+      url: "/dashboard/laporan/kehadiran",
+      icon: FileTextIcon,
+    },
+    {
+      name: "Log Aktivitas",
+      url: "/dashboard/log",
+      icon: ActivityIcon,
+    },
+  ],
+  navSecondary: [
+    {
+      title: "Pengaturan",
+      url: "/dashboard/settings",
+      icon: Settings2Icon,
+    },
+    {
+      title: "Dokumentasi SOP",
+      url: "/dashboard/bantuan",
+      icon: BookOpenIcon,
+    },
+  ],
+}
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const aiPanel = useAiPanel()
+
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      {/* Clean Minimalist Brand Header (Hidden when sidebar is collapsed) */}
+      <SidebarHeader className="p-2.5 pb-1 group-data-[collapsible=icon]:hidden">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="WorkPulse"
+              className="h-9 px-2 rounded-xl hover:bg-muted/50 transition-colors"
+              render={<a href="/dashboard" />}
+            >
+              <ActivityIcon className="size-5! text-red-600 shrink-0 stroke-[2.2]" />
+              <span className="text-base font-semibold tracking-tight text-foreground">
+                WorkPulse
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2.5 pt-2 gap-2">
+        {/* Main Red AI Assistant Button + Integrated Panel Toggle Companion Button */}
+        <SidebarGroup className="p-0">
+          <SidebarMenu>
+            <SidebarMenuItem className="flex items-center gap-1.5">
+              {/* Primary: Navigates to Full Page AI Assistant */}
+              <SidebarMenuButton
+                tooltip="AI Assistant"
+                className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
+                render={<Link href="/dashboard/ai" />}
+              >
+                <SparklesIcon className="size-4 shrink-0 text-white" />
+                <span className="text-xs font-semibold group-data-[collapsible=icon]:hidden">
+                  AI Assistant
+                </span>
+              </SidebarMenuButton>
+
+              {/* Companion: Toggles integrated right AI panel and auto-collapses sidebar */}
+              <button
+                type="button"
+                onClick={() => aiPanel?.toggleAiPanel()}
+                title="Buka AI Panel Terintegrasi"
+                className={`inline-flex size-8.5 items-center justify-center rounded-xl border transition-colors group-data-[collapsible=icon]:hidden shrink-0 cursor-pointer ${
+                  aiPanel?.isOpen
+                    ? "bg-red-50 text-red-600 border-red-300 dark:bg-red-950 dark:text-red-400"
+                    : "border-zinc-200 dark:border-zinc-800 bg-background hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <PanelRightOpenIcon className="size-3.5" />
+                <span className="sr-only">Buka AI Panel Terintegrasi</span>
+              </button>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <NavMain items={data.navMain} />
+        <SidebarSeparator className="hidden group-data-[collapsible=icon]:block my-1 mx-1 opacity-50" />
+        <NavDocuments items={data.documents} />
+      </SidebarContent>
+
+      <SidebarFooter className="p-2.5 pt-1.5 flex flex-col gap-1.5">
+        <NavSecondary items={data.navSecondary} />
+        <NavUser user={data.user} />
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
