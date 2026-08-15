@@ -39,7 +39,7 @@ export default function LoginPage() {
     }
 
     toast.success("Login berhasil! Selamat datang di WorkPulse Telkom Akses.")
-    router.push("/dashboard")
+    router.push("/staff-dashboard")
   }
 
   return (
@@ -162,13 +162,6 @@ export default function LoginPage() {
             </div>
             
           </form>
-
-          <p className="mt-8 text-center text-sm text-zinc-500">
-            Don't have an account?{" "}
-            <a href="/signup" className="font-semibold text-black hover:underline">
-              Sign Up
-            </a>
-          </p>
         </div>
 
         {/* Right Side - Image/Illustration */}

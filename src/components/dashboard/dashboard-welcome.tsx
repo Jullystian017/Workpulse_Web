@@ -21,7 +21,7 @@ export function DashboardWelcome() {
       {/* Left: Welcome message */}
       <div className="flex flex-col gap-0.5">
         <h2 className="text-xl font-semibold tracking-tight text-foreground">
-          Selamat Datang, Budi Admin!
+          Selamat Datang, Dimas!
         </h2>
         <p className="text-sm text-muted-foreground">
           Terdapat <span className="font-semibold text-red-600">3 task overdue</span>, 9 task dalam proses, dan 124 task selesai hari ini.
