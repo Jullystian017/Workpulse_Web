@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import {
@@ -127,67 +127,67 @@ export default function RekapKehadiranPage() {
 
           {/* Stats Bar */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <UserCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Rata-rata Kehadiran</span>
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Rata-rata Kehadiran</span>
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
                     Sangat Baik
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   96.4%
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Total 22 hari kerja efektif</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Total 22 hari kerja efektif</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Akumulasi Lembur</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Akumulasi Lembur</span>
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                     Overtime
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
-                  113 <span className="text-sm font-normal text-muted-foreground">Jam</span>
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                  113 <span className="text-xs font-normal text-muted-foreground">Jam</span>
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Dari seluruh departemen</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Dari seluruh departemen</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <CalendarIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Total Cuti & Sakit</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Total Cuti & Sakit</span>
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                     Disetujui
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
-                  7 <span className="text-sm font-normal text-muted-foreground">Hari</span>
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                  7 <span className="text-xs font-normal text-muted-foreground">Hari</span>
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Termasuk izin resmi</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Termasuk izin resmi</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <XCircleIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Tingkat Mangkir</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Tingkat Mangkir</span>
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                     0.8%
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
-                  1 <span className="text-sm font-normal text-muted-foreground">Kasus</span>
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                  1 <span className="text-xs font-normal text-muted-foreground">Kasus</span>
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Membutuhkan SP-1</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Membutuhkan SP-1</p>
               </div>
             </div>
           </div>
@@ -290,8 +290,8 @@ export default function RekapKehadiranPage() {
                           parseFloat(row.skorPresensi) >= 95
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold"
                             : parseFloat(row.skorPresensi) >= 90
-                            ? "bg-blue-50 text-blue-700 border-blue-200 font-semibold"
-                            : "bg-amber-50 text-amber-700 border-amber-200 font-semibold"
+                              ? "bg-blue-50 text-blue-700 border-blue-200 font-semibold"
+                              : "bg-amber-50 text-amber-700 border-amber-200 font-semibold"
                         }
                       >
                         {row.skorPresensi}

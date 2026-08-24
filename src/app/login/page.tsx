@@ -43,9 +43,9 @@ export default function LoginPage() {
 
     toast.success("Login berhasil! Selamat datang di WorkPulse Telkom Akses.");
     if (role === "admin") {
-      router.push("/dashboard");
+      router.push("/admin/dashboard");
     } else {
-      router.push("/staff-dashboard");
+      router.push("/karyawan/dashboard");
     }
   };
 

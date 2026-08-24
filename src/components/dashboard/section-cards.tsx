@@ -50,7 +50,7 @@ export function SectionCards() {
       {cards.map((card) => (
         <div
           key={card.label}
-          className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+          className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
         >
           {/* Watermark icon — faint, top-right */}
           <card.icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
@@ -59,8 +59,8 @@ export function SectionCards() {
           <div className="relative">
             {/* Top row: label + badge */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">{card.label}</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950/60 dark:text-red-400">
+              <span className="text-xs font-semibold text-muted-foreground">{card.label}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                 {card.trend === "up"
                   ? <TrendingUpIcon className="size-2.5" />
                   : <TrendingDownIcon className="size-2.5" />
@@ -69,13 +69,13 @@ export function SectionCards() {
               </span>
             </div>
 
-            {/* Big Number */}
-            <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+            {/* Number Count */}
+            <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
               {card.value}
             </p>
 
             {/* Description */}
-            <p className="mt-1 text-xs text-muted-foreground">{card.desc}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{card.desc}</p>
           </div>
         </div>
       ))}

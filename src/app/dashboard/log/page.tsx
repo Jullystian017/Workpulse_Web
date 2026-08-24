@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import {
@@ -90,7 +90,7 @@ export default function AuditLogPage() {
           {/* Header */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                 Log Aktivitas & Audit Trail Sistem
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -110,67 +110,67 @@ export default function AuditLogPage() {
 
           {/* Stats Summary */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ActivityIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Total Event Log</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Total Event Log</span>
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                     Hari Ini
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   148
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Semua aktivitas sistem terrekam</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Semua aktivitas sistem terrekam</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <UserCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">User Aktif</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">User Aktif</span>
+                  <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
                     Sessions
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   34
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Sesi login aktif saat ini</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Sesi login aktif saat ini</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <DatabaseIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Perubahan Data</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Perubahan Data</span>
+                  <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900">
                     Audit
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   12
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Aktivitas update/create data</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Aktivitas update/create data</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ShieldCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Keamanan Alert</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Keamanan Alert</span>
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                     Warning
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   2
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">1 Login Error & 1 Geofence</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">1 Login Error & 1 Geofence</p>
               </div>
             </div>
           </div>
@@ -269,10 +269,10 @@ export default function AuditLogPage() {
                           row.level === "INFO"
                             ? "bg-blue-50 text-blue-700 border-blue-200"
                             : row.level === "AUDIT"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : row.level === "WARNING"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-red-50 text-red-700 border-red-200 font-semibold"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : row.level === "WARNING"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-red-50 text-red-700 border-red-200 font-semibold"
                         }
                       >
                         {row.level}

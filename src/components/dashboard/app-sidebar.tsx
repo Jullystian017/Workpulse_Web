@@ -46,51 +46,56 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/admin/dashboard",
       icon: LayoutDashboardIcon,
     },
     {
       title: "Presensi & Kehadiran",
-      url: "/dashboard/presensi",
+      url: "/admin/presensi",
       icon: CalendarCheckIcon,
     },
     {
       title: "Task Management",
-      url: "/dashboard/tasks",
+      url: "/admin/tasks",
       icon: CheckSquareIcon,
     },
     {
       title: "Karyawan",
-      url: "/dashboard/karyawan",
+      url: "/admin/karyawan",
       icon: UsersIcon,
+    },
+    {
+      title: "Jadwal & Shift",
+      url: "/admin/jadwal",
+      icon: CalendarRangeIcon,
     },
   ],
   documents: [
     {
       name: "Laporan Kinerja",
-      url: "/dashboard/laporan/kinerja",
+      url: "/admin/laporan/kinerja",
       icon: FileBarChartIcon,
     },
     {
       name: "Rekap Kehadiran",
-      url: "/dashboard/laporan/kehadiran",
+      url: "/admin/laporan/kehadiran",
       icon: FileTextIcon,
     },
     {
       name: "Log Aktivitas",
-      url: "/dashboard/log",
+      url: "/admin/log",
       icon: ActivityIcon,
     },
   ],
   navSecondary: [
     {
       title: "Pengaturan",
-      url: "/dashboard/settings",
+      url: "/admin/settings",
       icon: Settings2Icon,
     },
     {
       title: "Dokumentasi SOP",
-      url: "/dashboard/bantuan",
+      url: "/admin/bantuan",
       icon: BookOpenIcon,
     },
   ],
@@ -141,11 +146,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 type="button"
                 onClick={() => aiPanel?.toggleAiPanel()}
                 title="Buka AI Panel Terintegrasi"
-                className={`inline-flex size-8.5 items-center justify-center rounded-xl border transition-colors group-data-[collapsible=icon]:hidden shrink-0 cursor-pointer ${
-                  aiPanel?.isOpen
+                className={`inline-flex size-8.5 items-center justify-center rounded-xl border transition-colors group-data-[collapsible=icon]:hidden shrink-0 cursor-pointer ${aiPanel?.isOpen
                     ? "bg-red-50 text-red-600 border-red-300 dark:bg-red-950 dark:text-red-400"
                     : "border-zinc-200 dark:border-zinc-800 bg-background hover:bg-muted/60 text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 <PanelRightOpenIcon className="size-3.5" />
                 <span className="sr-only">Buka AI Panel Terintegrasi</span>

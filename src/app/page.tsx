@@ -48,17 +48,17 @@ export default function Home() {
         {/* Action Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-6 relative z-20">
           <Link 
-            href="/dashboard" 
+            href="/admin/dashboard" 
             className="group flex items-center gap-2 rounded-full bg-red-600 px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-red-700 hover:scale-105 hover:shadow-red-600/20 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
           >
             Masuk Sebagai Admin
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
-            href="/login"
+            href="/karyawan/dashboard"
             className="group flex items-center gap-2 rounded-full bg-zinc-900 border border-zinc-800 dark:bg-zinc-800 px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-zinc-800 hover:scale-105 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            Masuk Sebagai Staff
+            Masuk Sebagai Karyawan
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>

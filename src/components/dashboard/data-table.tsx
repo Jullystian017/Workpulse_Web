@@ -277,17 +277,6 @@ const columns = columnHelper.columns([
     header: "Progress",
     cell: ({ row }) => <ProgressBar value={row.original.progress} />,
   }),
-  columnHelper.accessor("bukti", {
-    header: "Bukti",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1">
-        <ImageIcon className={`size-3.5 ${row.original.bukti ? "text-green-500" : "text-muted-foreground/40"}`} />
-        <span className={`text-xs ${row.original.bukti ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
-          {row.original.bukti ? "Ada" : "Belum"}
-        </span>
-      </div>
-    ),
-  }),
   columnHelper.display({
     id: "actions",
     cell: ({ row }) => (
@@ -417,82 +406,97 @@ export function DataTable({
   }
 
   return (
-    <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
-      <div className="overflow-hidden rounded-2xl border bg-card shadow-2xs">
-        <DndContext
-          collisionDetection={closestCenter}
-          modifiers={[restrictToVerticalAxis]}
-          onDragEnd={handleDragEnd}
-          sensors={sensors}
-          id={sortableId}
-        >
-          <Table>
-            <TableHeader className="bg-muted/50 sticky top-0 z-10">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
-                      <FlexRender header={header} />
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              <SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
-                {table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => <DraggableRow key={row.id} row={row} />)
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                      Tidak ada task ditemukan.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </SortableContext>
-            </TableBody>
-          </Table>
-        </DndContext>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-2">
-        <div className="text-muted-foreground text-xs font-mono">
-          {table.getFilteredSelectedRowModel().rows.length} dari {table.getRowModel().rows.length} baris dipilih.
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium">Baris per halaman</span>
-            <Select
-              value={`${pagination.pageSize}`}
-              onValueChange={(val) => table.setPageSize(Number(val))}
-            >
-              <SelectTrigger className="h-8 w-16 text-xs rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 50].map((s) => (
-                  <SelectItem key={s} value={`${s}`}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="relative px-4 lg:px-6">
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
+        {/* Clean Table Header without Icons */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+              Daftar Manajemen Tugas Operasional
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Ringkasan seluruh tiket pengerjaan tugas kantor, status progres, dan teknisi penanggung jawab
+            </p>
           </div>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
-              <ChevronsLeftIcon className="size-4" /><span className="sr-only">Halaman pertama</span>
-            </Button>
-            <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-              <ChevronLeftIcon className="size-4" /><span className="sr-only">Sebelumnya</span>
-            </Button>
-            <span className="text-xs px-2 font-mono font-medium">
-              Hal. {pagination.pageIndex + 1} dari {Math.max(1, table.getPageCount())}
-            </span>
-            <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-              <ChevronRightIcon className="size-4" /><span className="sr-only">Berikutnya</span>
-            </Button>
-            <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
-              <ChevronsRightIcon className="size-4" /><span className="sr-only">Halaman terakhir</span>
-            </Button>
+        </div>
+
+        {/* Inner Table Container */}
+        <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-card shadow-2xs">
+          <DndContext
+            collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis]}
+            onDragEnd={handleDragEnd}
+            sensors={sensors}
+            id={sortableId}
+          >
+            <Table>
+              <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} colSpan={header.colSpan}>
+                        <FlexRender header={header} />
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                <SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
+                  {table.getRowModel().rows.length ? (
+                    table.getRowModel().rows.map((row) => <DraggableRow key={row.id} row={row} />)
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                        Tidak ada task ditemukan.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </SortableContext>
+              </TableBody>
+            </Table>
+          </DndContext>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-1 pt-1">
+          <div className="text-muted-foreground text-xs font-mono">
+            {table.getFilteredSelectedRowModel().rows.length} dari {table.getRowModel().rows.length} baris dipilih.
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Baris per halaman</span>
+              <Select
+                value={`${pagination.pageSize}`}
+                onValueChange={(val) => table.setPageSize(Number(val))}
+              >
+                <SelectTrigger className="h-8 w-16 text-xs rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 50].map((s) => (
+                    <SelectItem key={s} value={`${s}`}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+                <ChevronsLeftIcon className="size-4" /><span className="sr-only">Halaman pertama</span>
+              </Button>
+              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                <ChevronLeftIcon className="size-4" /><span className="sr-only">Sebelumnya</span>
+              </Button>
+              <span className="text-xs px-2 font-mono font-medium">
+                Hal. {pagination.pageIndex + 1} dari {Math.max(1, table.getPageCount())}
+              </span>
+              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                <ChevronRightIcon className="size-4" /><span className="sr-only">Berikutnya</span>
+              </Button>
+              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+                <ChevronsRightIcon className="size-4" /><span className="sr-only">Halaman terakhir</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 
-import { NavDocuments } from "@/components/dashboard/nav-documents"
 import { NavMain } from "@/components/dashboard/nav-main"
 import { NavSecondary } from "@/components/dashboard/nav-secondary"
 import { NavUser } from "@/components/dashboard/nav-user"
@@ -17,17 +16,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboardIcon,
   CalendarCheckIcon,
+  CalendarRangeIcon,
   CheckSquareIcon,
-  UsersIcon,
-  Settings2Icon,
   BookOpenIcon,
-  FileBarChartIcon,
-  FileTextIcon,
   ActivityIcon,
   SparklesIcon,
   PanelRightOpenIcon,
@@ -36,57 +31,35 @@ import {
 const data = {
   user: {
     name: "Budi Santoso",
-    email: "budi@telkomakses.co.id",
+    email: "budi.santoso@telkomakses.co.id",
     avatar: "",
   },
   navMain: [
     {
       title: "Dashboard",
-      url: "/staff-dashboard",
+      url: "/karyawan/dashboard",
       icon: LayoutDashboardIcon,
     },
     {
-      title: "Presensi & Kehadiran",
-      url: "#",
+      title: "Presensi GPS",
+      url: "/karyawan/presensi",
       icon: CalendarCheckIcon,
     },
     {
-      title: "Task Management",
-      url: "#",
+      title: "Tugas Saya",
+      url: "/karyawan/tasks",
       icon: CheckSquareIcon,
     },
     {
-      title: "Karyawan",
-      url: "#",
-      icon: UsersIcon,
-    },
-  ],
-  documents: [
-    {
-      name: "Laporan Kinerja",
-      url: "#",
-      icon: FileBarChartIcon,
-    },
-    {
-      name: "Rekap Kehadiran",
-      url: "#",
-      icon: FileTextIcon,
-    },
-    {
-      name: "Log Aktivitas",
-      url: "#",
-      icon: ActivityIcon,
+      title: "Pengajuan Cuti",
+      url: "/karyawan/cuti",
+      icon: CalendarRangeIcon,
     },
   ],
   navSecondary: [
     {
-      title: "Pengaturan",
-      url: "#",
-      icon: Settings2Icon,
-    },
-    {
-      title: "Dokumentasi SOP",
-      url: "#",
+      title: "Bantuan",
+      url: "/karyawan/bantuan",
       icon: BookOpenIcon,
     },
   ],
@@ -103,7 +76,7 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
             <SidebarMenuButton
               tooltip="WorkPulse"
               className="h-9 px-2 rounded-xl hover:bg-muted/50 transition-colors"
-              render={<a href="/staff-dashboard" />}
+              render={<a href="/karyawan/dashboard" />}
             >
               <ActivityIcon className="size-5! text-red-600 shrink-0 stroke-[2.2]" />
               <span className="text-base font-semibold tracking-tight text-foreground">
@@ -121,7 +94,7 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
               <SidebarMenuButton
                 tooltip="AI Assistant"
                 className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
-                render={<Link href="/staff-dashboard" />}
+                render={<Link href="/karyawan/dashboard" />}
               >
                 <SparklesIcon className="size-4 shrink-0 text-white" />
                 <span className="text-xs font-semibold group-data-[collapsible=icon]:hidden">
@@ -147,8 +120,6 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
         </SidebarGroup>
 
         <NavMain items={data.navMain} />
-        <SidebarSeparator className="hidden group-data-[collapsible=icon]:block my-1 mx-1 opacity-50" />
-        <NavDocuments items={data.documents} />
       </SidebarContent>
 
       <SidebarFooter className="p-2.5 pt-1.5 flex flex-col gap-1.5">

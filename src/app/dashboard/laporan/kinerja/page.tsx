@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import {
@@ -141,67 +141,67 @@ export default function LaporanKinerjaPage() {
 
           {/* Quick Metrics (Red Theme) */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Total Task Selesai</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Total Task Selesai</span>
+                  <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                     Agustus 2026
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   124
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Dari 179 task yang ditugaskan</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Dari 179 task yang ditugaskan</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <TrendingUpIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Tingkat Penyelesaian</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-                    Rate
+                  <span className="text-xs font-semibold text-muted-foreground">Tingkat Penyelesaian</span>
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
+                    +5.2%
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   92.4%
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">+5.2% dari bulan lalu</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Tingkat kepatuhan SLA sangat baik</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <PaperclipIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Bukti Foto / Nota</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                  <span className="text-xs font-semibold text-muted-foreground">Bukti Foto / Nota</span>
+                  <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
                     Verified
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                   118
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Terverifikasi oleh atasan</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Terverifikasi oleh atasan</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <StarIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Skor Performa Rata-rata</span>
-                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-                    Score
+                  <span className="text-xs font-semibold text-muted-foreground">Skor Performa Rata-rata</span>
+                  <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900">
+                    Grade A
                   </span>
                 </div>
-                <p className="mt-2 text-5xl font-semibold tracking-tight tabular-nums text-foreground">
-                  92.8
+                <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                  4.85 <span className="text-xs font-normal text-muted-foreground">/ 5.0</span>
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Skala 1 - 100 poin</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Berdasarkan 17 teknisi lapangan</p>
               </div>
             </div>
           </div>
@@ -224,11 +224,10 @@ export default function LaporanKinerjaPage() {
                 <button
                   key={dept}
                   onClick={() => setSelectedDept(dept)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                    selectedDept === dept
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedDept === dept
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   {dept}
                 </button>

@@ -1,0 +1,22 @@
+[
+  { "id": "TSK-001", "judulTask": "Pemasangan Kabel Fiber Optik Blok A", "assignee": "Andi Pratama", "departemen": "IT", "prioritas": "Tinggi", "deadline": "2026-08-12", "status": "Selesai", "progress": 100, "bukti": true },
+  { "id": "TSK-002", "judulTask": "Pengecekan ODP Area Pasar Minggu", "assignee": "Bambang Susanto", "departemen": "Operations", "prioritas": "Tinggi", "deadline": "2026-08-12", "status": "Selesai", "progress": 100, "bukti": true },
+  { "id": "TSK-003", "judulTask": "Perbaikan Splitter Node Cilandak", "assignee": "Irfan Maulana", "departemen": "IT", "prioritas": "Tinggi", "deadline": "2026-08-13", "status": "Dalam Proses", "progress": 65, "bukti": false },
+  { "id": "TSK-004", "judulTask": "Instalasi ONT Pelanggan Baru Blok C", "assignee": "Kevin Pratama", "departemen": "IT", "prioritas": "Sedang", "deadline": "2026-08-13", "status": "Dalam Proses", "progress": 40, "bukti": false },
+  { "id": "TSK-005", "judulTask": "Laporan Rekap Kinerja Agustus", "assignee": "Siti Rahayu", "departemen": "Finance", "prioritas": "Sedang", "deadline": "2026-08-15", "status": "Dalam Proses", "progress": 30, "bukti": false },
+  { "id": "TSK-006", "judulTask": "Audit Jaringan Area Depok", "assignee": "Qomar Siddiq", "departemen": "IT", "prioritas": "Tinggi", "deadline": "2026-08-11", "status": "Tertunda", "progress": 0, "bukti": false },
+  { "id": "TSK-007", "judulTask": "Monitoring BTS Tower Sektor Timur", "assignee": "Julia Sari", "departemen": "Operations", "prioritas": "Sedang", "deadline": "2026-08-12", "status": "Selesai", "progress": 100, "bukti": true },
+  { "id": "TSK-008", "judulTask": "Update Dokumentasi SOP Teknisi", "assignee": "Rudi Hermawan", "departemen": "HR", "prioritas": "Rendah", "deadline": "2026-08-20", "status": "Dalam Proses", "progress": 20, "bukti": false },
+  { "id": "TSK-009", "judulTask": "Penggantian Kabel Drop Wire RW 05", "assignee": "Oscar Budiman", "departemen": "Operations", "prioritas": "Tinggi", "deadline": "2026-08-12", "status": "Selesai", "progress": 100, "bukti": true },
+  { "id": "TSK-010", "judulTask": "Testing Perangkat OLT Pusat", "assignee": "Irfan Maulana", "departemen": "IT", "prioritas": "Tinggi", "deadline": "2026-08-14", "status": "Dalam Proses", "progress": 55, "bukti": false },
+  { "id": "TSK-011", "judulTask": "Survey Lokasi Pemasangan Baru Blok F", "assignee": "Bambang Susanto", "departemen": "Operations", "prioritas": "Sedang", "deadline": "2026-08-16", "status": "Tertunda", "progress": 0, "bukti": false },
+  { "id": "TSK-012", "judulTask": "Rekap Data Absensi Mingguan", "assignee": "Rina Kusumawati", "departemen": "HR", "prioritas": "Rendah", "deadline": "2026-08-14", "status": "Selesai", "progress": 100, "bukti": true },
+  { "id": "TSK-013", "judulTask": "Perawatan Rutin Genset Tower A", "assignee": "Oscar Budiman", "departemen": "Operations", "prioritas": "Tinggi", "deadline": "2026-08-13", "status": "Dalam Proses", "progress": 75, "bukti": false },
+  { "id": "TSK-014", "judulTask": "Kalibrasi Alat Ukur OTDR", "assignee": "Kevin Pratama", "departemen": "IT", "prioritas": "Sedang", "deadline": "2026-08-15", "status": "Dalam Proses", "progress": 50, "bukti": false },
+  { "id": "TSK-015", "judulTask": "Koordinasi Tim Lapangan Proyek X", "assignee": "Rudi Hermawan", "departemen": "HR", "prioritas": "Sedang", "deadline": "2026-08-11", "status": "Tertunda", "progress": 0, "bukti": false },
+  { "id": "TSK-016", "judulTask": "Penyusunan Anggaran Operasional Q3", "assignee": "Fajar Nugroho", "departemen": "Finance", "prioritas": "Tinggi", "deadline": "2026-08-13", "status": "Dalam Proses", "progress": 60, "bukti": false },
+  { "id": "TSK-017", "judulTask": "Pemasangan Tiang Telekomunikasi Jl. Gatot", "assignee": "Andi Pratama", "departemen": "IT", "prioritas": "Tinggi", "deadline": "2026-08-12", "status": "Selesai", "progress": 100, "bukti": true },
+  { "id": "TSK-018", "judulTask": "Sosialisasi SOP Baru ke Teknisi", "assignee": "Mukhlis Amir", "departemen": "HR", "prioritas": "Rendah", "deadline": "2026-08-18", "status": "Dalam Proses", "progress": 15, "bukti": false },
+  { "id": "TSK-019", "judulTask": "Pengecekan Grounding Tower B", "assignee": "Julia Sari", "departemen": "Operations", "prioritas": "Tinggi", "deadline": "2026-08-12", "status": "Selesai", "progress": 100, "bukti": true },
+  { "id": "TSK-020", "judulTask": "Backup Konfigurasi Router Pusat", "assignee": "Qomar Siddiq", "departemen": "IT", "prioritas": "Sedang", "deadline": "2026-08-15", "status": "Dalam Proses", "progress": 35, "bukti": false }
+]

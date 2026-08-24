@@ -19,12 +19,74 @@ export function SiteHeader() {
   }
 
   const getBreadcrumb = () => {
-    if (pathname.includes("/portal")) {
+    // ── KARYAWAN PORTAL SECTION ──
+    if (pathname.startsWith("/karyawan")) {
+      if (pathname.includes("/presensi")) {
+        return (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+            <span>Portal Karyawan</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">Presensi GPS</span>
+          </div>
+        )
+      }
+      if (pathname.includes("/tasks")) {
+        return (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+            <span>Portal Karyawan</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">Tugas Saya</span>
+          </div>
+        )
+      }
+      if (pathname.includes("/cuti")) {
+        return (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+            <span>Portal Karyawan</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">Pengajuan Cuti</span>
+          </div>
+        )
+      }
+      if (pathname.includes("/bantuan")) {
+        return (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+            <span>Portal Karyawan</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">Bantuan</span>
+          </div>
+        )
+      }
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+          <span>Portal Karyawan</span>
+          <span>/</span>
+          <span className="font-semibold text-foreground">Dashboard</span>
+        </div>
+      )
+    }
+
+    // ── ADMIN / MANAGEMENT DASHBOARD SECTION ──
+    if (pathname.includes("/laporan/kinerja")) {
       return (
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
           <span>Dashboard</span>
           <span>/</span>
-          <span className="font-semibold text-foreground">Portal Karyawan (Personal View)</span>
+          <span>Laporan</span>
+          <span>/</span>
+          <span className="font-semibold text-foreground">Kinerja Karyawan</span>
+        </div>
+      )
+    }
+
+    if (pathname.includes("/laporan/kehadiran")) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+          <span>Dashboard</span>
+          <span>/</span>
+          <span>Laporan</span>
+          <span>/</span>
+          <span className="font-semibold text-foreground">Rekap Kehadiran</span>
         </div>
       )
     }
@@ -44,7 +106,27 @@ export function SiteHeader() {
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
           <span>Dashboard</span>
           <span>/</span>
-          <span className="font-semibold text-foreground">Task Management</span>
+          <span className="font-semibold text-foreground">Manajemen Tugas</span>
+        </div>
+      )
+    }
+
+    if (pathname.includes("/presensi")) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+          <span>Dashboard</span>
+          <span>/</span>
+          <span className="font-semibold text-foreground">Presensi & Kehadiran</span>
+        </div>
+      )
+    }
+
+    if (pathname.includes("/jadwal")) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+          <span>Dashboard</span>
+          <span>/</span>
+          <span className="font-semibold text-foreground">Jadwal & Shift Kerja</span>
         </div>
       )
     }
@@ -59,22 +141,12 @@ export function SiteHeader() {
       )
     }
 
-    if (pathname.includes("/presensi")) {
+    if (pathname.includes("/cuti")) {
       return (
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
           <span>Dashboard</span>
           <span>/</span>
-          <span className="font-semibold text-foreground">Presensi & Kehadiran (Geofencing)</span>
-        </div>
-      )
-    }
-
-    if (pathname.includes("/jadwal")) {
-      return (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-          <span>Dashboard</span>
-          <span>/</span>
-          <span className="font-semibold text-foreground">Jadwal & Shift Kerja</span>
+          <span className="font-semibold text-foreground">Persetujuan Cuti & Izin</span>
         </div>
       )
     }
@@ -109,30 +181,6 @@ export function SiteHeader() {
       )
     }
 
-    if (pathname.includes("/laporan/kinerja")) {
-      return (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-          <span>Dashboard</span>
-          <span>/</span>
-          <span>Laporan</span>
-          <span>/</span>
-          <span className="font-semibold text-foreground">Kinerja Karyawan</span>
-        </div>
-      )
-    }
-
-    if (pathname.includes("/laporan/kehadiran")) {
-      return (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-          <span>Dashboard</span>
-          <span>/</span>
-          <span>Laporan</span>
-          <span>/</span>
-          <span className="font-semibold text-foreground">Rekap Kehadiran</span>
-        </div>
-      )
-    }
-
     if (pathname.includes("/notifikasi")) {
       return (
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
@@ -153,7 +201,17 @@ export function SiteHeader() {
       )
     }
 
-    // Default for /dashboard Overview
+    if (pathname.includes("/bantuan")) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+          <span>Dashboard</span>
+          <span>/</span>
+          <span className="font-semibold text-foreground">Dokumentasi SOP</span>
+        </div>
+      )
+    }
+
+    // Default for /dashboard Overview or root
     return (
       <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
         <span>Dashboard</span>
