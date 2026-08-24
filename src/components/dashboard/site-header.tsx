@@ -19,6 +19,16 @@ export function SiteHeader() {
   }
 
   const getBreadcrumb = () => {
+    if (pathname.includes("/portal")) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+          <span>Dashboard</span>
+          <span>/</span>
+          <span className="font-semibold text-foreground">Portal Karyawan (Personal View)</span>
+        </div>
+      )
+    }
+
     if (pathname.includes("/ai")) {
       return (
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
@@ -148,7 +158,7 @@ export function SiteHeader() {
       <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
         <span>Dashboard</span>
         <span>/</span>
-        <span className="font-semibold text-foreground">Admin Overview</span>
+        <span className="font-semibold text-foreground">Overview</span>
       </div>
     )
   }
@@ -167,20 +177,23 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2.5">
           {/* Search */}
-          <div className="relative hidden sm:block">
+          <div className="relative hidden md:block">
             <SearchIcon className="absolute left-2.5 top-2 h-4 w-4 text-zinc-400" />
             <input
               type="text"
-              placeholder="Cari karyawan, task..."
-              className="h-8 w-44 lg:w-48 rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-3 text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+              placeholder="Cari data, tugas..."
+              className="h-8 w-36 lg:w-44 rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-3 text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
             />
           </div>
 
           {/* Notif Bell */}
-          <button className="relative rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400">
+          <a
+            href="/dashboard/notifikasi"
+            className="relative rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+          >
             <BellIcon className="h-4 w-4" />
             <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-red-600 ring-2 ring-white dark:ring-zinc-950"></span>
-          </button>
+          </a>
         </div>
       </div>
     </header>
