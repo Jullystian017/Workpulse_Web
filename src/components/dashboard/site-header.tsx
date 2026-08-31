@@ -240,7 +240,7 @@ export function SiteHeader() {
             <input
               type="text"
               placeholder="Cari data, tugas..."
-              className="h-8 w-36 lg:w-44 rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-3 text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+              className="h-8 w-56 lg:w-72 rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-3 text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
             />
           </div>
 

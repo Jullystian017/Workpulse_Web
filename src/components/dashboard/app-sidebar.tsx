@@ -22,7 +22,6 @@ import {
 import {
   LayoutDashboardIcon,
   CalendarCheckIcon,
-  CalendarRangeIcon,
   CheckSquareIcon,
   UsersIcon,
   Settings2Icon,
@@ -32,9 +31,6 @@ import {
   FileTextIcon,
   ActivityIcon,
   SparklesIcon,
-  PanelRightOpenIcon,
-  ShieldCheckIcon,
-  CpuIcon,
 } from "lucide-react"
 
 const data = {
@@ -64,11 +60,7 @@ const data = {
       url: "/admin/karyawan",
       icon: UsersIcon,
     },
-    {
-      title: "Jadwal & Shift",
-      url: "/admin/jadwal",
-      icon: CalendarRangeIcon,
-    },
+
   ],
   documents: [
     {
@@ -106,7 +98,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      {/* Clean Minimalist Brand Header (Hidden when sidebar is collapsed) */}
       <SidebarHeader className="p-2.5 pb-1 group-data-[collapsible=icon]:hidden">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -125,14 +116,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent className="px-2.5 pt-2 gap-2">
-        {/* Main Red AI Assistant Button + Integrated Panel Toggle Companion Button */}
         <SidebarGroup className="p-0">
           <SidebarMenu>
             <SidebarMenuItem className="flex items-center gap-1.5">
-              {/* Primary: Navigates to Full Page AI Assistant */}
               <SidebarMenuButton
                 tooltip="AI Assistant"
-                className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
+                className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-[8px] duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
                 render={<Link href="/dashboard/ai" />}
               >
                 <SparklesIcon className="size-4 shrink-0 text-white" />
@@ -140,20 +129,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   AI Assistant
                 </span>
               </SidebarMenuButton>
-
-              {/* Companion: Toggles integrated right AI panel and auto-collapses sidebar */}
-              <button
-                type="button"
-                onClick={() => aiPanel?.toggleAiPanel()}
-                title="Buka AI Panel Terintegrasi"
-                className={`inline-flex size-8.5 items-center justify-center rounded-xl border transition-colors group-data-[collapsible=icon]:hidden shrink-0 cursor-pointer ${aiPanel?.isOpen
-                    ? "bg-red-50 text-red-600 border-red-300 dark:bg-red-950 dark:text-red-400"
-                    : "border-zinc-200 dark:border-zinc-800 bg-background hover:bg-muted/60 text-muted-foreground hover:text-foreground"
-                  }`}
-              >
-                <PanelRightOpenIcon className="size-3.5" />
-                <span className="sr-only">Buka AI Panel Terintegrasi</span>
-              </button>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>

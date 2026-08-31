@@ -478,7 +478,7 @@ export default function TasksPage() {
                   <Button
                     onClick={() => setIsCreateModalOpen(true)}
                     size="sm"
-                    className="h-8.5 px-3.5 gap-1 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
+                    className="h-8.5 px-3.5 gap-1 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
                   >
                     <span>Buat Task Baru</span>
                     <PlusIcon className="size-3.5" />

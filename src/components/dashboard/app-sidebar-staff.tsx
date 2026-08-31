@@ -25,7 +25,6 @@ import {
   BookOpenIcon,
   ActivityIcon,
   SparklesIcon,
-  PanelRightOpenIcon,
 } from "lucide-react"
 
 const data = {
@@ -46,7 +45,7 @@ const data = {
       icon: CalendarCheckIcon,
     },
     {
-      title: "Tugas Saya",
+      title: "Task Management",
       url: "/karyawan/tasks",
       icon: CheckSquareIcon,
     },
@@ -101,20 +100,6 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
                   AI Assistant
                 </span>
               </SidebarMenuButton>
-
-              <button
-                type="button"
-                onClick={() => aiPanel?.toggleAiPanel()}
-                title="Buka AI Panel Terintegrasi"
-                className={`inline-flex size-8.5 items-center justify-center rounded-xl border transition-colors group-data-[collapsible=icon]:hidden shrink-0 cursor-pointer ${
-                  aiPanel?.isOpen
-                    ? "bg-red-50 text-red-600 border-red-300 dark:bg-red-950 dark:text-red-400"
-                    : "border-zinc-200 dark:border-zinc-800 bg-background hover:bg-muted/60 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <PanelRightOpenIcon className="size-3.5" />
-                <span className="sr-only">Buka AI Panel Terintegrasi</span>
-              </button>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>

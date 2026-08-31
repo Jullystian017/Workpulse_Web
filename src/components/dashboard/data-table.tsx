@@ -407,7 +407,7 @@ export function DataTable({
 
   return (
     <div className="relative px-4 lg:px-6">
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-[8px] border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
         {/* Clean Table Header without Icons */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
@@ -421,7 +421,7 @@ export function DataTable({
         </div>
 
         {/* Inner Table Container */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-card shadow-2xs">
+        <div className="overflow-hidden rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-card shadow-2xs">
           <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis]}
