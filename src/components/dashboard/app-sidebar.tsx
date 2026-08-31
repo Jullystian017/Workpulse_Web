@@ -85,11 +85,6 @@ const data = {
       url: "/admin/settings",
       icon: Settings2Icon,
     },
-    {
-      title: "Dokumentasi SOP",
-      url: "/admin/bantuan",
-      icon: BookOpenIcon,
-    },
   ],
 }
 

@@ -55,13 +55,7 @@ const data = {
       icon: CalendarRangeIcon,
     },
   ],
-  navSecondary: [
-    {
-      title: "Bantuan",
-      url: "/karyawan/bantuan",
-      icon: BookOpenIcon,
-    },
-  ],
+  navSecondary: [],
 }
 
 export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sidebar>) {

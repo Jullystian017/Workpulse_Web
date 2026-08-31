@@ -48,15 +48,7 @@ export function SiteHeader() {
           </div>
         )
       }
-      if (pathname.includes("/bantuan")) {
-        return (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-            <span>Portal Karyawan</span>
-            <span>/</span>
-            <span className="font-semibold text-foreground">Bantuan</span>
-          </div>
-        )
-      }
+
       return (
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
           <span>Portal Karyawan</span>
@@ -201,15 +193,7 @@ export function SiteHeader() {
       )
     }
 
-    if (pathname.includes("/bantuan")) {
-      return (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-          <span>Dashboard</span>
-          <span>/</span>
-          <span className="font-semibold text-foreground">Dokumentasi SOP</span>
-        </div>
-      )
-    }
+
 
     // Default for /dashboard Overview or root
     return (
