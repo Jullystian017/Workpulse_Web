@@ -113,7 +113,7 @@ export default function BantuanPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6 pb-12">
           {/* Hero Banner Header */}
-          <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-red-700 via-red-600 to-rose-600 p-6 sm:p-10 text-white shadow-xl">
+          <div className="relative overflow-hidden rounded-[8px] bg-linear-to-r from-red-700 via-red-600 to-rose-600 p-6 sm:p-10 text-white shadow-xl">
             <div className="relative z-10 max-w-2xl">
               <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-md mb-3">
                 WorkPulse Support Center
@@ -132,7 +132,7 @@ export default function BantuanPage() {
                   placeholder="Cari kata kunci masalah (misal: Geofence, Cuti, Password)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 h-12 text-sm rounded-2xl bg-white text-gray-900 placeholder:text-gray-400 shadow-md border-0 focus-visible:ring-2 focus-visible:ring-white"
+                  className="pl-12 h-12 text-sm rounded-[8px] bg-white text-gray-900 placeholder:text-gray-400 shadow-md border-0 focus-visible:ring-2 focus-visible:ring-white"
                 />
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function BantuanPage() {
               return (
                 <Card key={idx} className="hover:border-primary/50 transition-all duration-200 hover:-translate-y-0.5 shadow-sm">
                   <CardHeader className="p-5 pb-3">
-                    <div className="p-2.5 rounded-xl bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300 w-fit mb-2">
+                    <div className="p-2.5 rounded-[8px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300 w-fit mb-2">
                       <IconComponent className="size-5" />
                     </div>
                     <CardTitle className="text-base font-bold text-foreground">{cat.title}</CardTitle>
@@ -179,7 +179,7 @@ export default function BantuanPage() {
                     return (
                       <div
                         key={index}
-                        className="rounded-2xl border bg-card overflow-hidden transition-all"
+                        className="rounded-[8px] border bg-card overflow-hidden transition-all"
                       >
                         <button
                           onClick={() => setOpenFaqIndex(isOpen ? null : index)}
@@ -226,13 +226,13 @@ export default function BantuanPage() {
                   <form onSubmit={handleSubmitTicket} className="flex flex-col gap-3.5">
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="nama" className="text-xs font-semibold">Nama Lengkap</Label>
-                      <Input id="nama" placeholder="Budi Admin" required className="h-9 text-xs rounded-xl" />
+                      <Input id="nama" placeholder="Budi Admin" required className="h-9 text-xs rounded-[8px]" />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="kategori" className="text-xs font-semibold">Kategori Masalah</Label>
                       <Select defaultValue="Presensi & Geofence">
-                        <SelectTrigger className="h-9 text-xs rounded-xl">
+                        <SelectTrigger className="h-9 text-xs rounded-[8px]">
                           <SelectValue placeholder="Pilih Kategori" />
                         </SelectTrigger>
                         <SelectContent>
@@ -247,7 +247,7 @@ export default function BantuanPage() {
 
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="subjek" className="text-xs font-semibold">Subjek Kendala</Label>
-                      <Input id="subjek" placeholder="Contoh: Kendala GPS Geofence tidak terbaca" required className="h-9 text-xs rounded-xl" />
+                      <Input id="subjek" placeholder="Contoh: Kendala GPS Geofence tidak terbaca" required className="h-9 text-xs rounded-[8px]" />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -256,11 +256,11 @@ export default function BantuanPage() {
                         id="pesan"
                         placeholder="Jelaskan secara singkat kendala yang dialami beserta pesan error..."
                         required
-                        className="text-xs rounded-xl min-h-[90px]"
+                        className="text-xs rounded-[8px] min-h-[90px]"
                       />
                     </div>
 
-                    <Button type="submit" className="w-full h-10 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-xl mt-1">
+                    <Button type="submit" className="w-full h-10 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-[8px] mt-1">
                       <SendIcon className="size-4" /> Kirim Tiket Helpdesk
                     </Button>
                   </form>

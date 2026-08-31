@@ -103,7 +103,7 @@ export default function KaryawanBantuanPage() {
   return (
     <div className="flex flex-1 flex-col gap-6 pb-12">
       {/* Hero Banner Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-red-700 via-red-600 to-rose-600 p-6 sm:p-10 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-[8px] bg-linear-to-r from-red-700 via-red-600 to-rose-600 p-6 sm:p-10 text-white shadow-xl">
         <div className="relative z-10 max-w-2xl">
           <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-md mb-3">
             WorkPulse Support Center &bull; Karyawan
@@ -122,7 +122,7 @@ export default function KaryawanBantuanPage() {
               placeholder="Cari kata kunci masalah (misal: Geofence, Cuti, Upload Nota, Password)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 text-sm rounded-2xl bg-white text-gray-900 placeholder:text-gray-400 shadow-md border-0 focus-visible:ring-2 focus-visible:ring-white"
+              className="pl-12 h-12 text-sm rounded-[8px] bg-white text-gray-900 placeholder:text-gray-400 shadow-md border-0 focus-visible:ring-2 focus-visible:ring-white"
             />
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function KaryawanBantuanPage() {
           return (
             <Card key={idx} className="hover:border-primary/50 transition-all duration-200 hover:-translate-y-0.5 shadow-sm">
               <CardHeader className="p-5 pb-3">
-                <div className="p-2.5 rounded-xl bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300 w-fit mb-2">
+                <div className="p-2.5 rounded-[8px] bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300 w-fit mb-2">
                   <IconComponent className="size-5" />
                 </div>
                 <CardTitle className="text-base font-bold text-foreground">{cat.title}</CardTitle>
@@ -169,7 +169,7 @@ export default function KaryawanBantuanPage() {
                 return (
                   <div
                     key={index}
-                    className="rounded-2xl border bg-card overflow-hidden transition-all"
+                    className="rounded-[8px] border bg-card overflow-hidden transition-all"
                   >
                     <button
                       onClick={() => setOpenFaqIndex(isOpen ? null : index)}
@@ -216,13 +216,13 @@ export default function KaryawanBantuanPage() {
               <form onSubmit={handleSubmitTicket} className="flex flex-col gap-3.5">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="nama" className="text-xs font-semibold">Nama Lengkap</Label>
-                  <Input id="nama" defaultValue="Andi Pratama" required className="h-9 text-xs rounded-xl" />
+                  <Input id="nama" defaultValue="Andi Pratama" required className="h-9 text-xs rounded-[8px]" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="kategori" className="text-xs font-semibold">Kategori Kendala</Label>
                   <Select defaultValue="Presensi & Geofence">
-                    <SelectTrigger className="h-9 text-xs rounded-xl">
+                    <SelectTrigger className="h-9 text-xs rounded-[8px]">
                       <SelectValue placeholder="Pilih Kategori" />
                     </SelectTrigger>
                     <SelectContent>
@@ -237,7 +237,7 @@ export default function KaryawanBantuanPage() {
 
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="subjek" className="text-xs font-semibold">Subjek Kendala</Label>
-                  <Input id="subjek" placeholder="Contoh: GPS presensi tidak terbaca di lantai 2" required className="h-9 text-xs rounded-xl" />
+                  <Input id="subjek" placeholder="Contoh: GPS presensi tidak terbaca di lantai 2" required className="h-9 text-xs rounded-[8px]" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -246,11 +246,11 @@ export default function KaryawanBantuanPage() {
                     id="pesan"
                     placeholder="Jelaskan secara singkat kendala yang Anda alami..."
                     required
-                    className="text-xs rounded-xl min-h-[90px]"
+                    className="text-xs rounded-[8px] min-h-[90px]"
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-10 font-semibold bg-red-600 hover:bg-red-700 text-white gap-2 rounded-xl mt-1 shadow-xs">
+                <Button type="submit" className="w-full h-10 font-semibold bg-red-600 hover:bg-red-700 text-white gap-2 rounded-[8px] mt-1 shadow-xs">
                   <SendIcon className="size-4" /> Kirim Pesan Bantuan
                 </Button>
               </form>

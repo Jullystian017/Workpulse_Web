@@ -84,12 +84,12 @@ const weeklyShifts: ShiftDay[] = [
 
 export function KaryawanShiftStrip() {
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden h-full flex flex-col justify-between">
+    <div className="rounded-[8px] border border-border bg-card shadow-xs overflow-hidden h-full flex flex-col justify-between">
       {/* Header */}
       <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <div className="size-7 rounded-lg bg-red-50 dark:bg-red-950/60 flex items-center justify-center">
+            <div className="size-7 rounded-[8px] bg-red-50 dark:bg-red-950/60 flex items-center justify-center">
               <CalendarDaysIcon className="size-4 text-red-600 dark:text-red-400" />
             </div>
             <h2 className="text-sm font-bold text-foreground">
@@ -102,7 +102,7 @@ export function KaryawanShiftStrip() {
         </div>
 
         <Link href="/karyawan/cuti">
-          <Button variant="outline" size="sm" className="h-7.5 px-3 text-[11px] font-semibold rounded-xl cursor-pointer">
+          <Button variant="outline" size="sm" className="h-7.5 px-3 text-[11px] font-semibold rounded-[8px] cursor-pointer">
             <span>Tukar Shift / Izin</span>
             <ChevronRightIcon className="size-3 ml-0.5" />
           </Button>
@@ -118,7 +118,7 @@ export function KaryawanShiftStrip() {
           return (
             <div
               key={s.date}
-              className={`relative rounded-xl p-3 border transition-all duration-200 flex flex-col justify-between min-h-[110px] ${
+              className={`relative rounded-[8px] p-3 border transition-all duration-200 flex flex-col justify-between min-h-[110px] ${
                 isToday
                   ? "bg-red-50/70 dark:bg-red-950/30 border-red-300 dark:border-red-800 shadow-xs ring-1 ring-red-500/20"
                   : isOff

@@ -160,7 +160,7 @@ export function TaskDetailSheet({
           </div>
 
           {/* Status Progress Stepper */}
-          <div className="rounded-xl border bg-muted/30 p-4">
+          <div className="rounded-[8px] border bg-muted/30 p-4">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">
               Alur Status Pekerjaan
             </span>
@@ -205,7 +205,7 @@ export function TaskDetailSheet({
           {/* Description */}
           <div className="flex flex-col gap-2">
             <h4 className="text-xs font-semibold text-foreground tracking-wide uppercase">Deskripsi Tugas</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed bg-card p-3 rounded-lg border">
+            <p className="text-sm text-muted-foreground leading-relaxed bg-card p-3 rounded-[8px] border">
               {task.deskripsi ||
                 `Pelaksanaan tugas ${task.judulTask} oleh teknisi ${task.assignee}. Pastikan mengambil foto lokasi ODP sebelum & sesudah pengerjaan serta menyimpan bukti nota material yang digunakan.`}
             </p>
@@ -223,7 +223,7 @@ export function TaskDetailSheet({
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-card hover:bg-accent/40 transition-colors">
+              <div className="flex items-center gap-2.5 p-2.5 rounded-[8px] border bg-card hover:bg-accent/40 transition-colors">
                 <div className="size-8 rounded bg-red-50 dark:bg-red-950 flex items-center justify-center shrink-0">
                   <ImageIcon className="size-4 text-red-600" />
                 </div>
@@ -232,7 +232,7 @@ export function TaskDetailSheet({
                   <span className="text-[10px] text-muted-foreground">1.2 MB · Lapangan</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-card hover:bg-accent/40 transition-colors">
+              <div className="flex items-center gap-2.5 p-2.5 rounded-[8px] border bg-card hover:bg-accent/40 transition-colors">
                 <div className="size-8 rounded bg-blue-50 dark:bg-blue-950 flex items-center justify-center shrink-0">
                   <FileTextIcon className="size-4 text-blue-600" />
                 </div>
@@ -259,7 +259,7 @@ export function TaskDetailSheet({
                     <span className="text-[11px] text-muted-foreground">{log.time}</span>
                   </div>
                   <span className="text-[11px] font-medium text-primary block">{log.user}</span>
-                  <p className="text-xs text-muted-foreground mt-1 bg-card p-2.5 rounded-lg border">
+                  <p className="text-xs text-muted-foreground mt-1 bg-card p-2.5 rounded-[8px] border">
                     {log.note}
                   </p>
                   {log.attachment && (

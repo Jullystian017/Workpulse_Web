@@ -170,14 +170,14 @@ export default function AccessControlPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => toast.info("Membuka draf penambahan role baru...")}
-                    className="h-9 gap-1.5 text-xs font-semibold rounded-xl"
+                    className="h-9 gap-1.5 text-xs font-semibold rounded-[8px]"
                   >
                     <PlusIcon className="size-3.5" /> Tambah Role
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => toast.info("Membuka form undangan pengguna baru...")}
-                    className="h-9 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                    className="h-9 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                   >
                     <UserCheckIcon className="size-3.5" /> Tambah Pengguna
                   </Button>
@@ -186,7 +186,7 @@ export default function AccessControlPage() {
 
               {/* KPI Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">Total Akun Terdaftar</span>
                     <UsersIcon className="size-4 text-red-600" />
@@ -198,7 +198,7 @@ export default function AccessControlPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">Tersebar di 5 Regional STO</p>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">Tingkat Role Aktif</span>
                     <KeyRoundIcon className="size-4 text-blue-600" />
@@ -210,7 +210,7 @@ export default function AccessControlPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">Role-Based Access Control</p>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">Enforcement 2FA / SSO</span>
                     <LockIcon className="size-4 text-emerald-600" />
@@ -222,7 +222,7 @@ export default function AccessControlPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">Menggunakan Telkom SSO</p>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">Audit Izin (7 Hari)</span>
                     <HistoryIcon className="size-4 text-amber-600" />
@@ -237,21 +237,21 @@ export default function AccessControlPage() {
 
               {/* Main Tabs Container */}
               <Tabs defaultValue="matrix" className="w-full space-y-4">
-                <TabsList className="h-10 bg-muted/60 p-1 rounded-xl">
-                  <TabsTrigger value="matrix" className="rounded-lg text-xs font-semibold px-4">
+                <TabsList className="h-10 bg-muted/60 p-1 rounded-[8px]">
+                  <TabsTrigger value="matrix" className="rounded-[8px] text-xs font-semibold px-4">
                     Matriks Izin Modul
                   </TabsTrigger>
-                  <TabsTrigger value="users" className="rounded-lg text-xs font-semibold px-4">
+                  <TabsTrigger value="users" className="rounded-[8px] text-xs font-semibold px-4">
                     Daftar Pengguna ({usersList.length})
                   </TabsTrigger>
-                  <TabsTrigger value="roles" className="rounded-lg text-xs font-semibold px-4">
+                  <TabsTrigger value="roles" className="rounded-[8px] text-xs font-semibold px-4">
                     Struktur Role ({roleData.length})
                   </TabsTrigger>
                 </TabsList>
 
                 {/* TAB 1: Matriks Izin Modul */}
                 <TabsContent value="matrix" className="space-y-4">
-                  <div className="rounded-2xl border bg-card overflow-hidden shadow-2xs">
+                  <div className="rounded-[8px] border bg-card overflow-hidden shadow-2xs">
                     <div className="p-4 border-b bg-muted/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <h3 className="text-sm font-bold text-foreground">Matriks Hak Akses per Modul</h3>
@@ -260,7 +260,7 @@ export default function AccessControlPage() {
                       <Button
                         size="sm"
                         onClick={() => toast.success("Konfigurasi hak akses matriks berhasil diperbarui!")}
-                        className="h-8 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                        className="h-8 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                       >
                         Simpan Perubahan
                       </Button>
@@ -318,7 +318,7 @@ export default function AccessControlPage() {
 
                 {/* TAB 2: Daftar Pengguna */}
                 <TabsContent value="users" className="space-y-4">
-                  <div className="rounded-2xl border bg-card p-4 shadow-2xs flex flex-col gap-4">
+                  <div className="rounded-[8px] border bg-card p-4 shadow-2xs flex flex-col gap-4">
                     {/* Filters */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                       <div className="relative flex-1 max-w-sm">
@@ -328,7 +328,7 @@ export default function AccessControlPage() {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="Cari nama, NIK, atau email staf..."
-                          className="w-full h-9 pl-9 pr-3 rounded-xl border bg-background text-xs outline-none focus:border-red-500"
+                          className="w-full h-9 pl-9 pr-3 rounded-[8px] border bg-background text-xs outline-none focus:border-red-500"
                         />
                       </div>
 
@@ -336,7 +336,7 @@ export default function AccessControlPage() {
                         <select
                           value={selectedRoleFilter}
                           onChange={(e) => setSelectedRoleFilter(e.target.value)}
-                          className="h-9 px-3 rounded-xl border bg-background text-xs text-foreground outline-none cursor-pointer"
+                          className="h-9 px-3 rounded-[8px] border bg-background text-xs text-foreground outline-none cursor-pointer"
                         >
                           <option value="all">Semua Role ({usersList.length})</option>
                           <option value="Super Admin">Super Admin</option>
@@ -349,7 +349,7 @@ export default function AccessControlPage() {
                     </div>
 
                     {/* Table */}
-                    <div className="overflow-x-auto rounded-xl border">
+                    <div className="overflow-x-auto rounded-[8px] border">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="border-b bg-muted/40 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
@@ -366,7 +366,7 @@ export default function AccessControlPage() {
                             <tr key={user.id} className="hover:bg-muted/30 transition-colors">
                               <td className="p-3.5 pl-4">
                                 <div className="flex items-center gap-2.5">
-                                  <Avatar className="size-8 rounded-lg bg-primary/10 text-primary font-bold text-xs">
+                                  <Avatar className="size-8 rounded-[8px] bg-primary/10 text-primary font-bold text-xs">
                                     <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                                   </Avatar>
                                   <div>
@@ -416,10 +416,10 @@ export default function AccessControlPage() {
                 <TabsContent value="roles" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {roleData.map((role) => (
-                      <div key={role.id} className="rounded-2xl border bg-card p-5 shadow-2xs flex flex-col justify-between gap-4">
+                      <div key={role.id} className="rounded-[8px] border bg-card p-5 shadow-2xs flex flex-col justify-between gap-4">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Badge className={`text-xs font-semibold px-2.5 py-0.5 rounded-lg ${role.badgeColor}`}>
+                            <Badge className={`text-xs font-semibold px-2.5 py-0.5 rounded-[8px] ${role.badgeColor}`}>
                               {role.name}
                             </Badge>
                             <span className="text-xs font-mono font-bold text-muted-foreground">
@@ -436,7 +436,7 @@ export default function AccessControlPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => toast.info(`Mengedit perizinan role: ${role.name}`)}
-                            className="h-7.5 text-xs font-semibold rounded-lg"
+                            className="h-7.5 text-xs font-semibold rounded-[8px]"
                           >
                             Edit Role
                           </Button>

@@ -25,7 +25,7 @@ export function KaryawanWelcome() {
           <Button
             variant="outline"
             size="sm"
-            className="h-9 px-3.5 gap-1.5 rounded-xl text-xs font-semibold hover:bg-muted border-border cursor-pointer shadow-2xs transition-colors"
+            className="h-9 px-3.5 gap-1.5 rounded-[8px] text-xs font-semibold hover:bg-muted border-border cursor-pointer shadow-2xs transition-colors"
           >
             <CalendarCheckIcon className="size-3.5 text-zinc-600 dark:text-zinc-300" />
             <span>Presensi GPS</span>
@@ -35,7 +35,7 @@ export function KaryawanWelcome() {
         <Link href="/karyawan/cuti">
           <Button
             size="sm"
-            className="h-9 px-4 gap-1.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-xs transition-all"
+            className="h-9 px-4 gap-1.5 rounded-[8px] text-xs font-semibold bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-xs transition-all"
           >
             <PlusIcon className="size-3.5" />
             <span>Ajukan Cuti</span>

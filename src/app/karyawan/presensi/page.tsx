@@ -160,7 +160,7 @@ export default function KaryawanPresensiPage() {
       {/* 2. 4 Summary Metric Cards (Overview Style) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <CalendarCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -177,7 +177,7 @@ export default function KaryawanPresensiPage() {
         </div>
 
         {/* Card 2 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -194,7 +194,7 @@ export default function KaryawanPresensiPage() {
         </div>
 
         {/* Card 3 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <CalendarRangeIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -211,7 +211,7 @@ export default function KaryawanPresensiPage() {
         </div>
 
         {/* Card 4 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <TrendingUpIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -229,7 +229,7 @@ export default function KaryawanPresensiPage() {
       </div>
 
       {/* 3. Main Hero: Unified Live Attendance & GPS Console */}
-      <div className="rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-xs overflow-hidden relative">
+      <div className="rounded-[8px] border border-border bg-card p-6 sm:p-7 shadow-xs overflow-hidden relative">
         {/* Subtle background gradient glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/5 dark:bg-red-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
@@ -257,7 +257,7 @@ export default function KaryawanPresensiPage() {
                 size="sm"
                 onClick={handleRefreshGps}
                 disabled={isRefreshingGps}
-                className="h-8.5 px-3 text-xs font-semibold rounded-xl gap-2 border-border bg-background hover:bg-muted text-foreground cursor-pointer shadow-2xs transition-all hover:border-red-300 dark:hover:border-red-800"
+                className="h-8.5 px-3 text-xs font-semibold rounded-[8px] gap-2 border-border bg-background hover:bg-muted text-foreground cursor-pointer shadow-2xs transition-all hover:border-red-300 dark:hover:border-red-800"
               >
                 <RefreshCwIcon className={`size-3.5 ${isRefreshingGps ? "animate-spin text-red-600" : "text-red-600"}`} />
                 <span>{isRefreshingGps ? "Memindai GPS..." : "Deteksi Lokasi GPS"}</span>
@@ -265,14 +265,14 @@ export default function KaryawanPresensiPage() {
             </div>
 
             {/* Main Visual Distance Radar Tile */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-muted/50 via-muted/20 to-background border border-border/80 flex flex-col sm:flex-row items-start sm:items-center gap-5 shadow-2xs">
+            <div className="p-5 sm:p-6 rounded-[8px] bg-gradient-to-br from-muted/50 via-muted/20 to-background border border-border/80 flex flex-col sm:flex-row items-start sm:items-center gap-5 shadow-2xs">
               {/* Radar Concentric Graphic Box */}
-              <div className="relative size-20 sm:size-22 rounded-2xl bg-gradient-to-br from-red-500/15 via-red-500/5 to-transparent border border-red-200 dark:border-red-900/60 flex items-center justify-center shrink-0 shadow-xs">
+              <div className="relative size-20 sm:size-22 rounded-[8px] bg-gradient-to-br from-red-500/15 via-red-500/5 to-transparent border border-red-200 dark:border-red-900/60 flex items-center justify-center shrink-0 shadow-xs">
                 {/* Concentric Pulse Rings */}
-                <div className="absolute inset-1.5 rounded-xl border border-red-400/30 animate-pulse" />
-                <div className="absolute inset-3.5 rounded-xl border border-red-500/20" />
+                <div className="absolute inset-1.5 rounded-[8px] border border-red-400/30 animate-pulse" />
+                <div className="absolute inset-3.5 rounded-[8px] border border-red-500/20" />
                 {/* Center Pin Icon */}
-                <div className="size-11 rounded-xl bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center shadow-md">
+                <div className="size-11 rounded-[8px] bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center shadow-md">
                   <MapPinIcon className="size-6 text-white" />
                 </div>
               </div>
@@ -313,15 +313,15 @@ export default function KaryawanPresensiPage() {
 
             {/* Bottom 3 Micro-Specs Grid */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/70 text-xs space-y-0.5">
+              <div className="p-3 rounded-[8px] bg-muted/40 border border-border/70 text-xs space-y-0.5">
                 <span className="text-[10px] text-muted-foreground font-medium block">Sentral Kantor</span>
                 <span className="font-bold text-foreground block truncate">Telkom Akses</span>
               </div>
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/70 text-xs space-y-0.5">
+              <div className="p-3 rounded-[8px] bg-muted/40 border border-border/70 text-xs space-y-0.5">
                 <span className="text-[10px] text-muted-foreground font-medium block">Jadwal Shift</span>
                 <span className="font-bold text-foreground block truncate">08:00 - 17:00 WIB</span>
               </div>
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/70 text-xs space-y-0.5">
+              <div className="p-3 rounded-[8px] bg-muted/40 border border-border/70 text-xs space-y-0.5">
                 <span className="text-[10px] text-muted-foreground font-medium block">Batas Toleransi</span>
                 <span className="font-bold text-foreground block truncate">08:15 WIB</span>
               </div>
@@ -329,7 +329,7 @@ export default function KaryawanPresensiPage() {
           </div>
 
           {/* Right Column: Clock Console & Action */}
-          <div className="lg:col-span-5 flex flex-col justify-between p-6 rounded-2xl bg-muted/30 border border-border/70 gap-5">
+          <div className="lg:col-span-5 flex flex-col justify-between p-6 rounded-[8px] bg-muted/30 border border-border/70 gap-5">
             <div className="text-center space-y-1">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
                 {isCheckedIn ? "JAM MASUK TERVERIFIKASI" : currentDate || "Senin, 24 Agustus 2026"}
@@ -348,7 +348,7 @@ export default function KaryawanPresensiPage() {
                 type="button"
                 onClick={handleClockIn}
                 disabled={isCheckedIn || !isWithinGeofence}
-                className={`w-full h-12 text-sm font-bold rounded-xl shadow-xs transition-all gap-2 cursor-pointer ${
+                className={`w-full h-12 text-sm font-bold rounded-[8px] shadow-xs transition-all gap-2 cursor-pointer ${
                   isCheckedIn
                     ? "bg-emerald-600 hover:bg-emerald-600 text-white cursor-default"
                     : "bg-red-600 hover:bg-red-700 text-white"
@@ -367,7 +367,7 @@ export default function KaryawanPresensiPage() {
                 variant="outline"
                 onClick={handleClockOut}
                 disabled={!isCheckedIn}
-                className="w-full h-10 text-xs font-semibold rounded-xl border border-border hover:bg-muted text-foreground cursor-pointer"
+                className="w-full h-10 text-xs font-semibold rounded-[8px] border border-border hover:bg-muted text-foreground cursor-pointer"
               >
                 Clock Out (Absen Pulang)
               </Button>
@@ -377,7 +377,7 @@ export default function KaryawanPresensiPage() {
       </div>
 
       {/* 4. Riwayat Presensi Saya Table */}
-      <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-zinc-900 p-6 rounded-[8px] border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-zinc-900 dark:text-white">
@@ -390,7 +390,7 @@ export default function KaryawanPresensiPage() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-[8px] border border-zinc-200 dark:border-zinc-800">
           <table className="w-full text-xs text-left">
             <thead className="bg-zinc-50 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 font-bold border-b border-zinc-200 dark:border-zinc-800">
               <tr>

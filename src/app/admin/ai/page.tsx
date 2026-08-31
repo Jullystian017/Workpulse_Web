@@ -484,7 +484,7 @@ export default function AIAssistantPage() {
               variant="outline"
               size="sm"
               onClick={() => setIsHistoryModalOpen(true)}
-              className="h-8 gap-1.5 rounded-xl text-xs font-semibold hover:bg-muted/70 cursor-pointer"
+              className="h-8 gap-1.5 rounded-[8px] text-xs font-semibold hover:bg-muted/70 cursor-pointer"
             >
               <HistoryIcon className="size-3.5 text-red-600" />
               <span className="hidden sm:inline">Riwayat Obrolan</span>
@@ -497,7 +497,7 @@ export default function AIAssistantPage() {
             <Button
               onClick={handleCreateNewChat}
               size="sm"
-              className="h-8 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
+              className="h-8 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
             >
               <PlusIcon className="size-3.5" />
               <span>Obrolan Baru</span>
@@ -524,7 +524,7 @@ export default function AIAssistantPage() {
                 </div>
 
                 {/* Big Search Input Box */}
-                <div className="rounded-2xl border-2 border-primary/20 bg-card p-4 shadow-sm focus-within:border-primary/60 focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                <div className="rounded-[8px] border-2 border-primary/20 bg-card p-4 shadow-sm focus-within:border-primary/60 focus-within:ring-4 focus-within:ring-primary/10 transition-all">
                   <textarea
                     value={inputQuery}
                     onChange={(e) => setInputQuery(e.target.value)}
@@ -589,7 +589,7 @@ export default function AIAssistantPage() {
                   </div>
 
                   {/* Task Timeline Selector */}
-                  <div className="divide-y rounded-2xl border bg-card overflow-hidden shadow-2xs">
+                  <div className="divide-y rounded-[8px] border bg-card overflow-hidden shadow-2xs">
                     {todaySchedule.map((item) => (
                       <div
                         key={item.id}
@@ -611,7 +611,7 @@ export default function AIAssistantPage() {
 
                   {/* Selected Task Details Expanded Card */}
                   {selectedTask && (
-                    <div className="rounded-2xl border-l-4 border-l-emerald-500 border bg-card p-4 shadow-sm flex flex-col gap-3 animate-in fade-in duration-200">
+                    <div className="rounded-[8px] border-l-4 border-l-emerald-500 border bg-card p-4 shadow-sm flex flex-col gap-3 animate-in fade-in duration-200">
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -624,7 +624,7 @@ export default function AIAssistantPage() {
                           onClick={() => handleSend(`Analisis dan beri rekomendasi untuk: ${selectedTask.title}`)}
                           size="sm"
                           variant="outline"
-                          className="h-7 text-[11px] gap-1 rounded-lg text-primary font-semibold cursor-pointer"
+                          className="h-7 text-[11px] gap-1 rounded-[8px] text-primary font-semibold cursor-pointer"
                         >
                           <SparklesIcon className="size-3" /> Analisis AI
                         </Button>
@@ -646,7 +646,7 @@ export default function AIAssistantPage() {
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {selectedTask.participants.map((p, i) => (
-                            <div key={i} className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/40 text-xs">
+                            <div key={i} className="flex items-center gap-2 p-1.5 rounded-[8px] bg-muted/40 text-xs">
                               <Avatar className="size-6 rounded-md bg-primary/10 text-primary font-bold text-[10px]">
                                 <AvatarFallback>{p.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                               </Avatar>
@@ -669,7 +669,7 @@ export default function AIAssistantPage() {
                   <div key={msg.id} className="flex flex-col gap-2">
                     {msg.sender === "user" ? (
                       <div className="flex justify-end">
-                        <div className="rounded-2xl rounded-tr-xs bg-muted/80 px-4 py-2.5 text-xs text-foreground max-w-[85%] font-medium">
+                        <div className="rounded-[8px] rounded-tr-xs bg-muted/80 px-4 py-2.5 text-xs text-foreground max-w-[85%] font-medium">
                           {msg.text}
                         </div>
                       </div>
@@ -684,7 +684,7 @@ export default function AIAssistantPage() {
 
                         {/* Rich Context Card */}
                         {msg.contextCard && (
-                          <div className={`rounded-xl border border-l-4 ${msg.contextCard.statusColor} bg-card p-3.5 shadow-xs flex flex-col gap-2`}>
+                          <div className={`rounded-[8px] border border-l-4 ${msg.contextCard.statusColor} bg-card p-3.5 shadow-xs flex flex-col gap-2`}>
                             <div className="flex items-center justify-between gap-2">
                               <div>
                                 <h4 className="text-xs font-bold text-foreground">{msg.contextCard.title}</h4>
@@ -768,7 +768,7 @@ export default function AIAssistantPage() {
                 ))}
 
                 {isGenerating && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse p-3 rounded-xl bg-muted/30">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse p-3 rounded-[8px] bg-muted/30">
                     <SparklesIcon className="size-4 text-red-600 animate-spin" />
                     <span>WorkPulse AI sedang menganalisis data riwayat tiket & shift...</span>
                   </div>
@@ -782,7 +782,7 @@ export default function AIAssistantPage() {
           {/* Sticky Bottom Input Bar when in conversation mode */}
           {currentMessages.length > 0 && (
             <div className="border-t bg-card/80 backdrop-blur-md p-4">
-              <div className="max-w-4xl mx-auto flex items-center gap-2 rounded-2xl border bg-background px-3 py-2 shadow-sm focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/10">
+              <div className="max-w-4xl mx-auto flex items-center gap-2 rounded-[8px] border bg-background px-3 py-2 shadow-sm focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/10">
                 <textarea
                   value={inputQuery}
                   onChange={(e) => setInputQuery(e.target.value)}
@@ -817,12 +817,12 @@ export default function AIAssistantPage() {
         {/* Riwayat & Memori Dropdown Modal (Sleek, Clean, No Sidebar Clutter) */}
         {isHistoryModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-            <div className="w-full max-w-lg rounded-2xl border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
+            <div className="w-full max-w-lg rounded-[8px] border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
               
               {/* Modal Header */}
               <div className="p-4 border-b flex items-center justify-between bg-muted/20">
                 <div className="flex items-center gap-2">
-                  <div className="flex size-7 items-center justify-center rounded-lg bg-red-600 text-white shadow-xs">
+                  <div className="flex size-7 items-center justify-center rounded-[8px] bg-red-600 text-white shadow-xs">
                     <SparklesIcon className="size-4 text-white" />
                   </div>
                   <div>
@@ -832,7 +832,7 @@ export default function AIAssistantPage() {
                 </div>
                 <button
                   onClick={() => setIsHistoryModalOpen(false)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                 >
                   <XIcon className="size-4" />
                 </button>
@@ -847,13 +847,13 @@ export default function AIAssistantPage() {
                     value={searchHistoryQuery}
                     onChange={(e) => setSearchHistoryQuery(e.target.value)}
                     placeholder="Cari topik obrolan lampau..."
-                    className="w-full h-8.5 pl-8.5 pr-3 rounded-xl border bg-background text-xs placeholder:text-muted-foreground outline-none focus:border-red-500"
+                    className="w-full h-8.5 pl-8.5 pr-3 rounded-[8px] border bg-background text-xs placeholder:text-muted-foreground outline-none focus:border-red-500"
                   />
                 </div>
                 <Button
                   onClick={handleCreateNewChat}
                   size="sm"
-                  className="h-8.5 px-3 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer shrink-0"
+                  className="h-8.5 px-3 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer shrink-0"
                 >
                   <PlusIcon className="size-3.5" />
                   <span>Obrolan Baru</span>
@@ -878,7 +878,7 @@ export default function AIAssistantPage() {
                             <div
                               key={session.id}
                               onClick={() => handleSelectSession(session.id)}
-                              className={`group flex items-center justify-between p-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all border ${
+                              className={`group flex items-center justify-between p-2.5 rounded-[8px] text-xs font-medium cursor-pointer transition-all border ${
                                 isActive
                                   ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-900/50 font-semibold"
                                   : "border-transparent text-foreground hover:bg-muted/60 hover:border-border/60"

@@ -349,7 +349,7 @@ export default function JadwalPage() {
           {/* 2. 4 TOP SUMMARY CARDS (Overview Style) */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Card 1 */}
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <UsersIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -366,7 +366,7 @@ export default function JadwalPage() {
             </div>
 
             {/* Card 2 */}
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -383,7 +383,7 @@ export default function JadwalPage() {
             </div>
 
             {/* Card 3 */}
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ClipboardListIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -400,7 +400,7 @@ export default function JadwalPage() {
             </div>
 
             {/* Card 4 */}
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <CalendarCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -421,7 +421,7 @@ export default function JadwalPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 
             {/* View Switcher Tabs (Mingguan | Bulanan) */}
-            <div className="flex items-center gap-1 rounded-lg border bg-muted p-1 text-muted-foreground self-start sm:self-auto">
+            <div className="flex items-center gap-1 rounded-[8px] border bg-muted p-1 text-muted-foreground self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setViewMode("Mingguan")}
@@ -450,12 +450,12 @@ export default function JadwalPage() {
 
             {/* Date Range Navigator & Action Button */}
             <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-              <div className="flex items-center gap-2 bg-background dark:bg-card px-3 py-1.5 rounded-xl border border-border/80 shadow-2xs">
+              <div className="flex items-center gap-2 bg-background dark:bg-card px-3 py-1.5 rounded-[8px] border border-border/80 shadow-2xs">
                 <button
                   type="button"
                   onClick={handlePrevWeek}
                   disabled={currentWeekIndex === 0}
-                  className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  className="p-1 hover:bg-muted rounded-[8px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                   title="Minggu Sebelumnya"
                 >
                   <ChevronLeftIcon className="size-4" />
@@ -469,7 +469,7 @@ export default function JadwalPage() {
                   type="button"
                   onClick={handleNextWeek}
                   disabled={currentWeekIndex === weekPeriods.length - 1}
-                  className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  className="p-1 hover:bg-muted rounded-[8px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                   title="Minggu Berikutnya"
                 >
                   <ChevronRightIcon className="size-4" />
@@ -479,7 +479,7 @@ export default function JadwalPage() {
               {/* Action Button */}
               <Button
                 onClick={() => setIsAddShiftOpen(true)}
-                className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs shrink-0 cursor-pointer"
+                className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs shrink-0 cursor-pointer"
               >
                 <PlusIcon className="size-4" /> Atur Shift Baru
               </Button>
@@ -488,23 +488,23 @@ export default function JadwalPage() {
           </div>
 
           {/* SEARCH & QUICK FILTERS BAR */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-[8px] border border-border/80 shadow-2xs">
             <div className="relative w-full sm:w-80">
               <SearchIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
               <Input
                 placeholder="Cari nama karyawan, NIK, penugasan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs rounded-xl bg-background"
+                className="pl-9 h-9 text-xs rounded-[8px] bg-background"
               />
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               <Select value={deptFilter} onValueChange={(val) => setDeptFilter(val ?? "Semua")}>
-                <SelectTrigger className="h-9 w-[160px] text-xs rounded-xl bg-background">
+                <SelectTrigger className="h-9 w-[160px] text-xs rounded-[8px] bg-background">
                   <SelectValue placeholder="Departemen" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl text-xs">
+                <SelectContent className="rounded-[8px] text-xs">
                   <SelectItem value="Semua">Semua Divisi</SelectItem>
                   <SelectItem value="Operasional">Operasional</SelectItem>
                   <SelectItem value="Teknisi Lapangan">Teknisi Lapangan</SelectItem>
@@ -517,7 +517,7 @@ export default function JadwalPage() {
 
           {/* MAIN VIEW CONTENT */}
           {viewMode === "Mingguan" && (
-            <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-6 shadow-xs overflow-hidden">
+            <div className="rounded-[8px] border border-border/80 bg-card p-4 sm:p-6 shadow-xs overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse min-w-[1000px]">
                   <thead>
@@ -733,7 +733,7 @@ export default function JadwalPage() {
 
           {/* BULANAN VIEW */}
           {viewMode === "Bulanan" && (
-            <Card className="p-6 rounded-2xl">
+            <Card className="p-6 rounded-[8px]">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-base font-bold text-foreground">Kalender Shift Agustus 2026</h3>
@@ -756,7 +756,7 @@ export default function JadwalPage() {
                   return (
                     <div
                       key={dayNum}
-                      className={`min-h-[85px] p-2 rounded-xl border flex flex-col justify-between transition-all ${isToday
+                      className={`min-h-[85px] p-2 rounded-[8px] border flex flex-col justify-between transition-all ${isToday
                           ? "bg-red-50/50 dark:bg-red-950/20 border-red-300 dark:border-red-800/60 ring-2 ring-red-500/20"
                           : "bg-card border-border/70 hover:border-border"
                         }`}
@@ -786,7 +786,7 @@ export default function JadwalPage() {
 
           {/* TASK DETAIL DIALOG */}
           <Dialog open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
-            <DialogContent className="sm:max-w-md p-6 rounded-2xl border bg-card shadow-xl">
+            <DialogContent className="sm:max-w-md p-6 rounded-[8px] border bg-card shadow-xl">
               {selectedTask && (
                 <>
                   <DialogHeader className="pb-3 border-b border-border/60">
@@ -815,7 +815,7 @@ export default function JadwalPage() {
                   </DialogHeader>
 
                   <div className="flex flex-col gap-4 py-3 text-xs">
-                    <div className="bg-muted/40 p-3 rounded-xl flex items-center justify-between">
+                    <div className="bg-muted/40 p-3 rounded-[8px] flex items-center justify-between">
                       <div>
                         <p className="text-[11px] text-muted-foreground font-medium">Teknisi Bertugas</p>
                         <p className="font-bold text-foreground text-sm">{selectedTask.employeeName}</p>
@@ -837,7 +837,7 @@ export default function JadwalPage() {
                             key={st}
                             type="button"
                             onClick={() => handleUpdateTaskStatus(st)}
-                            className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${selectedTask.cell.status === st
+                            className={`py-2 px-3 rounded-[8px] border text-xs font-semibold transition-all cursor-pointer ${selectedTask.cell.status === st
                                 ? "bg-red-600 text-white border-red-600 shadow-xs"
                                 : "bg-card hover:bg-muted text-muted-foreground"
                               }`}
@@ -854,7 +854,7 @@ export default function JadwalPage() {
                       type="button"
                       variant="outline"
                       onClick={() => setSelectedTask(null)}
-                      className="w-full text-xs font-semibold rounded-xl"
+                      className="w-full text-xs font-semibold rounded-[8px]"
                     >
                       Tutup
                     </Button>
@@ -866,7 +866,7 @@ export default function JadwalPage() {
 
           {/* ADD SHIFT DIALOG */}
           <Dialog open={isAddShiftOpen} onOpenChange={setIsAddShiftOpen}>
-            <DialogContent className="sm:max-w-md p-6 rounded-2xl border bg-card shadow-xl">
+            <DialogContent className="sm:max-w-md p-6 rounded-[8px] border bg-card shadow-xl">
               <DialogHeader className="pb-2 border-b border-border/60">
                 <DialogTitle className="text-base font-bold text-foreground">
                   Atur Shift & Penugasan Baru
@@ -882,13 +882,13 @@ export default function JadwalPage() {
                     <Label htmlFor="nik" className="text-xs font-semibold text-foreground">
                       NIK Teknisi <span className="text-red-500">*</span>
                     </Label>
-                    <Input id="nik" name="nik" placeholder="2024105" required className="h-9 font-mono text-xs rounded-xl" />
+                    <Input id="nik" name="nik" placeholder="2024105" required className="h-9 font-mono text-xs rounded-[8px]" />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="nama" className="text-xs font-semibold text-foreground">
                       Nama Teknisi <span className="text-red-500">*</span>
                     </Label>
-                    <Input id="nama" name="nama" placeholder="Nama Lengkap" required className="h-9 text-xs rounded-xl" />
+                    <Input id="nama" name="nama" placeholder="Nama Lengkap" required className="h-9 text-xs rounded-[8px]" />
                   </div>
                 </div>
 
@@ -896,10 +896,10 @@ export default function JadwalPage() {
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-foreground">Divisi / Role</Label>
                     <Select name="departemen" defaultValue="Operasional">
-                      <SelectTrigger className="h-9 text-xs rounded-xl">
+                      <SelectTrigger className="h-9 text-xs rounded-[8px]">
                         <SelectValue placeholder="Pilih Divisi" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl text-xs">
+                      <SelectContent className="rounded-[8px] text-xs">
                         <SelectItem value="Operasional">Operasional</SelectItem>
                         <SelectItem value="Teknisi Lapangan">Teknisi Lapangan</SelectItem>
                         <SelectItem value="Customer Support">Customer Support</SelectItem>
@@ -910,10 +910,10 @@ export default function JadwalPage() {
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-semibold text-foreground">Prioritas Task</Label>
                     <Select name="priority" defaultValue="HIGH">
-                      <SelectTrigger className="h-9 text-xs rounded-xl">
+                      <SelectTrigger className="h-9 text-xs rounded-[8px]">
                         <SelectValue placeholder="Prioritas" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl text-xs">
+                      <SelectContent className="rounded-[8px] text-xs">
                         <SelectItem value="HIGH">🔴 High Priority</SelectItem>
                         <SelectItem value="MEDIUM">🟡 Medium Priority</SelectItem>
                         <SelectItem value="LOW">🟢 Low Priority</SelectItem>
@@ -931,7 +931,7 @@ export default function JadwalPage() {
                     name="taskTitle"
                     placeholder="Contoh: Maintenance Jaringan Witel"
                     defaultValue="Maintenance Jaringan Witel"
-                    className="h-9 text-xs rounded-xl"
+                    className="h-9 text-xs rounded-[8px]"
                   />
                 </div>
 
@@ -946,14 +946,14 @@ export default function JadwalPage() {
                       placeholder="Area Jakarta Pusat"
                       defaultValue="Area Jakarta Pusat"
                       required
-                      className="h-9 text-xs rounded-xl"
+                      className="h-9 text-xs rounded-[8px]"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="time" className="text-xs font-semibold text-foreground">
                       Jam Mulai
                     </Label>
-                    <Input id="time" name="time" placeholder="07:30" defaultValue="07:30" className="h-9 text-xs rounded-xl" />
+                    <Input id="time" name="time" placeholder="07:30" defaultValue="07:30" className="h-9 text-xs rounded-[8px]" />
                   </div>
                 </div>
 
@@ -962,13 +962,13 @@ export default function JadwalPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setIsAddShiftOpen(false)}
-                    className="h-9 px-4 text-xs font-semibold rounded-xl"
+                    className="h-9 px-4 text-xs font-semibold rounded-[8px]"
                   >
                     Batal
                   </Button>
                   <Button
                     type="submit"
-                    className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                    className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                   >
                     Simpan Jadwal Shift
                   </Button>
@@ -990,7 +990,7 @@ function ShiftCell({ cell, onClickTask }: { cell: ShiftCellType; onClickTask?: (
     return (
       <div
         onClick={onClickTask}
-        className="bg-card border border-border/90 rounded-xl p-2.5 shadow-2xs space-y-1.5 hover:shadow-md hover:border-red-300 dark:hover:border-red-800 transition-all text-left group cursor-pointer min-h-[96px] flex flex-col justify-between"
+        className="bg-card border border-border/90 rounded-[8px] p-2.5 shadow-2xs space-y-1.5 hover:shadow-md hover:border-red-300 dark:hover:border-red-800 transition-all text-left group cursor-pointer min-h-[96px] flex flex-col justify-between"
       >
         <div>
           {/* Priority Badge & Time */}
@@ -1039,7 +1039,7 @@ function ShiftCell({ cell, onClickTask }: { cell: ShiftCellType; onClickTask?: (
             >
               <MoreVerticalIcon className="size-3" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36 text-xs rounded-xl">
+            <DropdownMenuContent align="end" className="w-36 text-xs rounded-[8px]">
               <DropdownMenuItem onClick={onClickTask} className="cursor-pointer">
                 <EyeIcon className="size-3.5 mr-2" /> Detail Task
               </DropdownMenuItem>
@@ -1062,7 +1062,7 @@ function ShiftCell({ cell, onClickTask }: { cell: ShiftCellType; onClickTask?: (
 
   if (cell.type === "full_day") {
     return (
-      <div className="bg-emerald-50/70 hover:bg-emerald-100/80 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-200/70 dark:border-emerald-900/50 rounded-xl p-3 h-full min-h-[96px] flex items-center justify-center text-center cursor-pointer transition-colors shadow-2xs">
+      <div className="bg-emerald-50/70 hover:bg-emerald-100/80 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-200/70 dark:border-emerald-900/50 rounded-[8px] p-3 h-full min-h-[96px] flex items-center justify-center text-center cursor-pointer transition-colors shadow-2xs">
         <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 leading-snug">
           {cell.label}
         </span>
@@ -1072,7 +1072,7 @@ function ShiftCell({ cell, onClickTask }: { cell: ShiftCellType; onClickTask?: (
 
   if (cell.type === "sub_unit" || cell.type === "khusus") {
     return (
-      <div className="bg-purple-50/70 hover:bg-purple-100/80 dark:bg-purple-950/30 dark:hover:bg-purple-950/50 border border-purple-200/70 dark:border-purple-900/50 rounded-xl p-3 h-full min-h-[96px] flex items-center justify-center text-center cursor-pointer transition-colors shadow-2xs">
+      <div className="bg-purple-50/70 hover:bg-purple-100/80 dark:bg-purple-950/30 dark:hover:bg-purple-950/50 border border-purple-200/70 dark:border-purple-900/50 rounded-[8px] p-3 h-full min-h-[96px] flex items-center justify-center text-center cursor-pointer transition-colors shadow-2xs">
         <span className="text-xs font-bold text-purple-800 dark:text-purple-300 leading-snug">
           {cell.label}
         </span>
@@ -1082,7 +1082,7 @@ function ShiftCell({ cell, onClickTask }: { cell: ShiftCellType; onClickTask?: (
 
   if (cell.type === "off") {
     return (
-      <div className="bg-muted/30 hover:bg-muted/50 dark:bg-muted/10 dark:hover:bg-muted/20 border border-dashed border-border/80 rounded-xl p-3 h-full min-h-[96px] flex items-center justify-center text-center cursor-pointer transition-colors shadow-2xs">
+      <div className="bg-muted/30 hover:bg-muted/50 dark:bg-muted/10 dark:hover:bg-muted/20 border border-dashed border-border/80 rounded-[8px] p-3 h-full min-h-[96px] flex items-center justify-center text-center cursor-pointer transition-colors shadow-2xs">
         <span className="text-xs font-medium text-muted-foreground/80 leading-snug">
           {cell.label}
         </span>

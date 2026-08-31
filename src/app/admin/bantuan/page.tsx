@@ -262,7 +262,7 @@ export default function AdminBantuanPage() {
         <SiteHeader />
         <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-6">
           {/* Header Banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-red-700 via-red-600 to-rose-600 p-6 sm:p-8 text-white shadow-lg">
+          <div className="relative overflow-hidden rounded-[8px] bg-linear-to-r from-red-700 via-red-600 to-rose-600 p-6 sm:p-8 text-white shadow-lg">
             <div className="relative z-10 max-w-2xl">
               <div className="flex items-center gap-2 mb-2">
                 <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-md text-xs font-semibold">
@@ -287,10 +287,10 @@ export default function AdminBantuanPage() {
           {/* Main Tabs Navigation */}
           <Tabs defaultValue="inbox" className="space-y-6">
             <div className="flex items-center justify-between border-b pb-3">
-              <TabsList className="bg-zinc-100 dark:bg-zinc-800/70 p-1 rounded-2xl h-11 border border-zinc-200 dark:border-zinc-700">
+              <TabsList className="bg-zinc-100 dark:bg-zinc-800/70 p-1 rounded-[8px] h-11 border border-zinc-200 dark:border-zinc-700">
                 <TabsTrigger
                   value="inbox"
-                  className="rounded-xl px-5 text-xs font-bold gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:text-red-600 data-[state=active]:shadow-xs transition-all"
+                  className="rounded-[8px] px-5 text-xs font-bold gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:text-red-600 data-[state=active]:shadow-xs transition-all"
                 >
                   <InboxIcon className="size-4" />
                   <span>Kotak Masuk Tiket Karyawan</span>
@@ -302,7 +302,7 @@ export default function AdminBantuanPage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="panduan"
-                  className="rounded-xl px-5 text-xs font-bold gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:text-red-600 data-[state=active]:shadow-xs transition-all"
+                  className="rounded-[8px] px-5 text-xs font-bold gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:text-red-600 data-[state=active]:shadow-xs transition-all"
                 >
                   <BookOpenIcon className="size-4" />
                   <span>Panduan & FAQ Administrator</span>
@@ -314,7 +314,7 @@ export default function AdminBantuanPage() {
             <TabsContent value="inbox" className="space-y-6 mt-0">
               {/* 4 Summary KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+                <div className="bg-white dark:bg-zinc-900 p-5 rounded-[8px] border border-zinc-200 dark:border-zinc-800 shadow-2xs">
                   <span className="text-xs font-semibold text-zinc-500">Total Tiket Masuk</span>
                   <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
                     {tickets.length} <span className="text-xs font-normal text-zinc-400">Tiket</span>
@@ -322,7 +322,7 @@ export default function AdminBantuanPage() {
                   <span className="text-[11px] text-zinc-400 mt-2 block">Seluruh riwayat pesan karyawan</span>
                 </div>
 
-                <div className="bg-amber-50/60 dark:bg-amber-950/20 p-5 rounded-2xl border border-amber-200 dark:border-amber-900/60 shadow-2xs">
+                <div className="bg-amber-50/60 dark:bg-amber-950/20 p-5 rounded-[8px] border border-amber-200 dark:border-amber-900/60 shadow-2xs">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-amber-900 dark:text-amber-300">Menunggu Respon</span>
                     <AlertCircleIcon className="size-4 text-amber-600" />
@@ -333,7 +333,7 @@ export default function AdminBantuanPage() {
                   <span className="text-[11px] text-amber-700 dark:text-amber-400 mt-2 block">Prioritas respon &lt; 1 jam</span>
                 </div>
 
-                <div className="bg-blue-50/60 dark:bg-blue-950/20 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+                <div className="bg-blue-50/60 dark:bg-blue-950/20 p-5 rounded-[8px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-blue-900 dark:text-blue-300">Sedang Ditangani</span>
                     <ClockIcon className="size-4 text-blue-600" />
@@ -344,7 +344,7 @@ export default function AdminBantuanPage() {
                   <span className="text-[11px] text-blue-600 dark:text-blue-400 mt-2 block">Dalam koordinasi tim teknis</span>
                 </div>
 
-                <div className="bg-emerald-50/60 dark:bg-emerald-950/20 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 shadow-2xs">
+                <div className="bg-emerald-50/60 dark:bg-emerald-950/20 p-5 rounded-[8px] border border-emerald-200 dark:border-emerald-900/60 shadow-2xs">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">Selesai Ditangani</span>
                     <CheckCircle2Icon className="size-4 text-emerald-600" />
@@ -357,24 +357,24 @@ export default function AdminBantuanPage() {
               </div>
 
               {/* Filter & Search Bar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-4 rounded-[8px] border border-zinc-200 dark:border-zinc-800 shadow-2xs">
                 <div className="relative w-full sm:w-80">
                   <SearchIcon className="absolute left-3.5 top-2.5 size-4 text-zinc-400" />
                   <Input
                     placeholder="Cari NIK, nama, atau subjek tiket..."
                     value={searchTicket}
                     onChange={(e) => setSearchTicket(e.target.value)}
-                    className="pl-10 h-9 text-xs rounded-xl"
+                    className="pl-10 h-9 text-xs rounded-[8px]"
                   />
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <FilterIcon className="size-4 text-zinc-400 hidden sm:block" />
                   <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "all")}>
-                    <SelectTrigger className="h-9 text-xs rounded-xl w-full sm:w-48">
+                    <SelectTrigger className="h-9 text-xs rounded-[8px] w-full sm:w-48">
                       <SelectValue placeholder="Filter Status" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl text-xs">
+                    <SelectContent className="rounded-[8px] text-xs">
                       <SelectItem value="all">Semua Status</SelectItem>
                       <SelectItem value="pending">Menunggu Respon ({pendingCount})</SelectItem>
                       <SelectItem value="in_progress">Sedang Ditangani</SelectItem>
@@ -394,7 +394,7 @@ export default function AdminBantuanPage() {
                   return (
                     <div
                       key={ticket.id}
-                      className={`p-5 rounded-2xl border transition-all bg-white dark:bg-zinc-900 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                      className={`p-5 rounded-[8px] border transition-all bg-white dark:bg-zinc-900 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                         isPending
                           ? "border-amber-300 dark:border-amber-900/80 shadow-xs ring-1 ring-amber-200/50 dark:ring-amber-900/30"
                           : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300"
@@ -437,13 +437,13 @@ export default function AdminBantuanPage() {
                         </div>
 
                         {/* Message Preview */}
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80 leading-relaxed">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-[8px] border border-zinc-100 dark:border-zinc-800/80 leading-relaxed">
                           &quot;{ticket.pesan}&quot;
                         </p>
 
                         {/* Admin Reply Preview if any */}
                         {ticket.adminReply && (
-                          <div className="text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 flex items-start gap-2">
+                          <div className="text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-[8px] border border-emerald-200 dark:border-emerald-900/60 flex items-start gap-2">
                             <CheckCircle2Icon className="size-3.5 text-emerald-600 shrink-0 mt-0.5" />
                             <span>
                               <strong>Respon Admin:</strong> {ticket.adminReply}
@@ -459,7 +459,7 @@ export default function AdminBantuanPage() {
                           <Button
                             size="sm"
                             onClick={() => handleQuickResetPassword(ticket)}
-                            className="h-8 px-3 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-xs"
+                            className="h-8 px-3 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white rounded-[8px] shadow-xs"
                           >
                             <KeyRoundIcon className="size-3.5 mr-1 text-amber-400" />
                             Reset Password NIK
@@ -469,7 +469,7 @@ export default function AdminBantuanPage() {
                         <Button
                           size="sm"
                           onClick={() => handleOpenTicket(ticket)}
-                          className={`h-8 px-4 text-xs font-semibold rounded-xl shadow-xs ${
+                          className={`h-8 px-4 text-xs font-semibold rounded-[8px] shadow-xs ${
                             isPending
                               ? "bg-red-600 hover:bg-red-700 text-white"
                               : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
@@ -484,7 +484,7 @@ export default function AdminBantuanPage() {
                 })}
 
                 {filteredTickets.length === 0 && (
-                  <div className="p-12 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-zinc-500 text-xs">
+                  <div className="p-12 text-center bg-white dark:bg-zinc-900 rounded-[8px] border border-zinc-200 dark:border-zinc-800 text-zinc-500 text-xs">
                     Tidak ada tiket bantuan yang sesuai dengan filter.
                   </div>
                 )}
@@ -500,10 +500,10 @@ export default function AdminBantuanPage() {
                   return (
                     <div
                       key={idx}
-                      className="group relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-2xs hover:shadow-md hover:border-red-300 transition-all flex flex-col justify-between"
+                      className="group relative overflow-hidden rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-2xs hover:shadow-md hover:border-red-300 transition-all flex flex-col justify-between"
                     >
                       <div>
-                        <div className="size-10 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-600 flex items-center justify-center mb-3">
+                        <div className="size-10 rounded-[8px] bg-red-50 dark:bg-red-950/60 text-red-600 flex items-center justify-center mb-3">
                           <Icon className="size-5" />
                         </div>
                         <h3 className="text-sm font-bold text-zinc-900 dark:text-white group-hover:text-red-600 transition-colors">
@@ -520,7 +520,7 @@ export default function AdminBantuanPage() {
 
               {/* Main FAQ Accordion */}
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-4 rounded-[8px] border border-zinc-200 dark:border-zinc-800 shadow-2xs">
                   <div>
                     <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                       <BookOpenIcon className="size-5 text-red-600" />
@@ -536,7 +536,7 @@ export default function AdminBantuanPage() {
                       placeholder="Cari SOP / panduan admin..."
                       value={searchFaq}
                       onChange={(e) => setSearchFaq(e.target.value)}
-                      className="pl-10 h-9 text-xs rounded-xl"
+                      className="pl-10 h-9 text-xs rounded-[8px]"
                     />
                   </div>
                 </div>
@@ -547,7 +547,7 @@ export default function AdminBantuanPage() {
                     return (
                       <div
                         key={index}
-                        className={`rounded-2xl border transition-all overflow-hidden bg-white dark:bg-zinc-900 ${
+                        className={`rounded-[8px] border transition-all overflow-hidden bg-white dark:bg-zinc-900 ${
                           isOpen
                             ? "border-red-200 dark:border-red-900/60 shadow-xs"
                             : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300"
@@ -589,7 +589,7 @@ export default function AdminBantuanPage() {
 
         {/* DIALOG MODAL: RESPON & BALAS TIKET BANTUAN */}
         <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-          <DialogContent className="sm:max-w-lg rounded-2xl p-6">
+          <DialogContent className="sm:max-w-lg rounded-[8px] p-6">
             {selectedTicket && (
               <form onSubmit={handleSendReply} className="space-y-4">
                 <DialogHeader>
@@ -610,7 +610,7 @@ export default function AdminBantuanPage() {
                 </DialogHeader>
 
                 {/* Original Message Box */}
-                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 space-y-1">
+                <div className="p-3.5 rounded-[8px] bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 space-y-1">
                   <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                     Pesan Kendala Karyawan:
                   </span>
@@ -628,10 +628,10 @@ export default function AdminBantuanPage() {
                     value={replyStatus}
                     onValueChange={(val) => val && setReplyStatus(val as "pending" | "in_progress" | "resolved")}
                   >
-                    <SelectTrigger className="h-9 text-xs rounded-xl">
+                    <SelectTrigger className="h-9 text-xs rounded-[8px]">
                       <SelectValue placeholder="Pilih Status" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl text-xs">
+                    <SelectContent className="rounded-[8px] text-xs">
                       <SelectItem value="pending">Menunggu Respon (Pending)</SelectItem>
                       <SelectItem value="in_progress">Sedang Ditangani (In Progress)</SelectItem>
                       <SelectItem value="resolved">Selesai (Resolved)</SelectItem>
@@ -650,7 +650,7 @@ export default function AdminBantuanPage() {
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Tuliskan instruksi, konfirmasi perbaikan, atau respon kepada karyawan..."
                     required
-                    className="text-xs rounded-xl min-h-[90px]"
+                    className="text-xs rounded-[8px] min-h-[90px]"
                   />
                 </div>
 
@@ -660,13 +660,13 @@ export default function AdminBantuanPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setSelectedTicket(null)}
-                    className="h-9 px-4 text-xs font-semibold rounded-xl"
+                    className="h-9 px-4 text-xs font-semibold rounded-[8px]"
                   >
                     Batal
                   </Button>
                   <Button
                     type="submit"
-                    className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                    className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                   >
                     <SendIcon className="size-3.5 mr-1.5" />
                     Kirim Balasan ke Karyawan

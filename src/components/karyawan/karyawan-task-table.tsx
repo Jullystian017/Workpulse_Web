@@ -265,7 +265,7 @@ export function KaryawanTaskTable() {
 
   return (
     <div className="relative px-4 lg:px-6">
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-[8px] border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
         
         {/* Clean Table Header without Icons */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -287,14 +287,14 @@ export function KaryawanTaskTable() {
               placeholder="Cari task, PIC..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-xs rounded-xl bg-background border-zinc-200 dark:border-zinc-800"
+              className="pl-9 h-9 text-xs rounded-[8px] bg-background border-zinc-200 dark:border-zinc-800"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "all")}>
-              <SelectTrigger className="h-9 text-xs rounded-xl border-zinc-200 dark:border-zinc-800 bg-background w-full sm:w-36">
+              <SelectTrigger className="h-9 text-xs rounded-[8px] border-zinc-200 dark:border-zinc-800 bg-background w-full sm:w-36">
                 <SelectValue placeholder="Semua Status" />
               </SelectTrigger>
               <SelectContent>
@@ -308,7 +308,7 @@ export function KaryawanTaskTable() {
 
             {/* Prioritas Filter */}
             <Select value={prioritasFilter} onValueChange={(val) => setPrioritasFilter(val ?? "all")}>
-              <SelectTrigger className="h-9 text-xs rounded-xl border-zinc-200 dark:border-zinc-800 bg-background w-full sm:w-36">
+              <SelectTrigger className="h-9 text-xs rounded-[8px] border-zinc-200 dark:border-zinc-800 bg-background w-full sm:w-36">
                 <SelectValue placeholder="Semua Prioritas" />
               </SelectTrigger>
               <SelectContent>
@@ -322,7 +322,7 @@ export function KaryawanTaskTable() {
         </div>
 
         {/* Inner Table Container - matching Admin DataTable style */}
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-card shadow-2xs">
+        <div className="overflow-hidden rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-card shadow-2xs">
           <Table>
             <TableHeader className="bg-muted/50 sticky top-0 z-10">
               <TableRow className="hover:bg-transparent">
@@ -445,7 +445,7 @@ export function KaryawanTaskTable() {
                             <EllipsisVerticalIcon className="size-4" />
                             <span className="sr-only">Buka menu aksi</span>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44 text-xs rounded-xl">
+                          <DropdownMenuContent align="end" className="w-44 text-xs rounded-[8px]">
                             <DropdownMenuItem onClick={() => handleOpenDetail(task)} className="cursor-pointer">
                               <EyeIcon className="size-3.5 mr-2" /> Lihat Detail
                             </DropdownMenuItem>
@@ -479,7 +479,7 @@ export function KaryawanTaskTable() {
 
           <div className="flex items-center gap-2">
             <Link href="/karyawan/tasks">
-              <Button variant="outline" size="sm" className="h-8 text-xs font-semibold rounded-xl cursor-pointer">
+              <Button variant="outline" size="sm" className="h-8 text-xs font-semibold rounded-[8px] cursor-pointer">
                 Buka Semua Task (Kanban & Log) &rarr;
               </Button>
             </Link>
@@ -489,7 +489,7 @@ export function KaryawanTaskTable() {
 
       {/* ── MODAL 1: UPDATE PROGRES KARYAWAN ─────────────────────── */}
       <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
-        <DialogContent className="sm:max-w-[450px] rounded-2xl p-6">
+        <DialogContent className="sm:max-w-[450px] rounded-[8px] p-6">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-foreground">
               Update Progres Pengerjaan Task
@@ -501,7 +501,7 @@ export function KaryawanTaskTable() {
 
           {selectedTask && (
             <div className="space-y-4 py-2">
-              <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1">
+              <div className="p-3 rounded-[8px] bg-muted/40 border border-border space-y-1">
                 <span className="font-mono text-xs font-bold text-red-600">#{selectedTask.id}</span>
                 <p className="text-xs font-bold text-foreground">{selectedTask.judulTask}</p>
                 <p className="text-[11px] text-muted-foreground">Pemberi: {selectedTask.pemberiTugas} ({selectedTask.departemen})</p>
@@ -537,7 +537,7 @@ export function KaryawanTaskTable() {
                   placeholder="Contoh: Konfigurasi routing selesai, redaman kabel optical -18 dBm..."
                   value={catatanInput}
                   onChange={(e) => setCatatanInput(e.target.value)}
-                  className="text-xs min-h-[75px] rounded-xl"
+                  className="text-xs min-h-[75px] rounded-[8px]"
                 />
               </div>
             </div>
@@ -549,7 +549,7 @@ export function KaryawanTaskTable() {
               variant="outline"
               size="sm"
               onClick={() => setIsUpdateOpen(false)}
-              className="text-xs rounded-xl cursor-pointer"
+              className="text-xs rounded-[8px] cursor-pointer"
             >
               Batal
             </Button>
@@ -557,7 +557,7 @@ export function KaryawanTaskTable() {
               type="button"
               size="sm"
               onClick={handleSaveProgress}
-              className="text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
+              className="text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
             >
               Simpan Progres
             </Button>
@@ -567,7 +567,7 @@ export function KaryawanTaskTable() {
 
       {/* ── MODAL 2: LIHAT DETAIL TASK (READ ONLY) ────────────────── */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-2xl p-6">
+        <DialogContent className="sm:max-w-[480px] rounded-[8px] p-6">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-foreground flex items-center justify-between">
               <span>Detail Penugasan Tugas</span>
@@ -585,7 +585,7 @@ export function KaryawanTaskTable() {
                 <p className="text-muted-foreground leading-relaxed">{detailTask.deskripsi}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-muted/40 border border-border">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-[8px] bg-muted/40 border border-border">
                 <div>
                   <span className="text-[10px] text-muted-foreground block">Pemberi Tugas</span>
                   <span className="font-semibold text-foreground">{detailTask.pemberiTugas}</span>
@@ -625,7 +625,7 @@ export function KaryawanTaskTable() {
               variant="outline"
               size="sm"
               onClick={() => setIsDetailOpen(false)}
-              className="text-xs rounded-xl cursor-pointer"
+              className="text-xs rounded-[8px] cursor-pointer"
             >
               Tutup
             </Button>
@@ -637,7 +637,7 @@ export function KaryawanTaskTable() {
                   setIsDetailOpen(false)
                   handleOpenUpdate(detailTask)
                 }}
-                className="text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
+                className="text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
               >
                 Update Progres
               </Button>

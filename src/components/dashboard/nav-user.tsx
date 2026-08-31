@@ -47,13 +47,13 @@ export function NavUser({
             render={
               <SidebarMenuButton
                 size="lg"
-                className="h-12 px-2.5 rounded-xl hover:bg-muted/50 aria-expanded:bg-muted/50 transition-colors"
+                className="h-12 px-2.5 rounded-[8px] hover:bg-muted/50 aria-expanded:bg-muted/50 transition-colors"
               />
             }
           >
-            <Avatar className="size-8 rounded-lg bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">
+            <Avatar className="size-8 rounded-[8px] bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg font-bold text-xs bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">{initials}</AvatarFallback>
+              <AvatarFallback className="rounded-[8px] font-bold text-xs bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">{initials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-xs leading-tight">
               <span className="truncate font-semibold text-foreground">{user.name}</span>
@@ -64,7 +64,7 @@ export function NavUser({
             <ChevronsUpDownIcon className="ml-auto size-3.5 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-56 rounded-xl"
+            className="min-w-56 rounded-[8px]"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={6}
@@ -72,9 +72,9 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2.5 px-2 py-2 text-left text-xs">
-                  <Avatar className="size-8 rounded-lg bg-red-50 text-red-700 border border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900">
+                  <Avatar className="size-8 rounded-[8px] bg-red-50 text-red-700 border border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg font-bold text-xs bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">{initials}</AvatarFallback>
+                    <AvatarFallback className="rounded-[8px] font-bold text-xs bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-xs leading-tight">
                     <span className="truncate font-semibold text-foreground">{user.name}</span>

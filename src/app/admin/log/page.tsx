@@ -101,7 +101,7 @@ export default function AuditLogPage() {
               <Button
                 onClick={handleExportLog}
                 variant="outline"
-                className="h-9 text-xs gap-1.5 font-semibold rounded-xl"
+                className="h-9 text-xs gap-1.5 font-semibold rounded-[8px]"
               >
                 <DownloadIcon className="size-4" /> Export Log (CSV)
               </Button>
@@ -110,7 +110,7 @@ export default function AuditLogPage() {
 
           {/* Stats Summary */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ActivityIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -126,7 +126,7 @@ export default function AuditLogPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <UserCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -142,7 +142,7 @@ export default function AuditLogPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <DatabaseIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -158,7 +158,7 @@ export default function AuditLogPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ShieldCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -176,14 +176,14 @@ export default function AuditLogPage() {
           </div>
 
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-2xl border">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-[8px] border">
             <div className="relative w-full sm:w-72">
               <SearchIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
               <Input
                 placeholder="Cari user, action, detail..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs rounded-xl"
+                className="pl-9 h-9 text-xs rounded-[8px]"
               />
             </div>
 
@@ -191,7 +191,7 @@ export default function AuditLogPage() {
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-muted-foreground shrink-0">Level Log:</span>
                 <Select value={selectedLevel} onValueChange={(val) => val && setSelectedLevel(val)}>
-                  <SelectTrigger className="h-9 text-xs w-32 rounded-xl">
+                  <SelectTrigger className="h-9 text-xs w-32 rounded-[8px]">
                     <SelectValue placeholder="Semua Level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -207,7 +207,7 @@ export default function AuditLogPage() {
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-muted-foreground shrink-0">Modul:</span>
                 <Select value={selectedModule} onValueChange={(val) => val && setSelectedModule(val)}>
-                  <SelectTrigger className="h-9 text-xs w-40 rounded-xl">
+                  <SelectTrigger className="h-9 text-xs w-40 rounded-[8px]">
                     <SelectValue placeholder="Semua Modul" />
                   </SelectTrigger>
                   <SelectContent>

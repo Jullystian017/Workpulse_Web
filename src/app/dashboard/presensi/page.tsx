@@ -161,7 +161,7 @@ export default function PresensiPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 gap-1.5 rounded-xl text-xs font-semibold hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs transition-colors"
+                      className="h-9 gap-1.5 rounded-[8px] text-xs font-semibold hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs transition-colors"
                     >
                       <FileTextIcon className="size-3.5 text-red-600" />
                       <span>Rekap Kehadiran</span>
@@ -171,11 +171,11 @@ export default function PresensiPage() {
                   <Dialog open={isSubmitCutiOpen} onOpenChange={setIsSubmitCutiOpen}>
                     <Button
                       onClick={() => setIsSubmitCutiOpen(true)}
-                      className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                      className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                     >
                       <PlusIcon className="size-4" /> Ajukan Cuti Baru
                     </Button>
-                    <DialogContent className="sm:max-w-md p-6 rounded-2xl border bg-card shadow-lg">
+                    <DialogContent className="sm:max-w-md p-6 rounded-[8px] border bg-card shadow-lg">
                       <DialogHeader className="pb-2 border-b border-border/60">
                         <DialogTitle className="text-base font-bold text-foreground">
                           Form Pengajuan Cuti / Izin Karyawan
@@ -188,20 +188,20 @@ export default function PresensiPage() {
                         <div className="grid grid-cols-2 gap-3">
                           <div className="flex flex-col gap-1.5">
                             <Label htmlFor="nik" className="text-xs font-semibold text-foreground">NIK Karyawan <span className="text-red-500">*</span></Label>
-                            <Input id="nik" name="nik" placeholder="10293841" required className="h-9 font-mono text-xs rounded-xl" />
+                            <Input id="nik" name="nik" placeholder="10293841" required className="h-9 font-mono text-xs rounded-[8px]" />
                           </div>
                           <div className="flex flex-col gap-1.5">
                             <Label htmlFor="nama" className="text-xs font-semibold text-foreground">Nama Lengkap <span className="text-red-500">*</span></Label>
-                            <Input id="nama" name="nama" placeholder="Contoh: Andi Pratama" required className="h-9 text-xs rounded-xl" />
+                            <Input id="nama" name="nama" placeholder="Contoh: Andi Pratama" required className="h-9 text-xs rounded-[8px]" />
                           </div>
                         </div>
                         <div className="flex flex-col gap-1.5">
                           <Label htmlFor="tipeCuti" className="text-xs font-semibold text-foreground">Tipe Pengajuan</Label>
                           <Select name="tipeCuti" defaultValue="Cuti Tahunan">
-                            <SelectTrigger className="h-9 text-xs rounded-xl">
+                            <SelectTrigger className="h-9 text-xs rounded-[8px]">
                               <SelectValue placeholder="Pilih Tipe" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-xl text-xs">
+                            <SelectContent className="rounded-[8px] text-xs">
                               <SelectItem value="Cuti Tahunan">Cuti Tahunan</SelectItem>
                               <SelectItem value="Izin Sakit">Izin Sakit</SelectItem>
                               <SelectItem value="Cuti Melahirkan">Cuti Melahirkan</SelectItem>
@@ -212,29 +212,29 @@ export default function PresensiPage() {
                         <div className="grid grid-cols-2 gap-3">
                           <div className="flex flex-col gap-1.5">
                             <Label htmlFor="tglMulai" className="text-xs font-semibold text-foreground">Tanggal Mulai <span className="text-red-500">*</span></Label>
-                            <Input id="tglMulai" name="tglMulai" type="date" required className="h-9 text-xs rounded-xl" />
+                            <Input id="tglMulai" name="tglMulai" type="date" required className="h-9 text-xs rounded-[8px]" />
                           </div>
                           <div className="flex flex-col gap-1.5">
                             <Label htmlFor="tglSelesai" className="text-xs font-semibold text-foreground">Tanggal Selesai <span className="text-red-500">*</span></Label>
-                            <Input id="tglSelesai" name="tglSelesai" type="date" required className="h-9 text-xs rounded-xl" />
+                            <Input id="tglSelesai" name="tglSelesai" type="date" required className="h-9 text-xs rounded-[8px]" />
                           </div>
                         </div>
                         <div className="flex flex-col gap-1.5">
                           <Label htmlFor="alasan" className="text-xs font-semibold text-foreground">Alasan Pengajuan <span className="text-red-500">*</span></Label>
-                          <Input id="alasan" name="alasan" placeholder="Contoh: Acara keluarga penting / Istirahat sakit" required className="h-9 text-xs rounded-xl" />
+                          <Input id="alasan" name="alasan" placeholder="Contoh: Acara keluarga penting / Istirahat sakit" required className="h-9 text-xs rounded-[8px]" />
                         </div>
                         <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => setIsSubmitCutiOpen(false)}
-                            className="h-9 px-4 text-xs font-semibold rounded-xl"
+                            className="h-9 px-4 text-xs font-semibold rounded-[8px]"
                           >
                             Batal
                           </Button>
                           <Button
                             type="submit"
-                            className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                            className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                           >
                             Kirim Pengajuan Cuti
                           </Button>
@@ -247,7 +247,7 @@ export default function PresensiPage() {
 
               {/* Stats Bar */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <CircleCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -263,7 +263,7 @@ export default function PresensiPage() {
                   </div>
                 </div>
 
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -279,7 +279,7 @@ export default function PresensiPage() {
                   </div>
                 </div>
 
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <CalendarOffIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -295,7 +295,7 @@ export default function PresensiPage() {
                   </div>
                 </div>
 
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <XCircleIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -315,7 +315,7 @@ export default function PresensiPage() {
               {/* Main Content Tabs */}
               <Tabs defaultValue="log" className="w-full flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <TabsList className="h-9 bg-muted p-1 rounded-xl">
+                  <TabsList className="h-9 bg-muted p-1 rounded-[8px]">
                     <TabsTrigger value="log" className="text-xs gap-1.5 px-3">
                       <ClockIcon className="size-3.5" /> Log Presensi & Geofence
                     </TabsTrigger>
@@ -327,14 +327,14 @@ export default function PresensiPage() {
 
                 {/* TAB 1: Log Presensi */}
                 <TabsContent value="log" className="m-0 flex flex-col gap-4">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-2xl border">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-[8px] border">
                     <div className="relative w-full sm:w-72">
                       <SearchIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
                       <Input
                         placeholder="Cari NIK / Nama karyawan..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 h-9 text-xs rounded-xl"
+                        className="pl-9 h-9 text-xs rounded-[8px]"
                       />
                     </div>
 
@@ -344,7 +344,7 @@ export default function PresensiPage() {
                         <button
                           key={st}
                           onClick={() => setStatusFilter(st)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${statusFilter === st
+                          className={`px-2.5 py-1 rounded-[8px] text-xs font-medium transition-all ${statusFilter === st
                             ? "bg-primary text-primary-foreground font-semibold"
                             : "bg-muted text-muted-foreground hover:text-foreground"
                             }`}

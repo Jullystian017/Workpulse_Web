@@ -106,14 +106,14 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4 text-xs">
-                <div className="flex items-center justify-between p-3 border rounded-xl bg-muted/30">
+                <div className="flex items-center justify-between p-3 border rounded-[8px] bg-muted/30">
                   <div>
                     <span className="font-semibold text-foreground block">Notifikasi Overdue Task</span>
                     <span className="text-muted-foreground">Kirim reminder otomatis jika task melewati deadline.</span>
                   </div>
                   <input type="checkbox" defaultChecked className="size-4 accent-primary" />
                 </div>
-                <div className="flex items-center justify-between p-3 border rounded-xl bg-muted/30">
+                <div className="flex items-center justify-between p-3 border rounded-[8px] bg-muted/30">
                   <div>
                     <span className="font-semibold text-foreground block">Laporan Ringkasan Harian</span>
                     <span className="text-muted-foreground">Kirim email rekap presensi & task setiap pukul 17:00.</span>

@@ -64,7 +64,7 @@ export default function LoginPage() {
         </div>
 
         <div className="mx-auto flex justify-center mb-6">
-          <div className="size-10 rounded-xl bg-red-50 dark:bg-red-950/50 flex items-center justify-center border border-red-200/50 dark:border-red-900/40">
+          <div className="size-10 rounded-[8px] bg-red-50 dark:bg-red-950/50 flex items-center justify-center border border-red-200/50 dark:border-red-900/40">
             <ActivityIcon className="size-6 text-red-600" />
           </div>
         </div>
@@ -78,11 +78,11 @@ export default function LoginPage() {
           </p>
 
           {/* Role selector tab */}
-          <div className="mt-6 inline-flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
+          <div className="mt-6 inline-flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-[8px] border border-zinc-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={() => setRole("staff")}
-              className={`px-5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-5 py-2 text-xs font-semibold rounded-[8px] transition-all ${
                 role === "staff"
                   ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -93,7 +93,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setRole("admin")}
-              className={`px-5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-5 py-2 text-xs font-semibold rounded-[8px] transition-all ${
                 role === "admin"
                   ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -160,7 +160,7 @@ export default function LoginPage() {
                 className="border-0 border-b border-zinc-300 dark:border-zinc-700 rounded-none px-0 shadow-none focus-visible:ring-0 focus-visible:border-red-600 text-base h-10 font-mono uppercase flex-1 text-zinc-900 dark:text-zinc-100 bg-transparent"
               />
               <div className="flex items-center gap-2 mb-1">
-                <div className="select-none tracking-widest font-mono font-bold text-lg text-black bg-zinc-100 px-4 py-1.5 rounded-lg border border-zinc-200">
+                <div className="select-none tracking-widest font-mono font-bold text-lg text-black bg-zinc-100 px-4 py-1.5 rounded-[8px] border border-zinc-200">
                   {captchaCode}
                 </div>
                 <button

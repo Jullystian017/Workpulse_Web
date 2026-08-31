@@ -18,10 +18,10 @@ export function KaryawanQuickStatus() {
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* 1. Geofence Live Radar Card */}
-      <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 shadow-xs">
+      <div className="rounded-[8px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 shadow-xs">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="size-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 flex items-center justify-center">
+            <div className="size-8 rounded-[8px] bg-emerald-100 dark:bg-emerald-950/80 flex items-center justify-center">
               <ShieldCheckIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
@@ -51,7 +51,7 @@ export function KaryawanQuickStatus() {
       </div>
 
       {/* 2. Status Tracking Pengajuan Terakhir */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-xs flex-1 flex flex-col justify-between">
+      <div className="rounded-[8px] border border-border bg-card p-4 shadow-xs flex-1 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between mb-2.5">
             <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
@@ -66,7 +66,7 @@ export function KaryawanQuickStatus() {
             </Link>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 space-y-1">
+          <div className="p-2.5 rounded-[8px] bg-muted/40 border border-border/60 space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-foreground">Cuti Tahunan (1 Hari)</span>
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">

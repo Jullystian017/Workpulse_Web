@@ -48,7 +48,7 @@ export function CalendarView({ tasks, onSelectTask }: CalendarViewProps) {
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-[8px] border bg-card shadow-sm overflow-hidden">
         {/* Day Names Header */}
         <div className="grid grid-cols-7 border-b bg-muted/50 text-center text-xs font-bold py-3 text-muted-foreground">
           {daysOfWeek.map((day) => (

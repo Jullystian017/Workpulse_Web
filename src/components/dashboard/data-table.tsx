@@ -470,7 +470,7 @@ export function DataTable({
                 value={`${pagination.pageSize}`}
                 onValueChange={(val) => table.setPageSize(Number(val))}
               >
-                <SelectTrigger className="h-8 w-16 text-xs rounded-xl">
+                <SelectTrigger className="h-8 w-16 text-xs rounded-[8px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent side="top">
@@ -481,19 +481,19 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
                 <ChevronsLeftIcon className="size-4" /><span className="sr-only">Halaman pertama</span>
               </Button>
-              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
                 <ChevronLeftIcon className="size-4" /><span className="sr-only">Sebelumnya</span>
               </Button>
               <span className="text-xs px-2 font-mono font-medium">
                 Hal. {pagination.pageIndex + 1} dari {Math.max(1, table.getPageCount())}
               </span>
-              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                 <ChevronRightIcon className="size-4" /><span className="sr-only">Berikutnya</span>
               </Button>
-              <Button variant="outline" size="icon" className="size-8 rounded-lg" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
                 <ChevronsRightIcon className="size-4" /><span className="sr-only">Halaman terakhir</span>
               </Button>
             </div>

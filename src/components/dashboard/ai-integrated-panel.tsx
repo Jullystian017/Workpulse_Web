@@ -102,21 +102,21 @@ export function AiIntegratedPanel() {
           <Link
             href="/dashboard/ai"
             title="Buka Halaman Penuh"
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <Maximize2Icon className="size-3.5" />
           </Link>
           <button
             onClick={handleReset}
             title="Reset Chat"
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <RotateCcwIcon className="size-3.5" />
           </button>
           <button
             onClick={closeAiPanel}
             title="Tutup Panel AI"
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <XIcon className="size-4" />
           </button>
@@ -129,9 +129,9 @@ export function AiIntegratedPanel() {
           /* Initial Hero & Smart Actions Mode */
           <div className="space-y-4 animate-in fade-in duration-200">
             {/* Cute AI Hero Greeting Box with Sparkle Logo */}
-            <div className="flex flex-col items-center text-center p-3.5 rounded-2xl bg-muted/30 border border-border/50">
+            <div className="flex flex-col items-center text-center p-3.5 rounded-[8px] bg-muted/30 border border-border/50">
               <div className="relative mb-2">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-rose-600 text-white shadow-sm shadow-red-500/30">
+                <div className="flex size-11 items-center justify-center rounded-[8px] bg-gradient-to-br from-red-600 to-rose-600 text-white shadow-sm shadow-red-500/30">
                   <SparklesIcon className="size-5.5 fill-white text-white" />
                 </div>
                 <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-background animate-pulse" />
@@ -154,9 +154,9 @@ export function AiIntegratedPanel() {
                     <button
                       key={action.id}
                       onClick={() => handleActionClick(action.prompt)}
-                      className="w-full flex items-center gap-2.5 p-2 rounded-xl border bg-background hover:bg-muted/50 hover:border-primary/40 text-left transition-all text-xs group shadow-2xs cursor-pointer"
+                      className="w-full flex items-center gap-2.5 p-2 rounded-[8px] border bg-background hover:bg-muted/50 hover:border-primary/40 text-left transition-all text-xs group shadow-2xs cursor-pointer"
                     >
-                      <div className={`size-6 rounded-lg flex items-center justify-center shrink-0 ${action.iconColor}`}>
+                      <div className={`size-6 rounded-[8px] flex items-center justify-center shrink-0 ${action.iconColor}`}>
                         <ActionIcon className="size-3.5" />
                       </div>
                       <span className="flex-1 font-medium text-foreground text-[11px] truncate group-hover:text-primary transition-colors">
@@ -195,8 +195,8 @@ export function AiIntegratedPanel() {
               <div
                 className={`p-3 max-w-[90%] leading-relaxed text-[11px] ${
                   msg.sender === "user"
-                    ? "bg-red-600 text-white rounded-2xl rounded-tr-xs font-medium shadow-xs"
-                    : "bg-muted/70 text-foreground border border-border/60 rounded-2xl rounded-tl-xs shadow-2xs"
+                    ? "bg-red-600 text-white rounded-[8px] rounded-tr-xs font-medium shadow-xs"
+                    : "bg-muted/70 text-foreground border border-border/60 rounded-[8px] rounded-tl-xs shadow-2xs"
                 }`}
               >
                 {msg.text}
@@ -215,13 +215,13 @@ export function AiIntegratedPanel() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Tanyakan ke WorkPulse AI..."
-            className="flex-1 h-9 rounded-xl border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30"
+            className="flex-1 h-9 rounded-[8px] border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30"
           />
           <Button
             type="submit"
             size="icon"
             disabled={!inputValue.trim()}
-            className="size-9 rounded-xl bg-red-600 hover:bg-red-700 text-white shrink-0 shadow-xs cursor-pointer"
+            className="size-9 rounded-[8px] bg-red-600 hover:bg-red-700 text-white shrink-0 shadow-xs cursor-pointer"
           >
             <SendIcon className="size-3.5" />
           </Button>

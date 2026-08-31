@@ -39,7 +39,7 @@ export function NavMain({
                 <SidebarMenuButton
                   tooltip={item.title}
                   isActive={isActive}
-                  className={`h-8 px-2.5 rounded-lg text-xs font-medium transition-colors ${
+                  className={`h-8 px-2.5 rounded-[8px] text-xs font-medium transition-colors ${
                     isActive
                       ? "bg-red-50 text-red-700 font-semibold dark:bg-red-950/40 dark:text-red-300"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"

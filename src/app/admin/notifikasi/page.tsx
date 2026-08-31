@@ -160,7 +160,7 @@ export default function NotifikasiPage() {
               <Button
                 onClick={handleMarkAllRead}
                 variant="outline"
-                className="h-9 text-xs gap-1.5 font-semibold rounded-xl"
+                className="h-9 text-xs gap-1.5 font-semibold rounded-[8px]"
                 disabled={unreadCount === 0}
               >
                 <CheckCheckIcon className="size-4" /> Tandai Semua Dibaca
@@ -175,13 +175,13 @@ export default function NotifikasiPage() {
               placeholder="Cari notifikasi berdasarkan kata kunci..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 text-xs rounded-xl"
+              className="pl-10 h-10 text-xs rounded-[8px]"
             />
           </div>
 
           {/* Tabs */}
           <Tabs defaultValue="all" className="w-full flex-col gap-4">
-            <TabsList className="h-9 bg-muted p-1 rounded-xl w-full sm:w-auto overflow-x-auto justify-start">
+            <TabsList className="h-9 bg-muted p-1 rounded-[8px] w-full sm:w-auto overflow-x-auto justify-start">
               <TabsTrigger value="all" className="text-xs gap-1.5 px-3">
                 Semua ({notifications.length})
               </TabsTrigger>
@@ -214,7 +214,7 @@ export default function NotifikasiPage() {
                           }`}
                         >
                           <div
-                            className={`p-2.5 rounded-xl shrink-0 ${
+                            className={`p-2.5 rounded-[8px] shrink-0 ${
                               item.type === "pengajuan_cuti"
                                 ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                                 : item.type === "ai_insight"
@@ -262,7 +262,7 @@ export default function NotifikasiPage() {
                               }}
                               variant="ghost"
                               size="icon"
-                              className="size-8 text-muted-foreground hover:text-red-600 rounded-lg"
+                              className="size-8 text-muted-foreground hover:text-red-600 rounded-[8px]"
                             >
                               <Trash2Icon className="size-4" />
                             </Button>

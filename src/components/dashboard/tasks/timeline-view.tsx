@@ -26,7 +26,7 @@ const dates = [
 export function TimelineView({ tasks, onSelectTask }: TimelineViewProps) {
   return (
     <div className="flex flex-col gap-4 px-4 lg:px-6">
-      <div className="overflow-x-auto rounded-2xl border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-[8px] border bg-card shadow-sm">
         {/* Timeline Header Row (Dates) */}
         <div className="grid grid-cols-12 min-w-[900px] border-b bg-muted/50 text-xs font-semibold">
           <div className="col-span-3 p-4 border-r flex items-center gap-2">
@@ -102,7 +102,7 @@ export function TimelineView({ tasks, onSelectTask }: TimelineViewProps) {
                     }}
                   >
                     <div
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs shadow-sm border font-medium ${
+                      className={`flex items-center justify-between px-3 py-2 rounded-[8px] text-xs shadow-sm border font-medium ${
                         task.status === "Selesai"
                           ? "bg-emerald-500 text-white border-emerald-600"
                           : task.status === "Tertunda"

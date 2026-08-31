@@ -18,7 +18,7 @@ export function KaryawanAiInsight() {
 
   return (
     <div className="px-4 lg:px-6">
-      <div className="relative overflow-hidden rounded-2xl border border-red-200/80 dark:border-red-950/80 bg-gradient-to-r from-red-500/10 via-amber-500/5 to-transparent p-4 sm:p-5 shadow-xs">
+      <div className="relative overflow-hidden rounded-[8px] border border-red-200/80 dark:border-red-950/80 bg-gradient-to-r from-red-500/10 via-amber-500/5 to-transparent p-4 sm:p-5 shadow-xs">
         {/* Glow effect */}
         <div className="pointer-events-none absolute -right-12 -top-12 size-40 rounded-full bg-red-500/10 blur-2xl dark:bg-red-500/20" />
 
@@ -26,7 +26,7 @@ export function KaryawanAiInsight() {
           {/* Left section: Header & Badge */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-[8px] bg-red-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs">
                 <SparklesIcon className="size-3.5 fill-white" />
                 WorkPulse AI Assistant Insight
               </span>
@@ -38,8 +38,8 @@ export function KaryawanAiInsight() {
             {/* 3 Insight Bullets */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               {/* Bullet 1: Score */}
-              <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-background/80 p-2.5 backdrop-blur-xs">
-                <div className="size-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center shrink-0">
+              <div className="flex items-start gap-2.5 rounded-[8px] border border-border/60 bg-background/80 p-2.5 backdrop-blur-xs">
+                <div className="size-7 rounded-[8px] bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center shrink-0">
                   <AwardIcon className="size-4 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div className="space-y-0.5">
@@ -51,8 +51,8 @@ export function KaryawanAiInsight() {
               </div>
 
               {/* Bullet 2: High Task Alert */}
-              <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-background/80 p-2.5 backdrop-blur-xs">
-                <div className="size-7 rounded-lg bg-red-50 dark:bg-red-950/60 flex items-center justify-center shrink-0">
+              <div className="flex items-start gap-2.5 rounded-[8px] border border-border/60 bg-background/80 p-2.5 backdrop-blur-xs">
+                <div className="size-7 rounded-[8px] bg-red-50 dark:bg-red-950/60 flex items-center justify-center shrink-0">
                   <AlertTriangleIcon className="size-4 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="space-y-0.5">
@@ -64,8 +64,8 @@ export function KaryawanAiInsight() {
               </div>
 
               {/* Bullet 3: Attendance Streak */}
-              <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-background/80 p-2.5 backdrop-blur-xs">
-                <div className="size-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0">
+              <div className="flex items-start gap-2.5 rounded-[8px] border border-border/60 bg-background/80 p-2.5 backdrop-blur-xs">
+                <div className="size-7 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0">
                   <CheckCircle2Icon className="size-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div className="space-y-0.5">
@@ -85,7 +85,7 @@ export function KaryawanAiInsight() {
               variant="outline"
               size="sm"
               onClick={() => aiPanel?.toggleAiPanel()}
-              className="w-full sm:w-auto h-9 px-4 gap-1.5 rounded-xl text-xs font-bold border-red-200 dark:border-red-900 bg-background hover:bg-red-50 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 cursor-pointer transition-all shadow-2xs"
+              className="w-full sm:w-auto h-9 px-4 gap-1.5 rounded-[8px] text-xs font-bold border-red-200 dark:border-red-900 bg-background hover:bg-red-50 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 cursor-pointer transition-all shadow-2xs"
             >
               <span>Konsultasi Kinerja AI</span>
               <ArrowRightIcon className="size-3.5" />

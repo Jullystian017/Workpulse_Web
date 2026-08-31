@@ -40,7 +40,7 @@ export function KanbanView({ tasks, onSelectTask }: KanbanViewProps) {
         return (
           <div
             key={col.id}
-            className="flex flex-col gap-3 rounded-2xl border bg-muted/40 p-4 min-h-[500px]"
+            className="flex flex-col gap-3 rounded-[8px] border bg-muted/40 p-4 min-h-[500px]"
           >
             {/* Column Header */}
             <div className="flex items-center justify-between pb-1">
@@ -73,7 +73,7 @@ export function KanbanView({ tasks, onSelectTask }: KanbanViewProps) {
                   <div
                     key={task.id}
                     onClick={() => onSelectTask(task)}
-                    className="group relative flex flex-col gap-2.5 rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/40 cursor-pointer"
+                    className="group relative flex flex-col gap-2.5 rounded-[8px] border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/40 cursor-pointer"
                   >
                     {/* Top Badges */}
                     <div className="flex items-center justify-between">
@@ -157,7 +157,7 @@ export function KanbanView({ tasks, onSelectTask }: KanbanViewProps) {
               })}
 
               {colTasks.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border-2 border-dashed rounded-[8px]">
                   <span className="text-xs">Tidak ada task</span>
                 </div>
               )}

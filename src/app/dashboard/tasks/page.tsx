@@ -93,7 +93,7 @@ function CustomDropdown({
           e.stopPropagation()
           setOpen((prev) => !prev)
         }}
-        className={`flex items-center gap-1.5 h-8.5 px-3 rounded-xl border transition-all cursor-pointer shadow-2xs whitespace-nowrap text-xs font-medium ${
+        className={`flex items-center gap-1.5 h-8.5 px-3 rounded-[8px] border transition-all cursor-pointer shadow-2xs whitespace-nowrap text-xs font-medium ${
           open
             ? "border-red-500 ring-2 ring-red-500/20 bg-muted/80 text-foreground"
             : "bg-background hover:bg-muted/60 text-foreground"
@@ -107,7 +107,7 @@ function CustomDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 min-w-48 p-1.5 rounded-2xl border bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5 ring-1 ring-border/50">
+        <div className="absolute left-0 top-full mt-1.5 z-50 min-w-48 p-1.5 rounded-[8px] border bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5 ring-1 ring-border/50">
           <div className="px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             {label}
           </div>
@@ -121,7 +121,7 @@ function CustomDropdown({
                   onChange(opt.value)
                   setOpen(false)
                 }}
-                className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl text-xs text-left transition-colors cursor-pointer ${
+                className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[8px] text-xs text-left transition-colors cursor-pointer ${
                   isSelected
                     ? "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400 font-semibold"
                     : "hover:bg-muted/80 text-foreground"
@@ -270,7 +270,7 @@ export default function TasksPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8.5 px-3 gap-1.5 rounded-xl text-xs font-semibold hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs transition-colors"
+                      className="h-8.5 px-3 gap-1.5 rounded-[8px] text-xs font-semibold hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs transition-colors"
                     >
                       <FileBarChartIcon className="size-3.5 text-red-600" />
                       <span>Laporan Kinerja</span>
@@ -404,14 +404,14 @@ export default function TasksPage() {
                       placeholder="Cari task..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-8.5 pl-8 pr-3 w-36 sm:w-44 focus:w-56 transition-all rounded-xl border bg-background text-xs placeholder:text-muted-foreground outline-none focus:border-red-500 shadow-2xs"
+                      className="h-8.5 pl-8 pr-3 w-36 sm:w-44 focus:w-56 transition-all rounded-[8px] border bg-background text-xs placeholder:text-muted-foreground outline-none focus:border-red-500 shadow-2xs"
                     />
                   </div>
 
                   <Button
                     onClick={() => setIsCreateModalOpen(true)}
                     size="sm"
-                    className="h-8.5 px-3.5 gap-1 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
+                    className="h-8.5 px-3.5 gap-1 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
                   >
                     <span>Create Task</span>
                     <PlusIcon className="size-3.5" />
@@ -459,11 +459,11 @@ export default function TasksPage() {
         {/* Modal Dialog: Create Task + */}
         {isCreateModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-            <div className="w-full max-w-lg rounded-2xl border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
+            <div className="w-full max-w-lg rounded-[8px] border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
               {/* Modal Header */}
               <div className="p-4 border-b flex items-center justify-between bg-muted/20">
                 <div className="flex items-center gap-2">
-                  <div className="flex size-8 items-center justify-center rounded-xl bg-red-600 text-white shadow-xs">
+                  <div className="flex size-8 items-center justify-center rounded-[8px] bg-red-600 text-white shadow-xs">
                     <PlusIcon className="size-4" />
                   </div>
                   <div>
@@ -473,7 +473,7 @@ export default function TasksPage() {
                 </div>
                 <button
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                 >
                   <XIcon className="size-4" />
                 </button>
@@ -489,7 +489,7 @@ export default function TasksPage() {
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Contoh: Perbaikan Kabel Feeder 96 Core STO Gambir"
-                    className="h-9 text-xs rounded-xl"
+                    className="h-9 text-xs rounded-[8px]"
                   />
                 </div>
 
@@ -500,7 +500,7 @@ export default function TasksPage() {
                     <select
                       value={newTaskDept}
                       onChange={(e) => setNewTaskDept(e.target.value)}
-                      className="w-full h-9 px-3 rounded-xl border bg-background text-xs outline-none cursor-pointer"
+                      className="w-full h-9 px-3 rounded-[8px] border bg-background text-xs outline-none cursor-pointer"
                     >
                       <option value="Maintenance">Maintenance</option>
                       <option value="Deployment">Deployment</option>
@@ -514,7 +514,7 @@ export default function TasksPage() {
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value)}
-                      className="w-full h-9 px-3 rounded-xl border bg-background text-xs outline-none cursor-pointer"
+                      className="w-full h-9 px-3 rounded-[8px] border bg-background text-xs outline-none cursor-pointer"
                     >
                       <option value="Tinggi">🔴 Tinggi (Critical SLA)</option>
                       <option value="Sedang">🟡 Sedang (Normal SLA)</option>
@@ -529,7 +529,7 @@ export default function TasksPage() {
                   <select
                     value={newTaskAssignee}
                     onChange={(e) => setNewTaskAssignee(e.target.value)}
-                    className="w-full h-9 px-3 rounded-xl border bg-background text-xs outline-none cursor-pointer font-medium"
+                    className="w-full h-9 px-3 rounded-[8px] border bg-background text-xs outline-none cursor-pointer font-medium"
                   >
                     {teknisiList.map((t) => (
                       <option key={t.name} value={t.name}>
@@ -547,7 +547,7 @@ export default function TasksPage() {
                       value={newTaskLocation}
                       onChange={(e) => setNewTaskLocation(e.target.value)}
                       placeholder="Contoh: STO Gambir / ODP Depok"
-                      className="h-9 text-xs rounded-xl"
+                      className="h-9 text-xs rounded-[8px]"
                     />
                   </div>
 
@@ -557,7 +557,7 @@ export default function TasksPage() {
                       type="date"
                       value={newTaskDeadline}
                       onChange={(e) => setNewTaskDeadline(e.target.value)}
-                      className="h-9 text-xs rounded-xl"
+                      className="h-9 text-xs rounded-[8px]"
                     />
                   </div>
                 </div>
@@ -570,7 +570,7 @@ export default function TasksPage() {
                     value={newTaskDesc}
                     onChange={(e) => setNewTaskDesc(e.target.value)}
                     placeholder="Tuliskan instruksi teknis, SOP redaman, atau detail material yang diperlukan..."
-                    className="w-full p-2.5 rounded-xl border bg-background text-xs outline-none focus:border-red-500"
+                    className="w-full p-2.5 rounded-[8px] border bg-background text-xs outline-none focus:border-red-500"
                   />
                 </div>
 
@@ -580,13 +580,13 @@ export default function TasksPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setIsCreateModalOpen(false)}
-                    className="h-8.5 text-xs font-semibold rounded-xl"
+                    className="h-8.5 text-xs font-semibold rounded-[8px]"
                   >
                     Batal
                   </Button>
                   <Button
                     type="submit"
-                    className="h-8.5 px-4 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
+                    className="h-8.5 px-4 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
                   >
                     Create Task
                   </Button>

@@ -128,7 +128,7 @@ export function AiAssistantSheet({
       <SheetContent className="sm:max-w-md flex flex-col h-full p-0 border-l bg-background">
         {/* Top Header — Clean with pr-12 to prevent close button collision */}
         <div className="flex items-center gap-2.5 p-4 pr-12 border-b bg-muted/30 shrink-0">
-          <div className="flex size-8 items-center justify-center rounded-xl bg-red-600 text-white shadow-xs">
+          <div className="flex size-8 items-center justify-center rounded-[8px] bg-red-600 text-white shadow-xs">
             <SparklesIcon className="size-4 fill-white" />
           </div>
           <h3 className="text-sm font-bold text-foreground">Telkom AI Assistant Drawer</h3>
@@ -149,10 +149,10 @@ export function AiAssistantSheet({
                   <button
                     key={action.id}
                     onClick={() => handleSendMessage(action.prompt)}
-                    className={`flex flex-col justify-between p-2.5 rounded-xl border bg-card text-left transition-all duration-200 shadow-2xs group ${action.hoverBorder}`}
+                    className={`flex flex-col justify-between p-2.5 rounded-[8px] border bg-card text-left transition-all duration-200 shadow-2xs group ${action.hoverBorder}`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className={`size-6 rounded-lg flex items-center justify-center ${action.iconBg}`}>
+                      <div className={`size-6 rounded-[8px] flex items-center justify-center ${action.iconBg}`}>
                         <ActionIcon className="size-3.5" />
                       </div>
                       <ChevronRightIcon className="size-3.5 text-muted-foreground/50 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
@@ -184,8 +184,8 @@ export function AiAssistantSheet({
               <div
                 className={`p-3.5 max-w-[88%] leading-relaxed ${
                   msg.sender === "user"
-                    ? "bg-red-600 text-white rounded-2xl rounded-tr-xs font-medium shadow-xs"
-                    : "bg-muted/60 text-foreground border border-border/60 rounded-2xl rounded-tl-xs shadow-2xs"
+                    ? "bg-red-600 text-white rounded-[8px] rounded-tr-xs font-medium shadow-xs"
+                    : "bg-muted/60 text-foreground border border-border/60 rounded-[8px] rounded-tl-xs shadow-2xs"
                 }`}
               >
                 {msg.text}
@@ -213,12 +213,12 @@ export function AiAssistantSheet({
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Tanyakan analisis task atau kinerja..."
-              className="text-xs h-9 rounded-xl flex-1"
+              className="text-xs h-9 rounded-[8px] flex-1"
             />
             <Button
               type="submit"
               size="icon"
-              className="size-9 rounded-xl bg-red-600 hover:bg-red-700 text-white shrink-0 shadow-xs"
+              className="size-9 rounded-[8px] bg-red-600 hover:bg-red-700 text-white shrink-0 shadow-xs"
             >
               <SendIcon className="size-4" />
             </Button>

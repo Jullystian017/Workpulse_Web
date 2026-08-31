@@ -96,8 +96,8 @@ export function AiRecentActivity() {
     <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         {/* AI Header Pill */}
-        <div className="flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/50 p-2.5 dark:border-red-900/50 dark:bg-red-950/20">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+        <div className="flex items-center gap-2 rounded-[8px] border border-red-200/80 bg-red-50/50 p-2.5 dark:border-red-900/50 dark:bg-red-950/20">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-primary text-primary-foreground shadow-xs">
             <SparklesIcon className="size-4" />
           </div>
           <div className="flex flex-col">
@@ -126,7 +126,7 @@ export function AiRecentActivity() {
             {activities.map((act) => (
               <div
                 key={act.id}
-                className="flex items-center justify-between rounded-xl border bg-card/60 p-2.5 transition-all hover:bg-muted/50"
+                className="flex items-center justify-between rounded-[8px] border bg-card/60 p-2.5 transition-all hover:bg-muted/50"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">

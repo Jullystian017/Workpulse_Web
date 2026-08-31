@@ -116,7 +116,7 @@ export default function LaporanKinerjaPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 gap-1.5 rounded-xl text-xs font-semibold hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs transition-colors"
+                  className="h-9 gap-1.5 rounded-[8px] text-xs font-semibold hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs transition-colors"
                 >
                   <ArrowLeftIcon className="size-3.5" /> Kelola Tasks
                 </Button>
@@ -125,14 +125,14 @@ export default function LaporanKinerjaPage() {
                 onClick={handleExportExcel}
                 variant="outline"
                 size="sm"
-                className="h-9 text-xs gap-1.5 font-semibold text-emerald-700 border-emerald-200 hover:bg-emerald-50 rounded-xl"
+                className="h-9 text-xs gap-1.5 font-semibold text-emerald-700 border-emerald-200 hover:bg-emerald-50 rounded-[8px]"
               >
                 <FileSpreadsheetIcon className="size-4 text-emerald-600" /> Export Excel
               </Button>
               <Button
                 onClick={handleExportPDF}
                 size="sm"
-                className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
               >
                 <DownloadIcon className="size-4" /> Download PDF
               </Button>
@@ -141,7 +141,7 @@ export default function LaporanKinerjaPage() {
 
           {/* Quick Metrics (Red Theme) */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -157,7 +157,7 @@ export default function LaporanKinerjaPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <TrendingUpIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -173,7 +173,7 @@ export default function LaporanKinerjaPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <PaperclipIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -189,7 +189,7 @@ export default function LaporanKinerjaPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <StarIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -207,14 +207,14 @@ export default function LaporanKinerjaPage() {
           </div>
 
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-2xl border">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-[8px] border">
             <div className="relative w-full sm:w-72">
               <SearchIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
               <Input
                 placeholder="Cari NIK atau nama karyawan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs rounded-xl"
+                className="pl-9 h-9 text-xs rounded-[8px]"
               />
             </div>
 
@@ -224,7 +224,7 @@ export default function LaporanKinerjaPage() {
                 <button
                   key={dept}
                   onClick={() => setSelectedDept(dept)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${selectedDept === dept
+                  className={`px-3 py-1 rounded-[8px] text-xs font-medium transition-all ${selectedDept === dept
                     ? "bg-primary text-primary-foreground font-semibold"
                     : "bg-muted text-muted-foreground hover:text-foreground"
                     }`}

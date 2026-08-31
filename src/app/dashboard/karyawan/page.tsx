@@ -451,19 +451,19 @@ export default function Page() {
                       placeholder="Cari karyawan..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-8.5 h-9 text-xs rounded-xl"
+                      className="pl-8.5 h-9 text-xs rounded-[8px]"
                     />
                   </div>
 
                   <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <Button
                       onClick={() => setIsAddOpen(true)}
-                      className="h-9 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                      className="h-9 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                     >
                       <PlusIcon className="size-4" />
                       Tambah Karyawan
                     </Button>
-                    <DialogContent className="sm:max-w-lg p-6 rounded-2xl border bg-card shadow-lg">
+                    <DialogContent className="sm:max-w-lg p-6 rounded-[8px] border bg-card shadow-lg">
                       <DialogHeader className="pb-2 border-b border-border/60">
                         <DialogTitle className="text-base font-bold text-foreground">
                           Daftarkan Karyawan Baru
@@ -483,7 +483,7 @@ export default function Page() {
                             name="nama"
                             placeholder="Contoh: Rian Hidayat"
                             required
-                            className="h-9 text-xs rounded-xl"
+                            className="h-9 text-xs rounded-[8px]"
                           />
                         </div>
 
@@ -497,7 +497,7 @@ export default function Page() {
                               name="nik"
                               placeholder="Contoh: 10293858"
                               required
-                              className="h-9 text-xs font-mono rounded-xl"
+                              className="h-9 text-xs font-mono rounded-[8px]"
                             />
                           </div>
                           <div className="flex flex-col gap-1.5">
@@ -509,7 +509,7 @@ export default function Page() {
                               name="telepon"
                               placeholder="0812-xxxx-xxxx"
                               required
-                              className="h-9 text-xs rounded-xl"
+                              className="h-9 text-xs rounded-[8px]"
                             />
                           </div>
                         </div>
@@ -524,7 +524,7 @@ export default function Page() {
                             type="email"
                             placeholder="nama@telkomakses.co.id"
                             required
-                            className="h-9 text-xs rounded-xl"
+                            className="h-9 text-xs rounded-[8px]"
                           />
                         </div>
 
@@ -532,10 +532,10 @@ export default function Page() {
                           <div className="flex flex-col gap-1.5">
                             <Label className="text-xs font-semibold text-foreground">Departemen</Label>
                             <Select name="departemen" defaultValue="IT">
-                              <SelectTrigger className="h-9 text-xs rounded-xl">
+                              <SelectTrigger className="h-9 text-xs rounded-[8px]">
                                 <SelectValue placeholder="Pilih Departemen" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl text-xs">
+                              <SelectContent className="rounded-[8px] text-xs">
                                 <SelectItem value="IT">IT & Network</SelectItem>
                                 <SelectItem value="Operations">Operations</SelectItem>
                                 <SelectItem value="Finance">Finance</SelectItem>
@@ -547,10 +547,10 @@ export default function Page() {
                           <div className="flex flex-col gap-1.5">
                             <Label className="text-xs font-semibold text-foreground">Tipe Akun</Label>
                             <Select name="tipeUser" defaultValue="Telkom">
-                              <SelectTrigger className="h-9 text-xs rounded-xl">
+                              <SelectTrigger className="h-9 text-xs rounded-[8px]">
                                 <SelectValue placeholder="Tipe Karyawan" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl text-xs">
+                              <SelectContent className="rounded-[8px] text-xs">
                                 <SelectItem value="Telkom">Telkom Organik</SelectItem>
                                 <SelectItem value="Non-Telkom (Mitra)">Mitra Non-Telkom</SelectItem>
                               </SelectContent>
@@ -568,16 +568,16 @@ export default function Page() {
                               name="jabatan"
                               placeholder="Contoh: Staff Operasional"
                               required
-                              className="h-9 text-xs rounded-xl"
+                              className="h-9 text-xs rounded-[8px]"
                             />
                           </div>
                           <div className="flex flex-col gap-1.5">
                             <Label className="text-xs font-semibold text-foreground">Sub-Unit Area</Label>
                             <Select name="unit" defaultValue="Area 1">
-                              <SelectTrigger className="h-9 text-xs rounded-xl">
+                              <SelectTrigger className="h-9 text-xs rounded-[8px]">
                                 <SelectValue placeholder="Pilih Sub-Unit" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl text-xs">
+                              <SelectContent className="rounded-[8px] text-xs">
                                 <SelectItem value="Area 1">Teknisi Area 1</SelectItem>
                                 <SelectItem value="Area 2">Teknisi Area 2</SelectItem>
                                 <SelectItem value="Support">Support Offline</SelectItem>
@@ -592,13 +592,13 @@ export default function Page() {
                             type="button"
                             variant="outline"
                             onClick={() => setIsAddOpen(false)}
-                            className="h-9 px-4 text-xs font-semibold rounded-xl"
+                            className="h-9 px-4 text-xs font-semibold rounded-[8px]"
                           >
                             Batal
                           </Button>
                           <Button
                             type="submit"
-                            className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                            className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                           >
                             Simpan & Daftarkan Akun
                           </Button>
@@ -611,7 +611,7 @@ export default function Page() {
 
               {/* Quick Metrics Bar (Matching Telkom Red Design System) */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <UsersIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -627,7 +627,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <ShieldCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -643,7 +643,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <Building2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -659,7 +659,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                   <div className="relative">
                     <div className="flex items-center justify-between">
@@ -684,7 +684,7 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={() => setSelectedFilterPill("Semua Sub-Unit")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${selectedFilterPill === "Semua Sub-Unit"
+                    className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all ${selectedFilterPill === "Semua Sub-Unit"
                         ? "bg-red-600 text-white shadow-xs"
                         : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                       }`}
@@ -696,7 +696,7 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={() => setSelectedFilterPill("Teknisi Area 1")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${selectedFilterPill === "Teknisi Area 1"
+                    className={`px-4 py-1.5 rounded-[8px] text-xs font-medium transition-all ${selectedFilterPill === "Teknisi Area 1"
                         ? "bg-red-600 text-white shadow-xs"
                         : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                       }`}
@@ -708,7 +708,7 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={() => setSelectedFilterPill("Support Offline")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${selectedFilterPill === "Support Offline"
+                    className={`px-4 py-1.5 rounded-[8px] text-xs font-medium transition-all ${selectedFilterPill === "Support Offline"
                         ? "bg-red-600 text-white shadow-xs"
                         : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                       }`}
@@ -720,7 +720,7 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={() => setSelectedFilterPill("Non-Telkom")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${selectedFilterPill === "Non-Telkom"
+                    className={`px-4 py-1.5 rounded-[8px] text-xs font-medium transition-all ${selectedFilterPill === "Non-Telkom"
                         ? "bg-red-600 text-white shadow-xs"
                         : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                       }`}
@@ -732,7 +732,7 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={() => setSelectedFilterPill("Perlu Intervensi")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${selectedFilterPill === "Perlu Intervensi"
+                    className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold flex items-center gap-1.5 transition-all ${selectedFilterPill === "Perlu Intervensi"
                         ? "bg-red-700 text-white shadow-xs ring-2 ring-red-400"
                         : "bg-red-100/70 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-900 hover:bg-red-200/60"
                       }`}
@@ -743,7 +743,7 @@ export default function Page() {
                 </div>
 
                 {/* View Mode Toggle (Grid / List) */}
-                <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-card p-0.5">
+                <div className="flex items-center rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-card p-0.5">
                   <button
                     type="button"
                     onClick={() => setViewMode("grid")}
@@ -781,7 +781,7 @@ export default function Page() {
                     return (
                       <div
                         key={karyawan.nik}
-                        className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-card p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                        className="rounded-[8px] border border-zinc-200/90 dark:border-zinc-800 bg-card p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
                       >
                         {/* 1. Header: Avatar + Name + NIK & Unit Badge + 3-dots */}
                         <div className="flex items-start justify-between">
@@ -862,7 +862,7 @@ export default function Page() {
                         {/* 3. Geofence / Presence Status Banner */}
                         <div>
                           {karyawan.geofenceStatus === "valid_telkom" && (
-                            <div className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 p-2.5 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 p-2.5 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
                               <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
                               <span className="font-semibold text-[11px] truncate">
                                 {karyawan.geofenceText}
@@ -871,7 +871,7 @@ export default function Page() {
                           )}
 
                           {karyawan.geofenceStatus === "outside_area" && (
-                            <div className="rounded-xl bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 p-2.5 flex items-center gap-2 text-xs text-red-800 dark:text-red-300">
+                            <div className="rounded-[8px] bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 p-2.5 flex items-center gap-2 text-xs text-red-800 dark:text-red-300">
                               <MapPinOffIcon className="size-4 text-red-600 shrink-0" />
                               <span className="font-semibold text-[11px] truncate">
                                 {karyawan.geofenceText}
@@ -880,7 +880,7 @@ export default function Page() {
                           )}
 
                           {karyawan.geofenceStatus === "remote_verified" && (
-                            <div className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 p-2.5 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 p-2.5 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
                               <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
                               <span className="font-semibold text-[11px] truncate">
                                 {karyawan.geofenceText}
@@ -889,7 +889,7 @@ export default function Page() {
                           )}
 
                           {karyawan.geofenceStatus === "late_checkin" && (
-                            <div className="rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 p-2.5 flex items-center gap-2 text-xs text-amber-900 dark:text-amber-300">
+                            <div className="rounded-[8px] bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 p-2.5 flex items-center gap-2 text-xs text-amber-900 dark:text-amber-300">
                               <ClockIcon className="size-4 text-amber-600 shrink-0" />
                               <span className="font-semibold text-[11px] truncate">
                                 {karyawan.geofenceText}
@@ -944,7 +944,7 @@ export default function Page() {
                             <button
                               type="button"
                               onClick={() => setSelectedUser(karyawan)}
-                              className="w-full h-9 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/90 dark:bg-red-950/50 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-2xs"
+                              className="w-full h-9 rounded-[8px] border border-red-200 dark:border-red-900/60 bg-red-50/90 dark:bg-red-950/50 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-2xs"
                             >
                               Lihat Detail Log
                             </button>
@@ -952,7 +952,7 @@ export default function Page() {
                             <button
                               type="button"
                               onClick={() => setSelectedUser(karyawan)}
-                              className="w-full h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-2xs"
+                              className="w-full h-9 rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-2xs"
                             >
                               Lihat Detail Log
                             </button>
@@ -973,7 +973,7 @@ export default function Page() {
                     return (
                       <div
                         key={karyawan.nik}
-                        className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-card p-4 shadow-2xs hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                        className="rounded-[8px] border border-zinc-200/90 dark:border-zinc-800 bg-card p-4 shadow-2xs hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                       >
                         {/* Left: Avatar + Name + NIK + Unit */}
                         <div className="flex items-center gap-3.5 min-w-[220px]">
@@ -1031,7 +1031,7 @@ export default function Page() {
                         {/* Middle 2: Geofence Status */}
                         <div className="min-w-[210px]">
                           {karyawan.geofenceStatus === "valid_telkom" && (
-                            <div className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 px-3 py-2 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 px-3 py-2 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
                               <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
                               <span className="font-semibold text-xs truncate">
                                 {karyawan.geofenceText}
@@ -1040,7 +1040,7 @@ export default function Page() {
                           )}
 
                           {karyawan.geofenceStatus === "outside_area" && (
-                            <div className="rounded-xl bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 px-3 py-2 flex items-center gap-2 text-xs text-red-800 dark:text-red-300">
+                            <div className="rounded-[8px] bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 px-3 py-2 flex items-center gap-2 text-xs text-red-800 dark:text-red-300">
                               <MapPinOffIcon className="size-4 text-red-600 shrink-0" />
                               <span className="font-semibold text-xs truncate">
                                 {karyawan.geofenceText}
@@ -1049,7 +1049,7 @@ export default function Page() {
                           )}
 
                           {karyawan.geofenceStatus === "remote_verified" && (
-                            <div className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 px-3 py-2 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 px-3 py-2 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
                               <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
                               <span className="font-semibold text-xs truncate">
                                 {karyawan.geofenceText}
@@ -1058,7 +1058,7 @@ export default function Page() {
                           )}
 
                           {karyawan.geofenceStatus === "late_checkin" && (
-                            <div className="rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 px-3 py-2 flex items-center gap-2 text-xs text-amber-900 dark:text-amber-300">
+                            <div className="rounded-[8px] bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 px-3 py-2 flex items-center gap-2 text-xs text-amber-900 dark:text-amber-300">
                               <ClockIcon className="size-4 text-amber-600 shrink-0" />
                               <span className="font-semibold text-xs truncate">
                                 {karyawan.geofenceText}
@@ -1111,7 +1111,7 @@ export default function Page() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedUser(karyawan)}
-                                className="h-8.5 px-3.5 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/90 dark:bg-red-950/50 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 transition-colors shadow-2xs"
+                                className="h-8.5 px-3.5 rounded-[8px] border border-red-200 dark:border-red-900/60 bg-red-50/90 dark:bg-red-950/50 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 transition-colors shadow-2xs"
                               >
                                 Lihat Detail Log
                               </button>
@@ -1119,7 +1119,7 @@ export default function Page() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedUser(karyawan)}
-                                className="h-8.5 px-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 transition-colors shadow-2xs"
+                                className="h-8.5 px-3.5 rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 transition-colors shadow-2xs"
                               >
                                 Lihat Detail Log
                               </button>
@@ -1162,9 +1162,9 @@ export default function Page() {
                     </DialogHeader>
 
                     <div className="flex flex-col gap-4 py-2 text-xs">
-                      <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl">
+                      <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-[8px]">
                         <div
-                          className={`size-12 rounded-2xl ${selectedUser.avatarBgColor || "bg-primary text-primary-foreground"
+                          className={`size-12 rounded-[8px] ${selectedUser.avatarBgColor || "bg-primary text-primary-foreground"
                             } font-bold text-base flex items-center justify-center shadow-xs`}
                         >
                           {selectedUser.avatarInitials}
@@ -1176,18 +1176,18 @@ export default function Page() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 border rounded-xl">
+                        <div className="p-3 border rounded-[8px]">
                           <span className="text-muted-foreground block text-[10px] uppercase font-bold">Skor Kinerja</span>
                           <span className="font-mono font-bold text-base text-foreground">{selectedUser.score} / 100</span>
                           <span className="text-[10px] text-muted-foreground block">{selectedUser.scoreTitle}</span>
                         </div>
-                        <div className="p-3 border rounded-xl">
+                        <div className="p-3 border rounded-[8px]">
                           <span className="text-muted-foreground block text-[10px] uppercase font-bold">Status Presensi</span>
                           <span className="font-semibold text-xs text-foreground block mt-1">{selectedUser.geofenceText}</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-2 p-3 border rounded-xl">
+                      <div className="flex flex-col gap-2 p-3 border rounded-[8px]">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Email:</span>
                           <span className="font-semibold">{selectedUser.email}</span>

@@ -119,7 +119,7 @@ export default function KaryawanCutiPage() {
 
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="h-9 px-4 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs self-start sm:self-auto cursor-pointer"
+          className="h-9 px-4 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs self-start sm:self-auto cursor-pointer"
         >
           <PlusIcon className="size-3.5 mr-1.5" />
           Ajukan Cuti Baru
@@ -129,7 +129,7 @@ export default function KaryawanCutiPage() {
       {/* 2. 4 Summary Metric Cards (Overview Style) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <CalendarRangeIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -146,7 +146,7 @@ export default function KaryawanCutiPage() {
         </div>
 
         {/* Card 2 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <CalendarIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -163,7 +163,7 @@ export default function KaryawanCutiPage() {
         </div>
 
         {/* Card 3 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <AlertCircleIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -180,7 +180,7 @@ export default function KaryawanCutiPage() {
         </div>
 
         {/* Card 4 */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
           <div className="relative">
             <div className="flex items-center justify-between">
@@ -198,7 +198,7 @@ export default function KaryawanCutiPage() {
       </div>
 
       {/* 3. Tabel Riwayat Pengajuan Cuti Saya */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-[8px] border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
         <div>
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">
             Riwayat Permohonan Cuti & Izin Anda
@@ -208,7 +208,7 @@ export default function KaryawanCutiPage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-[8px] border border-zinc-200 dark:border-zinc-800">
           <table className="w-full text-xs text-left">
             <thead className="bg-zinc-50 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 font-bold border-b">
               <tr>
@@ -271,7 +271,7 @@ export default function KaryawanCutiPage() {
 
       {/* 4. MODAL POPUP DIALOG: FORM AJUKAN CUTI BARU */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-lg rounded-2xl p-6">
+        <DialogContent className="sm:max-w-lg rounded-[8px] p-6">
           <form onSubmit={handleSubmitLeave} className="space-y-4 text-xs">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold text-zinc-900 dark:text-white">
@@ -288,10 +288,10 @@ export default function KaryawanCutiPage() {
                 Jenis Cuti / Permohonan *
               </Label>
               <Select value={jenisCuti} onValueChange={(val) => setJenisCuti(val ?? "")}>
-                <SelectTrigger className="h-9 text-xs rounded-xl">
+                <SelectTrigger className="h-9 text-xs rounded-[8px]">
                   <SelectValue placeholder="Pilih Jenis Cuti" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl text-xs">
+                <SelectContent className="rounded-[8px] text-xs">
                   <SelectItem value="Cuti Tahunan">Cuti Tahunan (Sisa: 9 Hari)</SelectItem>
                   <SelectItem value="Izin Sakit">Izin Sakit (Wajib Surat Dokter)</SelectItem>
                   <SelectItem value="Keperluan Mendesak">Izin Keperluan Mendesak</SelectItem>
@@ -312,7 +312,7 @@ export default function KaryawanCutiPage() {
                   required
                   value={tglMulai}
                   onChange={(e) => setTglMulai(e.target.value)}
-                  className="h-9 text-xs rounded-xl"
+                  className="h-9 text-xs rounded-[8px]"
                 />
               </div>
 
@@ -326,7 +326,7 @@ export default function KaryawanCutiPage() {
                   required
                   value={tglSelesai}
                   onChange={(e) => setTglSelesai(e.target.value)}
-                  className="h-9 text-xs rounded-xl"
+                  className="h-9 text-xs rounded-[8px]"
                 />
               </div>
             </div>
@@ -342,7 +342,7 @@ export default function KaryawanCutiPage() {
                 value={alasan}
                 onChange={(e) => setAlasan(e.target.value)}
                 placeholder="Tuliskan alasan izin/cuti dan delegasi pekerjaan jika ada..."
-                className="text-xs rounded-xl min-h-[75px]"
+                className="text-xs rounded-[8px] min-h-[75px]"
               />
             </div>
 
@@ -361,7 +361,7 @@ export default function KaryawanCutiPage() {
                     setLampiranName(mock)
                     toast.success(`Dokumen ${mock} berhasil dilampirkan!`)
                   }}
-                  className="h-8.5 text-xs font-semibold rounded-xl gap-1.5 border-dashed"
+                  className="h-8.5 text-xs font-semibold rounded-[8px] gap-1.5 border-dashed"
                 >
                   <UploadIcon className="size-3.5 text-red-600" />
                   {lampiranName ? "Ganti File Lampiran" : "Pilih File PDF / Foto"}
@@ -378,13 +378,13 @@ export default function KaryawanCutiPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setIsModalOpen(false)}
-                className="h-9 px-4 text-xs font-semibold rounded-xl"
+                className="h-9 px-4 text-xs font-semibold rounded-[8px]"
               >
                 Batal
               </Button>
               <Button
                 type="submit"
-                className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
               >
                 <SendIcon className="size-3.5 mr-1.5" />
                 Kirim Pengajuan Cuti

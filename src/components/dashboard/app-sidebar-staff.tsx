@@ -74,7 +74,7 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="WorkPulse"
-              className="h-9 px-2 rounded-xl hover:bg-muted/50 transition-colors"
+              className="h-9 px-2 rounded-[8px] hover:bg-muted/50 transition-colors"
               render={<a href="/karyawan/dashboard" />}
             >
               <ActivityIcon className="size-5! text-red-600 shrink-0 stroke-[2.2]" />
@@ -92,7 +92,7 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
             <SidebarMenuItem className="flex items-center gap-1.5">
               <SidebarMenuButton
                 tooltip="AI Assistant"
-                className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
+                className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-[8px] duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
                 render={<Link href="/karyawan/dashboard" />}
               >
                 <SparklesIcon className="size-4 shrink-0 text-white" />

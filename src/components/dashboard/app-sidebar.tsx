@@ -103,7 +103,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="WorkPulse"
-              className="h-9 px-2 rounded-xl hover:bg-muted/50 transition-colors"
+              className="h-9 px-2 rounded-[8px] hover:bg-muted/50 transition-colors"
               render={<a href="/dashboard" />}
             >
               <ActivityIcon className="size-5! text-red-600 shrink-0 stroke-[2.2]" />

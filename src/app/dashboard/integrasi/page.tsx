@@ -204,14 +204,14 @@ export default function IntegrasiPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => toast.info("Memperbarui status seluruh gateway integrasi...")}
-                    className="h-9 gap-1.5 text-xs font-semibold rounded-xl"
+                    className="h-9 gap-1.5 text-xs font-semibold rounded-[8px]"
                   >
                     <RefreshCwIcon className="size-3.5" /> Refresh Status
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => toast.info("Membuka form pembuatan API Key baru...")}
-                    className="h-9 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                    className="h-9 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                   >
                     <PlusIcon className="size-3.5" /> Buat API Key
                   </Button>
@@ -220,7 +220,7 @@ export default function IntegrasiPage() {
 
               {/* KPI Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">Layanan Terkoneksi</span>
                     <RadioIcon className="size-4 text-emerald-600" />
@@ -232,7 +232,7 @@ export default function IntegrasiPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">Semua pipeline stabil</p>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">Request API (24 Jam)</span>
                     <ActivityIcon className="size-4 text-blue-600" />
@@ -244,7 +244,7 @@ export default function IntegrasiPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">Latency optimal</p>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">Webhook Terverifikasi</span>
                     <WebhookIcon className="size-4 text-amber-600" />
@@ -256,7 +256,7 @@ export default function IntegrasiPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">HMAC SHA-256 Valid</p>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-4 shadow-2xs">
+                <div className="rounded-[8px] border bg-card p-4 shadow-2xs">
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="text-xs font-medium">SLA Ketersediaan</span>
                     <ShieldCheckIcon className="size-4 text-red-600" />
@@ -271,17 +271,17 @@ export default function IntegrasiPage() {
 
               {/* Main Tabs */}
               <Tabs defaultValue="services" className="w-full space-y-4">
-                <TabsList className="h-10 bg-muted/60 p-1 rounded-xl">
-                  <TabsTrigger value="services" className="rounded-lg text-xs font-semibold px-4">
+                <TabsList className="h-10 bg-muted/60 p-1 rounded-[8px]">
+                  <TabsTrigger value="services" className="rounded-[8px] text-xs font-semibold px-4">
                     Status Layanan Terkoneksi ({services.length})
                   </TabsTrigger>
-                  <TabsTrigger value="keys" className="rounded-lg text-xs font-semibold px-4">
+                  <TabsTrigger value="keys" className="rounded-[8px] text-xs font-semibold px-4">
                     API Keys & Kredensial ({apiKeys.length})
                   </TabsTrigger>
-                  <TabsTrigger value="webhooks" className="rounded-lg text-xs font-semibold px-4">
+                  <TabsTrigger value="webhooks" className="rounded-[8px] text-xs font-semibold px-4">
                     Webhooks ({webhookEvents.length})
                   </TabsTrigger>
-                  <TabsTrigger value="logs" className="rounded-lg text-xs font-semibold px-4">
+                  <TabsTrigger value="logs" className="rounded-[8px] text-xs font-semibold px-4">
                     Real-time API Logs
                   </TabsTrigger>
                 </TabsList>
@@ -292,10 +292,10 @@ export default function IntegrasiPage() {
                     {services.map((srv) => {
                       const IconComponent = srv.icon
                       return (
-                        <div key={srv.id} className="rounded-2xl border bg-card p-5 shadow-2xs flex flex-col justify-between gap-4 hover:border-primary/40 transition-colors">
+                        <div key={srv.id} className="rounded-[8px] border bg-card p-5 shadow-2xs flex flex-col justify-between gap-4 hover:border-primary/40 transition-colors">
                           <div className="space-y-3">
                             <div className="flex items-start justify-between gap-2">
-                              <div className={`flex size-10 items-center justify-center rounded-xl shrink-0 ${srv.iconColor}`}>
+                              <div className={`flex size-10 items-center justify-center rounded-[8px] shrink-0 ${srv.iconColor}`}>
                                 <IconComponent className="size-5" />
                               </div>
                               <Badge variant="outline" className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200">
@@ -334,7 +334,7 @@ export default function IntegrasiPage() {
 
                 {/* TAB 2: API Keys */}
                 <TabsContent value="keys" className="space-y-4">
-                  <div className="rounded-2xl border bg-card p-4 shadow-2xs flex flex-col gap-4">
+                  <div className="rounded-[8px] border bg-card p-4 shadow-2xs flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-bold text-foreground">API Keys Staf & Gateway</h3>
@@ -343,13 +343,13 @@ export default function IntegrasiPage() {
                       <Button
                         size="sm"
                         onClick={() => toast.info("Membuat token API Key baru...")}
-                        className="h-8 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                        className="h-8 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                       >
                         + Generate Key
                       </Button>
                     </div>
 
-                    <div className="overflow-x-auto rounded-xl border">
+                    <div className="overflow-x-auto rounded-[8px] border">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="border-b bg-muted/40 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
@@ -409,7 +409,7 @@ export default function IntegrasiPage() {
 
                 {/* TAB 3: Webhooks */}
                 <TabsContent value="webhooks" className="space-y-4">
-                  <div className="rounded-2xl border bg-card p-4 shadow-2xs flex flex-col gap-4">
+                  <div className="rounded-[8px] border bg-card p-4 shadow-2xs flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-bold text-foreground">Webhook Event Subscriptions</h3>
@@ -418,13 +418,13 @@ export default function IntegrasiPage() {
                       <Button
                         size="sm"
                         onClick={() => toast.info("Menambahkan webhook endpoint baru...")}
-                        className="h-8 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                        className="h-8 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                       >
                         + Tambah Webhook
                       </Button>
                     </div>
 
-                    <div className="divide-y rounded-xl border">
+                    <div className="divide-y rounded-[8px] border">
                       {webhookEvents.map((wh) => (
                         <div key={wh.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-muted/30 transition-colors">
                           <div className="space-y-1 min-w-0">
@@ -449,7 +449,7 @@ export default function IntegrasiPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => toast.success(`Test ping webhook ${wh.event} berhasil (200 OK)!`)}
-                              className="h-8 text-xs font-semibold rounded-lg"
+                              className="h-8 text-xs font-semibold rounded-[8px]"
                             >
                               <SendIcon className="size-3" /> Test Ping
                             </Button>
@@ -462,7 +462,7 @@ export default function IntegrasiPage() {
 
                 {/* TAB 4: Real-time API Logs */}
                 <TabsContent value="logs" className="space-y-4">
-                  <div className="rounded-2xl border bg-card p-4 shadow-2xs flex flex-col gap-4">
+                  <div className="rounded-[8px] border bg-card p-4 shadow-2xs flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-bold text-foreground">Aktivitas API Gateway Real-time</h3>
@@ -473,7 +473,7 @@ export default function IntegrasiPage() {
                       </Badge>
                     </div>
 
-                    <div className="overflow-x-auto rounded-xl border">
+                    <div className="overflow-x-auto rounded-[8px] border">
                       <table className="w-full text-left text-xs border-collapse font-mono">
                         <thead>
                           <tr className="border-b bg-muted/40 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">

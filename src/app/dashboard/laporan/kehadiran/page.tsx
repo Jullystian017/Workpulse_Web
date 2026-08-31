@@ -104,7 +104,7 @@ export default function RekapKehadiranPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 text-xs gap-1.5 font-semibold rounded-xl hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs"
+                  className="h-9 text-xs gap-1.5 font-semibold rounded-[8px] hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs"
                 >
                   <ArrowLeftIcon className="size-3.5" /> Live Presensi & Peta
                 </Button>
@@ -112,13 +112,13 @@ export default function RekapKehadiranPage() {
               <Button
                 onClick={handleExportExcel}
                 variant="outline"
-                className="h-9 text-xs gap-1.5 font-semibold rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                className="h-9 text-xs gap-1.5 font-semibold rounded-[8px] border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"
               >
                 <FileSpreadsheetIcon className="size-4" /> Export Excel
               </Button>
               <Button
                 onClick={handleExportPDF}
-                className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                className="h-9 text-xs gap-1.5 font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
               >
                 <DownloadIcon className="size-4" /> Download PDF
               </Button>
@@ -127,7 +127,7 @@ export default function RekapKehadiranPage() {
 
           {/* Stats Bar */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <UserCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -143,7 +143,7 @@ export default function RekapKehadiranPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -159,7 +159,7 @@ export default function RekapKehadiranPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <CalendarIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -175,7 +175,7 @@ export default function RekapKehadiranPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <XCircleIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -193,14 +193,14 @@ export default function RekapKehadiranPage() {
           </div>
 
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-2xl border">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-[8px] border">
             <div className="relative w-full sm:w-72">
               <SearchIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
               <Input
                 placeholder="Cari NIK / Nama karyawan..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs rounded-xl"
+                className="pl-9 h-9 text-xs rounded-[8px]"
               />
             </div>
 
@@ -208,7 +208,7 @@ export default function RekapKehadiranPage() {
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-muted-foreground shrink-0">Periode Bulan:</span>
                 <Select value={selectedBulan} onValueChange={(val) => val && setSelectedBulan(val)}>
-                  <SelectTrigger className="h-9 text-xs w-36 rounded-xl">
+                  <SelectTrigger className="h-9 text-xs w-36 rounded-[8px]">
                     <SelectValue placeholder="Pilih Bulan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -223,7 +223,7 @@ export default function RekapKehadiranPage() {
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-muted-foreground shrink-0">Departemen:</span>
                 <Select value={selectedDept} onValueChange={(val) => val && setSelectedDept(val)}>
-                  <SelectTrigger className="h-9 text-xs w-36 rounded-xl">
+                  <SelectTrigger className="h-9 text-xs w-36 rounded-[8px]">
                     <SelectValue placeholder="Semua Dept" />
                   </SelectTrigger>
                   <SelectContent>

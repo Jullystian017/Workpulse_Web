@@ -91,7 +91,7 @@ export function ChartAreaInteractive() {
         </div>
 
         {/* Custom Segmented Control (Pill) for Time Range Selection */}
-        <div className="flex items-center gap-1 rounded-lg border bg-muted p-1 text-muted-foreground self-end sm:self-auto">
+        <div className="flex items-center gap-1 rounded-[8px] border bg-muted p-1 text-muted-foreground self-end sm:self-auto">
           <button
             onClick={() => setTimeRange("90d")}
             className={cn(
