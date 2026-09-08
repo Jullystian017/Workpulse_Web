@@ -58,20 +58,20 @@ export function KaryawanAiInsight() {
                 <div className="space-y-0.5">
                   <p className="text-xs font-bold text-foreground">Fokus Task Hari Ini</p>
                   <p className="text-[11px] text-muted-foreground leading-tight">
-                    Selesaikan <span className="font-semibold text-red-600 dark:text-red-400">#TASK-1029</span> sebelum 15:00 WIB untuk menjaga SLA.
+                    Selesaikan <span className="font-semibold text-red-600 dark:text-red-400">#TASK-1029</span> sebelum 15:00 WIB agar tepat waktu.
                   </p>
                 </div>
               </div>
 
-              {/* Bullet 3: Attendance Streak */}
+              {/* Bullet 3: Task Quality & On-Time Streak */}
               <div className="flex items-start gap-2.5 rounded-[8px] border border-border/60 bg-background/80 p-2.5 backdrop-blur-xs">
                 <div className="size-7 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center shrink-0">
                   <CheckCircle2Icon className="size-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-foreground">Disiplin Kerja 100%</p>
+                  <p className="text-xs font-bold text-foreground">Bebas Penalti Keterlambatan</p>
                   <p className="text-[11px] text-muted-foreground leading-tight">
-                    18 hari berturut-turut hadir tepat waktu tanpa keterlambatan.
+                    Seluruh tugas prioritas tinggi bulan ini diselesaikan tepat waktu.
                   </p>
                 </div>
               </div>

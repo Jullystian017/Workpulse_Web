@@ -2,58 +2,24 @@
 
 import * as React from "react"
 import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type UniqueIdentifier,
-} from "@dnd-kit/core"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import {
-  columnFilteringFeature,
-  columnVisibilityFeature,
-  createColumnHelper,
-  createFilteredRowModel,
-  createPaginatedRowModel,
-  createSortedRowModel,
-  FlexRender,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  tableFeatures,
-  useTable,
-  type ColumnFiltersState,
-  type ColumnVisibilityState,
-  type Row,
-  type SortingState,
-} from "@tanstack/react-table"
-import { toast } from "sonner"
-import { z } from "zod"
-
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -62,444 +28,1007 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import {
-  GripVerticalIcon,
-  CheckCircle2Icon,
+  SearchIcon,
+  PlusIcon,
+  MoreVerticalIcon,
   ClockIcon,
+  CheckCircle2Icon,
   PauseCircleIcon,
-  EllipsisVerticalIcon,
-  Columns3Icon,
-  ChevronDownIcon,
-  ChevronsLeftIcon,
+  AlertCircleIcon,
+  EyeIcon,
+  UserPlusIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronsLeftIcon,
   ChevronsRightIcon,
-  PlusIcon,
-  AlertCircleIcon,
-  ImageIcon,
+  XIcon,
+  Trash2Icon,
+  ArrowRightLeftIcon,
 } from "lucide-react"
+import { Task, TaskPriority, TaskStatus } from "@/types/database"
+import { deleteTask, updateTaskStatus, getActiveUserFromStorage } from "@/lib/api"
+import { toast } from "sonner"
+import { TaskDetailSheet } from "@/components/dashboard/tasks/task-detail-sheet"
+import { DelegateTaskModal } from "@/components/dashboard/tasks/delegate-task-modal"
+import { CreateTaskModal } from "@/components/dashboard/tasks/create-task-modal"
 
-const features = tableFeatures({
-  columnFilteringFeature,
-  columnVisibilityFeature,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  filteredRowModel: createFilteredRowModel(),
-  paginatedRowModel: createPaginatedRowModel(),
-  sortedRowModel: createSortedRowModel(),
-})
-
-const columnHelper = createColumnHelper<
-  typeof features,
-  z.infer<typeof schema>
->()
-
-export const schema = z.object({
-  id: z.string(),
-  judulTask: z.string(),
-  assignee: z.string(),
-  departemen: z.string(),
-  prioritas: z.string(),
-  deadline: z.string(),
-  status: z.string(),
-  progress: z.number(),
-  bukti: z.boolean(),
-})
-
-function DragHandle({ id }: { id: string }) {
-  const { attributes, listeners } = useSortable({ id })
-  return (
-    <Button
-      {...attributes}
-      {...listeners}
-      variant="ghost"
-      size="icon"
-      className="size-7 text-muted-foreground hover:bg-transparent"
-    >
-      <GripVerticalIcon className="size-3 text-muted-foreground" />
-      <span className="sr-only">Drag to reorder</span>
-    </Button>
-  )
-}
-
-const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
-  "Selesai": {
+const statusMeta: Record<TaskStatus, { label: string; icon: React.ReactNode; className: string }> = {
+  done: {
     label: "Selesai",
     icon: <CheckCircle2Icon className="size-3" />,
     className: "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400",
   },
-  "Dalam Proses": {
+  review: {
+    label: "Review Atasan",
+    icon: <PauseCircleIcon className="size-3" />,
+    className: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-400",
+  },
+  in_progress: {
     label: "Dalam Proses",
     icon: <ClockIcon className="size-3" />,
     className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400",
   },
-  "Tertunda": {
-    label: "Tertunda",
-    icon: <PauseCircleIcon className="size-3" />,
-    className: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400",
+  todo: {
+    label: "To-Do / Antrean",
+    icon: <ClockIcon className="size-3" />,
+    className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
+  },
+  unassigned: {
+    label: "Belum Ditugaskan",
+    icon: <AlertCircleIcon className="size-3" />,
+    className: "border-zinc-200 bg-zinc-100 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
   },
 }
 
-const prioritasConfig: Record<string, { className: string }> = {
-  "Tinggi": { className: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400" },
-  "Sedang": { className: "border-yellow-200 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400" },
-  "Rendah": { className: "border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-400" },
+const prioritasConfig: Record<TaskPriority, { label: string; sla: string; className: string }> = {
+  urgent: { label: "Mendesak", sla: "Target 2 Jam", className: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400" },
+  high: { label: "Tinggi", sla: "Target 4 Jam", className: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400" },
+  medium: { label: "Sedang", sla: "Target 8 Jam", className: "border-yellow-200 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400" },
+  low: { label: "Rendah", sla: "Target 24 Jam", className: "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-400" },
 }
 
-function ProgressBar({ value }: { value: number }) {
-  const color = value === 100 ? "bg-green-500" : value >= 50 ? "bg-blue-500" : value > 0 ? "bg-yellow-500" : "bg-gray-300"
-  return (
-    <div className="flex items-center gap-2 min-w-[90px]">
-      <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${value}%` }} />
-      </div>
-      <span className="text-xs tabular-nums text-muted-foreground w-7">{value}%</span>
-    </div>
-  )
+interface TaskTableRowProps {
+  task: Task
+  isSelected: boolean
+  onToggleSelect: (id: string) => void
+  onOpenDetail: (task: Task) => void
+  onOpenDelegate: (task: Task) => void
+  onQuickStatus: (taskId: string, status: TaskStatus) => void
+  isStaff?: boolean
 }
 
-function isOverdue(deadline: string, status: string) {
-  if (status === "Selesai") return false
-  return new Date(deadline) < new Date("2026-08-12")
-}
+function TaskTableRow({
+  task,
+  isSelected,
+  onToggleSelect,
+  onOpenDetail,
+  onOpenDelegate,
+  onQuickStatus,
+  isStaff = false,
+}: TaskTableRowProps) {
+  const sMeta = statusMeta[task.status] || statusMeta.in_progress
+  const pMeta = prioritasConfig[task.priority] || prioritasConfig.medium
+  const isOverdue = task.status !== "done" && task.deadline_at && new Date(task.deadline_at) < new Date()
 
-const columns = columnHelper.columns([
-  columnHelper.display({
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  }),
-  columnHelper.display({
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  }),
-  columnHelper.accessor("judulTask", {
-    header: "Judul Task",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-0.5 max-w-[260px]">
-        <div className="flex items-center gap-1.5">
-          {isOverdue(row.original.deadline, row.original.status) && (
-            <AlertCircleIcon className="size-3 shrink-0 text-red-500" />
-          )}
-          <span className="text-sm font-medium truncate">{row.original.judulTask}</span>
-        </div>
-        <span className="text-[11px] text-muted-foreground">{row.original.id}</span>
-      </div>
-    ),
-    enableHiding: false,
-  }),
-  columnHelper.accessor("assignee", {
-    header: "Karyawan",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-medium">{row.original.assignee}</span>
-        <Badge variant="outline" className="w-fit px-1.5 text-[10px] text-muted-foreground">{row.original.departemen}</Badge>
-      </div>
-    ),
-  }),
-  columnHelper.accessor("prioritas", {
-    header: "Prioritas",
-    cell: ({ row }) => {
-      const cfg = prioritasConfig[row.original.prioritas] ?? prioritasConfig["Rendah"]
-      return (
-        <Badge variant="outline" className={`px-2 text-xs font-medium ${cfg.className}`}>
-          {row.original.prioritas}
-        </Badge>
-      )
-    },
-  }),
-  columnHelper.accessor("deadline", {
-    header: "Deadline",
-    cell: ({ row }) => {
-      const overdue = isOverdue(row.original.deadline, row.original.status)
-      return (
-        <span className={`text-xs tabular-nums ${overdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
-          {new Date(row.original.deadline).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
-          {overdue && " ⚠️"}
-        </span>
-      )
-    },
-  }),
-  columnHelper.accessor("status", {
-    header: "Status",
-    cell: ({ row }) => {
-      const cfg = statusConfig[row.original.status] ?? statusConfig["Dalam Proses"]
-      return (
-        <Badge variant="outline" className={`flex w-fit items-center gap-1 px-2 text-xs ${cfg.className}`}>
-          {cfg.icon}{cfg.label}
-        </Badge>
-      )
-    },
-  }),
-  columnHelper.accessor("progress", {
-    header: "Progress",
-    cell: ({ row }) => <ProgressBar value={row.original.progress} />,
-  }),
-  columnHelper.display({
-    id: "actions",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="ghost" className="flex size-8 text-muted-foreground data-open:bg-muted" size="icon" />}
-        >
-          <EllipsisVerticalIcon />
-          <span className="sr-only">Open menu</span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
-          <DropdownMenuItem>Edit Task</DropdownMenuItem>
-          <DropdownMenuItem>Upload Bukti</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Hapus Task</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  }),
-])
-
-function DraggableRow({
-  row,
-}: {
-  row: Row<typeof features, z.infer<typeof schema>>
-}) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  })
   return (
     <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
-      ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
+      data-state={isSelected && "selected"}
+      onClick={() => onOpenDetail(task)}
+      className="cursor-pointer hover:bg-muted/30 transition-colors group"
     >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          <FlexRender cell={cell} />
-        </TableCell>
-      ))}
+      {/* Selection Checkbox Column */}
+      <TableCell className="w-[36px] px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(task.id)}
+            aria-label="Select row"
+          />
+        </div>
+      </TableCell>
+
+      {/* 1. Judul Task & Kode Tiket */}
+      <TableCell className="py-3 px-4">
+        <div className="flex flex-col gap-0.5 min-w-[200px] max-w-[320px]">
+          <span className="text-sm font-semibold text-foreground group-hover:text-red-600 transition-colors truncate">
+            {task.title}
+          </span>
+          <span className="text-[11px] font-mono text-muted-foreground">{task.ticket_code}</span>
+        </div>
+      </TableCell>
+
+      {/* 2. Kategori / Divisi */}
+      <TableCell className="py-3 px-4">
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-border/80">
+          <span>{task.channel?.icon || "📁"}</span>
+          <span className="truncate max-w-[110px]">{task.channel?.name || "Administrasi"}</span>
+        </span>
+      </TableCell>
+
+      {/* 3. Pelaksana & Delegasi */}
+      <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+        {task.assignee ? (
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <div className="flex items-center gap-2">
+              <img
+                src={
+                  task.assignee.avatar_url ||
+                  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                }
+                alt={task.assignee.nama}
+                className="size-6 rounded-full object-cover shrink-0 border border-border"
+              />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold text-foreground truncate max-w-[130px]">
+                  {task.assignee.nama}
+                </span>
+                <span className="text-[10px] text-muted-foreground truncate max-w-[130px]">
+                  {task.assignee.position_title || "Pelaksana"}
+                </span>
+              </div>
+            </div>
+            {task.delegator && (
+              <div className="flex items-center gap-1 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded w-fit border border-amber-200/60 font-medium">
+                <ArrowRightLeftIcon className="size-2.5 shrink-0 text-amber-600" />
+                <span className="truncate max-w-[130px]">
+                  Delegasi: {task.delegator.nama.split(" ")[0]}
+                </span>
+              </div>
+            )}
+          </div>
+        ) : isStaff ? (
+          <span className="text-[11px] text-muted-foreground font-mono italic">
+            Belum Ditugaskan
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onOpenDelegate(task)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 rounded-md border border-red-200 dark:border-red-900/50 cursor-pointer transition-colors"
+          >
+            <UserPlusIcon className="size-3" />
+            <span>Tugaskan</span>
+          </button>
+        )}
+      </TableCell>
+
+      {/* 4. Prioritas & Target */}
+      <TableCell className="py-3 px-4">
+        <div className="flex flex-col gap-0.5">
+          <Badge variant="outline" className={`px-2 py-0.5 text-[11px] font-semibold w-fit ${pMeta.className}`}>
+            {pMeta.label}
+          </Badge>
+          <span className="text-[10px] text-muted-foreground font-medium">
+            {pMeta.sla}
+          </span>
+        </div>
+      </TableCell>
+
+      {/* 5. Deadline & Waktu */}
+      <TableCell className="py-3 px-4">
+        {task.deadline_at ? (
+          <div className="flex flex-col gap-0.5 text-xs min-w-[125px]">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`font-semibold tabular-nums ${isOverdue ? "text-red-600 font-bold" : "text-foreground"}`}>
+                {new Date(task.deadline_at).toLocaleDateString("id-ID", {
+                  day: "numeric",
+                  month: "short",
+                })}
+              </span>
+              {isOverdue && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-red-700 bg-red-100 dark:bg-red-950/60 dark:text-red-300 px-1.5 py-0.2 rounded border border-red-200 shrink-0">
+                  <AlertCircleIcon className="size-2.5" />
+                  Lewat Target
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              {new Date(task.deadline_at).toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })} WIB
+            </span>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-xs font-mono">-</span>
+        )}
+      </TableCell>
+
+      {/* 6. Status */}
+      <TableCell className="py-3 px-4">
+        <Badge variant="outline" className={`flex w-fit items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${sMeta.className}`}>
+          {sMeta.icon}
+          <span>{sMeta.label}</span>
+        </Badge>
+      </TableCell>
+
+      {/* 7. Aksi Dropdown */}
+      <TableCell className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex size-8 text-muted-foreground data-open:bg-muted cursor-pointer"
+              />
+            }
+          >
+            <MoreVerticalIcon className="size-4" />
+            <span className="sr-only">Open menu</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 rounded-[8px]">
+            <DropdownMenuItem
+              onClick={() => onOpenDetail(task)}
+              className="text-xs cursor-pointer"
+            >
+              <EyeIcon className="size-3.5 mr-2 text-muted-foreground" />
+              Lihat Detail & SPJ
+            </DropdownMenuItem>
+            {!isStaff && (
+              <DropdownMenuItem
+                onClick={() => onOpenDelegate(task)}
+                className="text-xs cursor-pointer"
+              >
+                <UserPlusIcon className="size-3.5 mr-2 text-muted-foreground" />
+                Delegasikan
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            {isStaff ? (
+              <>
+                {(task.status === "todo" || task.status === "unassigned") && (
+                  <DropdownMenuItem
+                    onClick={() => onQuickStatus(task.id, "in_progress")}
+                    className="text-xs cursor-pointer text-blue-700 dark:text-blue-400 font-semibold"
+                  >
+                    <ClockIcon className="size-3.5 mr-2" />
+                    Mulai Pengerjaan
+                  </DropdownMenuItem>
+                )}
+                {task.status === "in_progress" && (
+                  <DropdownMenuItem
+                    onClick={() => onQuickStatus(task.id, "review")}
+                    className="text-xs cursor-pointer text-purple-700 dark:text-purple-400 font-semibold"
+                  >
+                    <CheckCircle2Icon className="size-3.5 mr-2" />
+                    Ajukan Review ke Atasan
+                  </DropdownMenuItem>
+                )}
+              </>
+            ) : (
+              <>
+                {task.status === "review" && (
+                  <DropdownMenuItem
+                    onClick={() => onQuickStatus(task.id, "done")}
+                    className="text-xs cursor-pointer text-purple-700 dark:text-purple-400 font-semibold"
+                  >
+                    <CheckCircle2Icon className="size-3.5 mr-2" />
+                    Approve Hasil Kerja
+                  </DropdownMenuItem>
+                )}
+                {task.status !== "done" && task.status !== "review" && (
+                  <DropdownMenuItem
+                    onClick={() => onQuickStatus(task.id, "done")}
+                    className="text-xs cursor-pointer text-emerald-700 dark:text-emerald-400"
+                  >
+                    <CheckCircle2Icon className="size-3.5 mr-2" />
+                    Tandai Selesai
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
     </TableRow>
   )
 }
 
+interface DataTableProps {
+  tasks: Task[]
+  onRefresh?: () => void
+  hideTitle?: boolean
+  hideToolbar?: boolean
+  className?: string
+  isStaff?: boolean
+}
+
 export function DataTable({
-  data: initialData,
-}: {
-  data: z.infer<typeof schema>[]
-}) {
-  const parsedData = React.useMemo(() => initialData.map((d: Record<string, unknown>) => schema.parse(d)), [initialData])
-  const [data, setData] = React.useState(() => parsedData)
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [isAddOpen, setIsAddOpen] = React.useState(false)
+  tasks: initialTasks,
+  onRefresh,
+  hideTitle = false,
+  hideToolbar = false,
+  className = "",
+  isStaff,
+}: DataTableProps) {
+  const [tasks, setTasks] = React.useState<Task[]>(initialTasks)
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
 
-  const handleAddNew = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const judulTask = formData.get("judulTask") as string
-    const assignee = formData.get("assignee") as string
-    const departemen = formData.get("departemen") as string
-    const prioritas = formData.get("prioritas") as string
-    const deadline = formData.get("deadline") as string
-    const status = "Dalam Proses"
+  const activeUser = React.useMemo(() => getActiveUserFromStorage(), [])
+  const isStaffUser = isStaff !== undefined ? isStaff : activeUser?.role === "staff"
 
-    const newId = `TSK-${String(data.length + 1).padStart(3, "0")}`
+  React.useEffect(() => {
+    setTasks(initialTasks)
+  }, [initialTasks])
 
-    const newTask = {
-      id: newId,
-      judulTask,
-      assignee,
-      departemen,
-      prioritas,
-      deadline,
-      status,
-      progress: 0,
-      bukti: false,
-    }
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [statusFilter, setStatusFilter] = React.useState<string>("all")
+  const [priorityFilter, setPriorityFilter] = React.useState<string>("all")
+  const [channelFilter, setChannelFilter] = React.useState<string>("all")
 
-    setData(prev => [newTask, ...prev])
-    setIsAddOpen(false)
-    toast.success(`Task "${judulTask}" berhasil ditambahkan!`)
+  // Modals state
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+  const [delegatingTask, setDelegatingTask] = React.useState<Task | null>(null)
+  const [isDelegateOpen, setIsDelegateOpen] = React.useState(false)
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false)
+
+  // Pagination state
+  const [pageIndex, setPageIndex] = React.useState(0)
+  const [pageSize, setPageSize] = React.useState(10)
+
+  // Unique channels from tasks
+  const channels = React.useMemo(() => {
+    const map = new Map<string, string>()
+    tasks.forEach((t) => {
+      if (t.channel_id && t.channel?.name) {
+        map.set(t.channel_id, t.channel.name)
+      }
+    })
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
+  }, [tasks])
+
+  // Filtered tasks
+  const filteredTasks = React.useMemo(() => {
+    if (hideToolbar) return tasks
+
+    return tasks.filter((task) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const matchTitle = task.title.toLowerCase().includes(q)
+        const matchTicket = task.ticket_code.toLowerCase().includes(q)
+        const matchAssignee = task.assignee?.nama.toLowerCase().includes(q)
+        if (!matchTitle && !matchTicket && !matchAssignee) return false
+      }
+
+      if (statusFilter !== "all" && task.status !== statusFilter) {
+        return false
+      }
+
+      if (priorityFilter !== "all" && task.priority !== priorityFilter) {
+        return false
+      }
+
+      if (channelFilter !== "all" && task.channel_id !== channelFilter) {
+        return false
+      }
+
+      return true
+    })
+  }, [tasks, searchQuery, statusFilter, priorityFilter, channelFilter, hideToolbar])
+
+  const totalPages = Math.ceil(filteredTasks.length / pageSize) || 1
+  const paginatedTasks = React.useMemo(() => {
+    const start = pageIndex * pageSize
+    return filteredTasks.slice(start, start + pageSize)
+  }, [filteredTasks, pageIndex, pageSize])
+
+  const hasActiveFilters = searchQuery !== "" || statusFilter !== "all" || priorityFilter !== "all" || channelFilter !== "all"
+
+  const handleResetFilters = () => {
+    setSearchQuery("")
+    setStatusFilter("all")
+    setPriorityFilter("all")
+    setChannelFilter("all")
+    setPageIndex(0)
   }
 
-  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({})
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 })
-  const sortableId = React.useId()
-  const sensors = useSensors(
-    useSensor(MouseSensor, {}),
-    useSensor(TouchSensor, {}),
-    useSensor(KeyboardSensor, {})
-  )
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id as UniqueIdentifier) || [],
-    [data]
-  )
-  const table = useTable({
-    features,
-    data,
-    columns,
-    state: { sorting, columnVisibility, rowSelection, columnFilters, pagination },
-    getRowId: (row) => row.id.toString(),
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-  })
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id)
-        const newIndex = dataIds.indexOf(over.id)
-        return arrayMove(data, oldIndex, newIndex)
-      })
+  const handleToggleSelectAll = () => {
+    if (selectedIds.size === paginatedTasks.length && paginatedTasks.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(paginatedTasks.map((t) => t.id)))
     }
   }
 
-  return (
-    <div className="relative px-4 lg:px-6">
-      <div className="bg-white dark:bg-zinc-900 rounded-[8px] border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
-        {/* Clean Table Header without Icons */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-              Daftar Manajemen Tugas Operasional
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Ringkasan seluruh tiket pengerjaan tugas kantor, status progres, dan teknisi penanggung jawab
-            </p>
-          </div>
-        </div>
+  const handleOpenDetail = (task: Task) => {
+    setSelectedTaskId(task.id)
+    setIsDetailOpen(true)
+  }
 
+  const handleOpenDelegate = (task: Task) => {
+    setDelegatingTask(task)
+    setIsDelegateOpen(true)
+  }
+
+  const handleQuickStatus = async (taskId: string, newStatus: TaskStatus) => {
+    try {
+      const ok = await updateTaskStatus(taskId, newStatus)
+      if (ok) {
+        toast.success(`Status tugas berhasil diubah ke ${statusMeta[newStatus]?.label}!`)
+        if (onRefresh) onRefresh()
+      } else {
+        toast.error("Gagal memperbarui status tugas.")
+      }
+    } catch {
+      toast.error("Terjadi kendala saat memperbarui status.")
+    }
+  }
+
+  const isAllSelected = paginatedTasks.length > 0 && selectedIds.size === paginatedTasks.length
+  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < paginatedTasks.length
+
+  const getStatusDisplay = () => {
+    if (statusFilter === "all") return "Semua Status"
+    return statusMeta[statusFilter as TaskStatus]?.label || statusFilter
+  }
+
+  const getPriorityDisplay = () => {
+    if (priorityFilter === "all") return "Semua Prioritas"
+    if (priorityFilter === "high" || priorityFilter === "urgent") return "Prioritas Tinggi"
+    if (priorityFilter === "medium") return "Prioritas Sedang"
+    if (priorityFilter === "low") return "Prioritas Rendah"
+    return priorityFilter
+  }
+
+  const getChannelDisplay = () => {
+    if (channelFilter === "all") return "Semua Departemen"
+    const ch = channels.find((c) => c.id === channelFilter)
+    return ch ? ch.name : "Departemen"
+  }
+
+  if (hideToolbar && hideTitle) {
+    return (
+      <div className={`relative space-y-3.5 ${className}`}>
         {/* Inner Table Container */}
-        <div className="overflow-hidden rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-card shadow-2xs">
-          <DndContext
-            collisionDetection={closestCenter}
-            modifiers={[restrictToVerticalAxis]}
-            onDragEnd={handleDragEnd}
-            sensors={sensors}
-            id={sortableId}
-          >
-            <Table>
-              <TableHeader className="bg-muted/50 sticky top-0 z-10">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} colSpan={header.colSpan}>
-                        <FlexRender header={header} />
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                <SortableContext items={dataIds} strategy={verticalListSortingStrategy}>
-                  {table.getRowModel().rows.length ? (
-                    table.getRowModel().rows.map((row) => <DraggableRow key={row.id} row={row} />)
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                        Tidak ada task ditemukan.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </SortableContext>
-              </TableBody>
-            </Table>
-          </DndContext>
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-xs">
+          <Table>
+            <TableHeader className="bg-muted/50 sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent text-xs text-muted-foreground font-semibold">
+                <TableHead className="w-[36px] px-3 py-3 text-center">
+                  <div className="flex items-center justify-center">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isSomeSelected}
+                      onCheckedChange={handleToggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </div>
+                </TableHead>
+                <TableHead className="py-3 px-4 min-w-[200px]">Tugas & No. Tiket</TableHead>
+                <TableHead className="py-3 px-4 min-w-[130px]">Kategori / Divisi</TableHead>
+                <TableHead className="py-3 px-4 min-w-[160px]">Pelaksana & Delegasi</TableHead>
+                <TableHead className="py-3 px-4 min-w-[110px]">Prioritas & Target</TableHead>
+                <TableHead className="py-3 px-4 min-w-[130px]">Deadline</TableHead>
+                <TableHead className="py-3 px-4 min-w-[130px]">Status</TableHead>
+                <TableHead className="py-3 px-4 text-right min-w-[60px]">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="text-xs">
+              {paginatedTasks.length > 0 ? (
+                paginatedTasks.map((t) => (
+                  <TaskTableRow
+                    key={t.id}
+                    task={t}
+                    isSelected={selectedIds.has(t.id)}
+                    onToggleSelect={handleToggleSelect}
+                    onOpenDetail={handleOpenDetail}
+                    onOpenDelegate={handleOpenDelegate}
+                    onQuickStatus={handleQuickStatus}
+                    isStaff={isStaffUser}
+                  />
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground text-xs">
+                    Tidak ada task yang sesuai dengan filter pencarian.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-1 pt-1">
+        {/* Pagination & Row Selection Count */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-1">
           <div className="text-muted-foreground text-xs font-mono">
-            {table.getFilteredSelectedRowModel().rows.length} dari {table.getRowModel().rows.length} baris dipilih.
+            {selectedIds.size} dari {filteredTasks.length} baris dipilih.
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Baris per halaman</span>
               <Select
-                value={`${pagination.pageSize}`}
-                onValueChange={(val) => table.setPageSize(Number(val))}
+                value={`${pageSize}`}
+                onValueChange={(val) => {
+                  setPageSize(Number(val))
+                  setPageIndex(0)
+                }}
               >
-                <SelectTrigger className="h-8 w-16 text-xs rounded-[8px]">
+                <SelectTrigger className="h-8 w-16 text-xs rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent side="top">
-                  {[10, 20, 30, 50].map((s) => (
+                  {[5, 10, 20, 50].map((s) => (
                     <SelectItem key={s} value={`${s}`}>{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
-                <ChevronsLeftIcon className="size-4" /><span className="sr-only">Halaman pertama</span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-xl"
+                onClick={() => setPageIndex(0)}
+                disabled={pageIndex === 0}
+              >
+                <ChevronsLeftIcon className="size-4" />
+                <span className="sr-only">Halaman pertama</span>
               </Button>
-              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-                <ChevronLeftIcon className="size-4" /><span className="sr-only">Sebelumnya</span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-xl"
+                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                disabled={pageIndex === 0}
+              >
+                <ChevronLeftIcon className="size-4" />
+                <span className="sr-only">Sebelumnya</span>
               </Button>
               <span className="text-xs px-2 font-mono font-medium">
-                Hal. {pagination.pageIndex + 1} dari {Math.max(1, table.getPageCount())}
+                Hal. {pageIndex + 1} dari {totalPages}
               </span>
-              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                <ChevronRightIcon className="size-4" /><span className="sr-only">Berikutnya</span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-xl"
+                onClick={() => setPageIndex((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={pageIndex >= totalPages - 1}
+              >
+                <ChevronRightIcon className="size-4" />
+                <span className="sr-only">Berikutnya</span>
               </Button>
-              <Button variant="outline" size="icon" className="size-8 rounded-[8px]" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
-                <ChevronsRightIcon className="size-4" /><span className="sr-only">Halaman terakhir</span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-xl"
+                onClick={() => setPageIndex(totalPages - 1)}
+                disabled={pageIndex >= totalPages - 1}
+              >
+                <ChevronsRightIcon className="size-4" />
+                <span className="sr-only">Halaman terakhir</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Task Detail Sheet */}
+        <TaskDetailSheet
+          taskId={selectedTaskId}
+          open={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
+          onTaskUpdated={() => {
+            if (onRefresh) onRefresh()
+          }}
+          onOpenDelegate={handleOpenDelegate}
+        />
+
+        {/* Delegate Task Modal */}
+        <DelegateTaskModal
+          task={delegatingTask}
+          open={isDelegateOpen}
+          onOpenChange={setIsDelegateOpen}
+          onSuccess={() => {
+            if (onRefresh) onRefresh()
+          }}
+        />
+
+        {/* Create Task Modal */}
+        <CreateTaskModal
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          onSuccess={() => {
+            if (onRefresh) onRefresh()
+          }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className={`space-y-4 ${className}`}>
+      {/* Standalone Card Container */}
+      <div className="rounded-[8px] border border-border bg-card p-4 space-y-4 shadow-2xs">
+        {/* Header Title / Total Tasks */}
+        {!hideTitle && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/70 pb-3">
+            <div>
+              <h3 className="text-base font-bold text-foreground">
+                {isStaffUser ? "Daftar Penugasan Kerja Saya" : "Daftar Tugas & Agenda Kerja"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {isStaffUser
+                  ? "Kelola status progress pengerjaan tugas, unggah berkas SPJ, dan ajukan review ke atasan."
+                  : "Monitoring status, prioritas target, penanggung jawab pelaksana tugas, dan instruksi pendelegasian."}
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground w-fit">
+              Total {filteredTasks.length} Tugas
+            </span>
+          </div>
+        )}
+
+        {/* Bulk Action Bar (when rows are selected) */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between gap-3 p-2.5 rounded-[8px] bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-xs animate-in fade-in duration-150">
+            <span className="font-semibold text-red-700 dark:text-red-400">
+              {selectedIds.size} tugas dipilih
+            </span>
+            <div className="flex items-center gap-2">
+              {isStaffUser ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        for (const id of Array.from(selectedIds)) {
+                          await updateTaskStatus(id, "review")
+                        }
+                        toast.success(`${selectedIds.size} tugas diajukan untuk review ke atasan!`)
+                        setSelectedIds(new Set())
+                        if (onRefresh) onRefresh()
+                      } catch {
+                        toast.error("Gagal mengajukan review tugas")
+                      }
+                    }}
+                    className="h-7 px-2.5 text-xs border-purple-300 text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/50 rounded-[8px]"
+                  >
+                    <PauseCircleIcon className="size-3 mr-1" />
+                    Ajukan Review Massal
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Batal
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        for (const id of Array.from(selectedIds)) {
+                          await updateTaskStatus(id, "done")
+                        }
+                        toast.success(`${selectedIds.size} tugas ditandai selesai!`)
+                        setSelectedIds(new Set())
+                        if (onRefresh) onRefresh()
+                      } catch {
+                        toast.error("Gagal memperbarui status tugas")
+                      }
+                    }}
+                    className="h-7 px-2 text-xs border-red-300 text-red-700 hover:bg-red-100 rounded-[8px]"
+                  >
+                    <CheckCircle2Icon className="size-3 mr-1" />
+                    Tandai Selesai
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={async () => {
+                      if (confirm(`Yakin ingin menghapus ${selectedIds.size} tugas terpilih?`)) {
+                        try {
+                          for (const id of Array.from(selectedIds)) {
+                            await deleteTask(id)
+                          }
+                          toast.success(`${selectedIds.size} tugas berhasil dihapus!`)
+                          setSelectedIds(new Set())
+                          if (onRefresh) onRefresh()
+                        } catch {
+                          toast.error("Gagal menghapus tugas")
+                        }
+                      }
+                    }}
+                    className="h-7 px-2 text-xs rounded-[8px]"
+                  >
+                    <Trash2Icon className="size-3 mr-1" />
+                    Hapus
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Batal
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Toolbar: Search & Filters */}
+        {!hideToolbar && (
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* Search Input & Select Dropdowns */}
+            <div className="flex items-center gap-2 flex-wrap flex-1">
+              <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setPageIndex(0)
+                  }}
+                  placeholder="Cari data, tugas..."
+                  className="h-8 pl-8 pr-3 text-xs rounded-[8px] bg-zinc-50 dark:bg-zinc-800/60 border-border"
+                />
+              </div>
+
+              {/* Status Filter */}
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v || "all")
+                  setPageIndex(0)
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs rounded-[8px] bg-zinc-50 dark:bg-zinc-800/60 border-border min-w-[125px] w-auto">
+                  <span className="truncate">{getStatusDisplay()}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="in_progress">Dalam Proses</SelectItem>
+                  <SelectItem value="review">Review Atasan</SelectItem>
+                  <SelectItem value="done">Selesai</SelectItem>
+                  <SelectItem value="todo">To-Do</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Priority Filter */}
+              <Select
+                value={priorityFilter}
+                onValueChange={(v) => {
+                  setPriorityFilter(v || "all")
+                  setPageIndex(0)
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs rounded-[8px] bg-zinc-50 dark:bg-zinc-800/60 border-border min-w-[130px] w-auto">
+                  <span className="truncate">{getPriorityDisplay()}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Prioritas</SelectItem>
+                  <SelectItem value="urgent">Mendesak</SelectItem>
+                  <SelectItem value="high">Tinggi</SelectItem>
+                  <SelectItem value="medium">Sedang</SelectItem>
+                  <SelectItem value="low">Rendah</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Channel / Departemen Filter */}
+              <Select
+                value={channelFilter}
+                onValueChange={(v) => {
+                  setChannelFilter(v || "all")
+                  setPageIndex(0)
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs rounded-[8px] bg-zinc-50 dark:bg-zinc-800/60 border-border min-w-[145px] w-auto max-w-[190px]">
+                  <span className="truncate">{getChannelDisplay()}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Departemen</SelectItem>
+                  {channels.map((ch) => (
+                    <SelectItem key={ch.id} value={ch.id}>
+                      {ch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Reset Filter Button if active */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetFilters}
+                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground rounded-[8px] gap-1"
+                >
+                  <XIcon className="size-3" />
+                  <span>Reset</span>
+                </Button>
+              )}
+            </div>
+
+            {/* Right Controls: Buat Task Button (Only for Management/Admin) */}
+            {!isStaffUser && (
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="h-8 px-3 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <PlusIcon className="size-3.5" />
+                  <span>Buat Task</span>
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Inner Table Container */}
+        <div className="overflow-x-auto rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-card shadow-2xs">
+          <Table>
+            <TableHeader className="bg-muted/50 sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent text-xs text-muted-foreground font-semibold">
+                <TableHead className="w-[36px] px-3 py-3 text-center">
+                  <div className="flex items-center justify-center">
+                    <Checkbox
+                      checked={isAllSelected}
+                      indeterminate={isSomeSelected}
+                      onCheckedChange={handleToggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </div>
+                </TableHead>
+                <TableHead className="py-3 px-4 min-w-[200px]">Tugas & No. Tiket</TableHead>
+                <TableHead className="py-3 px-4 min-w-[130px]">Kategori / Divisi</TableHead>
+                <TableHead className="py-3 px-4 min-w-[160px]">Pelaksana & Delegasi</TableHead>
+                <TableHead className="py-3 px-4 min-w-[110px]">Prioritas & Target</TableHead>
+                <TableHead className="py-3 px-4 min-w-[130px]">Deadline</TableHead>
+                <TableHead className="py-3 px-4 min-w-[130px]">Status</TableHead>
+                <TableHead className="py-3 px-4 text-right min-w-[60px]">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="text-xs">
+              {paginatedTasks.length > 0 ? (
+                paginatedTasks.map((t) => (
+                  <TaskTableRow
+                    key={t.id}
+                    task={t}
+                    isSelected={selectedIds.has(t.id)}
+                    onToggleSelect={handleToggleSelect}
+                    onOpenDetail={handleOpenDetail}
+                    onOpenDelegate={handleOpenDelegate}
+                    onQuickStatus={handleQuickStatus}
+                    isStaff={isStaffUser}
+                  />
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground text-xs">
+                    Tidak ada task yang sesuai dengan filter pencarian.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination & Row Selection Count */}
+        <div className="flex items-center justify-between px-1 pt-1">
+          <div className="text-muted-foreground text-xs font-mono">
+            {selectedIds.size} dari {filteredTasks.length} baris dipilih.
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Baris per halaman</span>
+              <Select
+                value={`${pageSize}`}
+                onValueChange={(val) => {
+                  setPageSize(Number(val))
+                  setPageIndex(0)
+                }}
+              >
+                <SelectTrigger className="h-8 w-16 text-xs rounded-[8px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[5, 10, 20, 50].map((s) => (
+                    <SelectItem key={s} value={`${s}`}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-[8px]"
+                onClick={() => setPageIndex(0)}
+                disabled={pageIndex === 0}
+              >
+                <ChevronsLeftIcon className="size-4" />
+                <span className="sr-only">Halaman pertama</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-[8px]"
+                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                disabled={pageIndex === 0}
+              >
+                <ChevronLeftIcon className="size-4" />
+                <span className="sr-only">Sebelumnya</span>
+              </Button>
+              <span className="text-xs px-2 font-mono font-medium">
+                Hal. {pageIndex + 1} dari {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-[8px]"
+                onClick={() => setPageIndex((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={pageIndex >= totalPages - 1}
+              >
+                <ChevronRightIcon className="size-4" />
+                <span className="sr-only">Berikutnya</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8 rounded-[8px]"
+                onClick={() => setPageIndex(totalPages - 1)}
+                disabled={pageIndex >= totalPages - 1}
+              >
+                <ChevronsRightIcon className="size-4" />
+                <span className="sr-only">Halaman terakhir</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Task Detail Sheet */}
+      <TaskDetailSheet
+        taskId={selectedTaskId}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        onTaskUpdated={() => {
+          if (onRefresh) onRefresh()
+        }}
+        onOpenDelegate={handleOpenDelegate}
+      />
+
+      {/* Delegate Task Modal */}
+      <DelegateTaskModal
+        task={delegatingTask}
+        open={isDelegateOpen}
+        onOpenChange={setIsDelegateOpen}
+        onSuccess={() => {
+          if (onRefresh) onRefresh()
+        }}
+      />
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onSuccess={() => {
+          if (onRefresh) onRefresh()
+        }}
+      />
     </div>
   )
 }

@@ -75,72 +75,72 @@ export interface KaryawanTask {
 const initialTasks: KaryawanTask[] = [
   {
     id: "TASK-1029",
-    judulTask: "Optimasi Latency Switch Sentral & Konfigurasi Core Gateway",
-    pemberiTugas: "Bambang Wijaya",
-    departemen: "IT Core & Network",
+    judulTask: "Rekonsiliasi Anggaran & Berkas SPJ Divisi Operasional Q3",
+    pemberiTugas: "Hendro Kusumo, S.T.",
+    departemen: "Operasional & Pemeliharaan",
     prioritas: "Tinggi",
-    lokasi: "STO Gambir (Lt. 3 Rack B)",
+    lokasi: "Kantor Telkom Akses Regional Lt. 4",
     deadline: "2026-08-24",
     deadlineTime: "15:00 WIB",
     status: "Dalam Proses",
     progress: 75,
-    deskripsi: "Lakukan tuning MTU dan konfigurasi BGP router gateway untuk mengurangi packet loss area Jakarta Pusat.",
+    deskripsi: "Penyusunan kelengkapan nota belanja operasional, validasi kwitansi, dan upload rekapitulasi SPJ ke sistem keuangan SAP.",
     isToday: true,
   },
   {
     id: "TASK-1030",
-    judulTask: "Rekap Audit Uptime Server Fiber & Dokumen Backup Mingguan",
-    pemberiTugas: "Hendro Susilo",
-    departemen: "Operasional",
+    judulTask: "Penyusunan Draft Memo Dinas & Notulen Rapat Koordinasi SGM",
+    pemberiTugas: "Ir. Budi Santoso, M.T.",
+    departemen: "Sekretariat & Regulasi",
     prioritas: "Sedang",
-    lokasi: "Data Center Telkom Akses",
+    lokasi: "Ruang Rapat Utama Lt. 5",
     deadline: "2026-08-24",
     deadlineTime: "17:00 WIB",
     status: "Review Atasan",
     progress: 100,
-    deskripsi: "Pemeriksaan log server OLT dan generate laporan backup konfigurasi perangkat fiber optic mingguan.",
+    deskripsi: "Notulensi rapat koordinasi anggaran bulanan, ringkasan arahan pimpinan, dan penerbitan nota dinas elektronik.",
     isToday: true,
   },
   {
     id: "TASK-1031",
-    judulTask: "Instalasi Access Point Baru & Migrasi SSID Gedung B",
-    pemberiTugas: "Dewi Lestari",
-    departemen: "Infrastruktur",
+    judulTask: "Verifikasi Kelengkapan Dokumen Proposal Tender Pengadaan",
+    pemberiTugas: "Dimas Wicaksono",
+    departemen: "Perencanaan & Optimasi",
     prioritas: "Sedang",
-    lokasi: "Gedung B Lantai 3",
+    lokasi: "Kantor Pusat Telkom Akses",
     deadline: "2026-08-28",
     deadlineTime: "16:00 WIB",
     status: "Dalam Proses",
-    progress: 10,
-    deskripsi: "Pemasangan 3 unit AP Cisco Enterprise di Lantai 3 Gedung B dan verifikasi signal coverage.",
+    progress: 25,
+    deskripsi: "Pemeriksaan legalitas vendor, spesifikasi teknis penawaran, dan penyesuaian dokumen Rencana Kerja dan Syarat (RKS).",
     isToday: false,
   },
   {
     id: "TASK-1032",
-    judulTask: "Preventive Maintenance OLT Sub-Unit Bekasi Timur",
-    pemberiTugas: "Rudi Hermawan",
-    departemen: "Field Operations",
+    judulTask: "Audit Dokumen Pengadaan & Rekonsiliasi Aset Kantor",
+    pemberiTugas: "Rian Pratama",
+    departemen: "Logistik & Aset",
     prioritas: "Rendah",
-    lokasi: "Sub-Unit Bekasi Timur",
+    lokasi: "Gudang Logistik & Arsip",
     deadline: "2026-09-02",
     deadlineTime: "14:00 WIB",
     status: "Tertunda",
     progress: 40,
-    deskripsi: "Pembersihan patch cord, pengecekan modul optical transceivers, dan uji redaman kabel FO.",
+    deskripsi: "Inventarisasi berkas berita acara serah terima (BAST) perangkat kantor dan pencocokan nomor seri inventaris.",
     isToday: false,
   },
   {
     id: "TASK-1025",
-    judulTask: "Penggantian Splitter Fiber Optic STO Cikini",
-    pemberiTugas: "Supervisor Wilayah 1",
-    departemen: "Maintenance",
+    judulTask: "Laporan Rekapitulasi Kinerja Personil & KPI Bulanan",
+    pemberiTugas: "Siti Rahayu",
+    departemen: "Human Capital",
     prioritas: "Tinggi",
-    lokasi: "STO Cikini Jakarta Pusat",
+    lokasi: "Kantor Telkom Akses Lt. 2",
     deadline: "2026-08-21",
     deadlineTime: "17:00 WIB",
     status: "Selesai",
     progress: 100,
-    deskripsi: "Re-terminasi 12 core fiber optic drop wire dan uji OTDR ke pelanggan enterprise.",
+    deskripsi: "Rekap data kehadiran, evaluasi pencapaian target kerja unit, dan generate sertifikat apresiasi kinerja.",
     isToday: false,
   },
 ]
@@ -274,7 +274,7 @@ export function KaryawanTaskTable() {
               Daftar Tugas Saya Hari Ini
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Ringkasan penugasan tugas kantor yang harus diselesaikan, batas deadline SLA, dan progres pengerjaan
+              Ringkasan penugasan tugas kantor yang harus diselesaikan, batas target waktu selesai, dan progres pengerjaan
             </p>
           </div>
         </div>
@@ -574,7 +574,7 @@ export function KaryawanTaskTable() {
               {detailTask && <span className="font-mono text-xs text-red-600 font-bold">#{detailTask.id}</span>}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Informasi instruksi penugasan dari atasan dan batas deadline SLA.
+              Informasi instruksi penugasan dari atasan dan target waktu penyelesaian.
             </DialogDescription>
           </DialogHeader>
 
@@ -599,7 +599,7 @@ export function KaryawanTaskTable() {
                   <span className="font-semibold text-foreground">{detailTask.lokasi}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-muted-foreground block">Deadline SLA</span>
+                  <span className="text-[10px] text-muted-foreground block">Target Selesai</span>
                   <span className="font-semibold text-foreground">{detailTask.deadline} ({detailTask.deadlineTime})</span>
                 </div>
               </div>

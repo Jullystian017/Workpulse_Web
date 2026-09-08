@@ -1,245 +1,353 @@
-﻿"use client"
+"use client"
 
 import * as React from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import {
   TableIcon,
   KanbanIcon,
   CalendarIcon,
   ClockIcon,
   PlusIcon,
-  FilterIcon,
   SearchIcon,
-  UserPlusIcon,
-  UsersIcon,
-  ArrowUpDownIcon,
-  LayersIcon,
-  UserIcon,
-  XIcon,
-  ChevronDownIcon,
-  CheckIcon,
-  MapPinIcon,
   AlertCircleIcon,
   CheckCircle2Icon,
   ClipboardListIcon,
-  FileBarChartIcon,
-  ArrowUpRightIcon,
+  RefreshCwIcon,
+  UsersIcon,
+  RotateCcwIcon,
+  SlidersHorizontalIcon,
+  ArrowUpDownIcon,
+  LayersIcon,
+  ArrowLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SparklesIcon,
 } from "lucide-react"
-import Link from "next/link"
 import { toast } from "sonner"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AiPanelProvider } from "@/components/dashboard/ai-panel-context"
-import { AiIntegratedPanel } from "@/components/dashboard/ai-integrated-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select"
 
-import { DataTable } from "@/components/dashboard/data-table"
 import { KanbanView } from "@/components/dashboard/tasks/kanban-view"
 import { TimelineView } from "@/components/dashboard/tasks/timeline-view"
 import { CalendarView } from "@/components/dashboard/tasks/calendar-view"
-import { TaskDetailSheet, type TaskItem } from "@/components/dashboard/tasks/task-detail-sheet"
-import initialTasks from "../data.json"
+import { DataTable } from "@/components/dashboard/data-table"
+import { DateStripNavigator } from "@/components/dashboard/tasks/date-strip-navigator"
+import { TaskDetailSheet } from "@/components/dashboard/tasks/task-detail-sheet"
+import { CreateTaskModal } from "@/components/dashboard/tasks/create-task-modal"
+import { DelegateTaskModal } from "@/components/dashboard/tasks/delegate-task-modal"
+import {
+  getTasks,
+  getChannels,
+  getAllUsers,
+  updateTaskStatus,
+} from "@/lib/api"
+import { Task, Channel, User, TaskStatus } from "@/types/database"
 
-const departments = ["Semua", "Deployment", "Maintenance", "Customer Service", "Survey"]
+function AdminTasksContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
 
-const teknisiList = [
-  { name: "Andi Pratama", role: "Field Lead Engineer", avatar: "AP" },
-  { name: "Bambang Susanto", role: "Supervisor Telkom", avatar: "BS" },
-  { name: "Kevin Sanjaya", role: "Network Specialist", avatar: "KS" },
-  { name: "Irfan Maulana", role: "Splicing Specialist", avatar: "IM" },
-  { name: "Oscar Budiman", role: "Mitra Support Team", avatar: "OB" },
-  { name: "Siti Rahayu", role: "Quality Assurance", avatar: "SR" },
-]
+  const [tasks, setTasks] = React.useState<Task[]>([])
+  const [channels, setChannels] = React.useState<Channel[]>([])
+  const [users, setUsers] = React.useState<User[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
 
-function CustomDropdown({
-  label,
-  icon: Icon,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  icon: React.ElementType
-  value: string
-  options: { label: string; value: string }[]
-  onChange: (val: string) => void
-}) {
-  const [open, setOpen] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
+  // Filter & Sort States
+  const urlTask = searchParams.get("task")
+  const urlAction = searchParams.get("action")
+  const urlView = searchParams.get("view")
+
+  const [searchQuery, setSearchQuery] = React.useState<string>("")
+  const [selectedStatus, setSelectedStatus] = React.useState<string>("all")
+  const [selectedPriority, setSelectedPriority] = React.useState<string>("all")
+  const [selectedAssignee, setSelectedAssignee] = React.useState<string>("all")
+  const [sortBy, setSortBy] = React.useState<string>("deadline_asc")
+
+  // Primary Macro Views: "calendar" (default) or "table"
+  const [activeTab, setActiveTab] = React.useState<"calendar" | "table">("calendar")
+
+  // Daily Workspace Drill-Down State (When a date is clicked on Calendar)
+  const [dailyDate, setDailyDate] = React.useState<string | null>(null)
+  const [dailyMode, setDailyMode] = React.useState<"kanban" | "timeline">("kanban")
+
+  // Modal States
+  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = React.useState(false)
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false)
+  const [isDelegateOpen, setIsDelegateOpen] = React.useState(false)
+  const [taskToDelegate, setTaskToDelegate] = React.useState<Task | null>(null)
+  const [createDefaultStatus, setCreateDefaultStatus] = React.useState<TaskStatus>("unassigned")
+
+  const loadAllData = React.useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const [fetchedTasks, fetchedChannels, fetchedUsers] = await Promise.all([
+        getTasks(),
+        getChannels(),
+        getAllUsers(),
+      ])
+      setTasks(fetchedTasks)
+      setChannels(fetchedChannels)
+      setUsers(fetchedUsers)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   React.useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false)
+    loadAllData()
+  }, [loadAllData])
+
+  React.useEffect(() => {
+    if (urlView) {
+      if (urlView === "table") {
+        setActiveTab("table")
+        setDailyDate(null)
+      } else if (urlView === "calendar") {
+        setActiveTab("calendar")
+        setDailyDate(null)
+      } else if (urlView === "kanban") {
+        const today = new Date().toISOString().split("T")[0]
+        setDailyDate(today)
+        setDailyMode("kanban")
+      } else if (urlView === "timeline") {
+        const today = new Date().toISOString().split("T")[0]
+        setDailyDate(today)
+        setDailyMode("timeline")
       }
     }
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside)
+  }, [urlView])
+
+  React.useEffect(() => {
+    if (urlAction === "create") {
+      setIsCreateOpen(true)
     }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
+  }, [urlAction])
+
+  React.useEffect(() => {
+    if (urlTask && tasks.length > 0) {
+      const t = tasks.find((item) => item.id === urlTask || item.ticket_code === urlTask)
+      if (t) {
+        setSelectedTask(t)
+        setIsDetailOpen(true)
+      }
     }
-  }, [open])
+  }, [urlTask, tasks])
 
-  const selectedOption = options.find((o) => o.value === value) || options[0]
+  // Daily Workspace Handlers
+  const handleSelectDateFromCalendar = (dateStr: string) => {
+    setDailyDate(dateStr)
+    setDailyMode("kanban")
+  }
 
-  return (
-    <div className="relative inline-block" ref={ref}>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpen((prev) => !prev)
-        }}
-        className={`flex items-center gap-1.5 h-8.5 px-3 rounded-[8px] border transition-all cursor-pointer shadow-2xs whitespace-nowrap text-xs font-medium ${open
-          ? "border-red-500 ring-2 ring-red-500/20 bg-muted/80 text-foreground"
-          : "bg-background hover:bg-muted/60 text-foreground"
-          }`}
-      >
-        <Icon className="size-3.5 text-muted-foreground" />
-        <span>
-          {label}: <strong className="font-semibold text-foreground">{selectedOption.label}</strong>
-        </span>
-        <ChevronDownIcon className={`size-3 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
-      </button>
+  const handlePrevDailyDate = () => {
+    if (!dailyDate) return
+    const d = new Date(dailyDate + "T00:00:00")
+    d.setDate(d.getDate() - 1)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    setDailyDate(`${y}-${m}-${day}`)
+  }
 
-      {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 min-w-48 p-1.5 rounded-[8px] border bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5 ring-1 ring-border/50">
-          <div className="px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-            {label}
-          </div>
-          {options.map((opt) => {
-            const isSelected = opt.value === value
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  onChange(opt.value)
-                  setOpen(false)
-                }}
-                className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[8px] text-xs text-left transition-colors cursor-pointer ${isSelected
-                  ? "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400 font-semibold"
-                  : "hover:bg-muted/80 text-foreground"
-                  }`}
-              >
-                <span>{opt.label}</span>
-                {isSelected && <CheckIcon className="size-3.5 text-red-600 dark:text-red-400 shrink-0 ml-2" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
+  const handleNextDailyDate = () => {
+    if (!dailyDate) return
+    const d = new Date(dailyDate + "T00:00:00")
+    d.setDate(d.getDate() + 1)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    setDailyDate(`${y}-${m}-${day}`)
+  }
 
-export default function TasksPage() {
-  const [tasks, setTasks] = React.useState<TaskItem[]>(initialTasks as TaskItem[])
-  const [selectedTask, setSelectedTask] = React.useState<TaskItem | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = React.useState(false)
-  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
+  const formattedDailyDateTitle = React.useMemo(() => {
+    if (!dailyDate) return ""
+    const d = new Date(dailyDate + "T00:00:00")
+    return d.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }, [dailyDate])
 
-  // Filtering & Sorting States
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [selectedDept, setSelectedDept] = React.useState("Semua")
-  const [selectedStatus, setSelectedStatus] = React.useState("Semua")
-  const [selectedPriority, setSelectedPriority] = React.useState("Semua")
-  const [selectedAssignee, setSelectedAssignee] = React.useState("Semua")
-  const [sortBy, setSortBy] = React.useState("deadline")
-  const [activeTab, setActiveTab] = React.useState<"table" | "kanban" | "timeline" | "calendar">("timeline")
+  const isDailyDateToday = React.useMemo(() => {
+    if (!dailyDate) return false
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = String(now.getMonth() + 1).padStart(2, "0")
+    const d = String(now.getDate()).padStart(2, "0")
+    return `${y}-${m}-${d}` === dailyDate
+  }, [dailyDate])
 
-  // New task form state
-  const [newTaskTitle, setNewTaskTitle] = React.useState("")
-  const [newTaskAssignee, setNewTaskAssignee] = React.useState(teknisiList[0].name)
-  const [newTaskDept, setNewTaskDept] = React.useState("Maintenance")
-  const [newTaskPriority, setNewTaskPriority] = React.useState("Tinggi")
-  const [newTaskDeadline, setNewTaskDeadline] = React.useState("2026-08-16")
-  const [newTaskLocation, setNewTaskLocation] = React.useState("STO Gambir")
-  const [newTaskDesc, setNewTaskDesc] = React.useState("")
+  // Priority weight for sorting
+  const priorityWeight: Record<string, number> = {
+    urgent: 4,
+    high: 3,
+    medium: 2,
+    low: 1,
+  }
 
-  const handleOpenDetail = (task: TaskItem) => {
+  // Filtered & Sorted Tasks for Macro Views (Calendar & Master Table)
+  const filteredTasks = React.useMemo(() => {
+    const result = tasks.filter((t) => {
+      const matchPriority = selectedPriority === "all" || t.priority === selectedPriority
+      const matchStatus =
+        selectedStatus === "all"
+          ? true
+          : selectedStatus === "todo"
+          ? t.status === "todo" || t.status === "unassigned"
+          : t.status === selectedStatus
+      const matchAssignee =
+        selectedAssignee === "all"
+          ? true
+          : selectedAssignee === "unassigned"
+          ? !t.assigned_to
+          : t.assigned_to === selectedAssignee
+      const matchSearch =
+        !searchQuery ||
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.ticket_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (t.assignee?.nama && t.assignee.nama.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (t.location_name && t.location_name.toLowerCase().includes(searchQuery.toLowerCase()))
+
+      return matchPriority && matchStatus && matchAssignee && matchSearch
+    })
+
+    // Sorting Logic
+    result.sort((a, b) => {
+      if (sortBy === "deadline_asc") {
+        const dateA = a.deadline_at ? new Date(a.deadline_at).getTime() : Infinity
+        const dateB = b.deadline_at ? new Date(b.deadline_at).getTime() : Infinity
+        return dateA - dateB
+      }
+      if (sortBy === "deadline_desc") {
+        const dateA = a.deadline_at ? new Date(a.deadline_at).getTime() : 0
+        const dateB = b.deadline_at ? new Date(b.deadline_at).getTime() : 0
+        return dateB - dateA
+      }
+      if (sortBy === "priority_desc") {
+        return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0)
+      }
+      if (sortBy === "priority_asc") {
+        return (priorityWeight[a.priority] || 0) - (priorityWeight[b.priority] || 0)
+      }
+      if (sortBy === "title_asc") {
+        return a.title.localeCompare(b.title)
+      }
+      if (sortBy === "title_desc") {
+        return b.title.localeCompare(a.title)
+      }
+      if (sortBy === "ticket_asc") {
+        return a.ticket_code.localeCompare(b.ticket_code)
+      }
+      return 0
+    })
+
+    return result
+  }, [tasks, selectedPriority, selectedStatus, selectedAssignee, searchQuery, sortBy])
+
+  // Daily Filtered Tasks for Workspace Drill-Down (Kanban & Timeline)
+  const dailyFilteredTasks = React.useMemo(() => {
+    if (!dailyDate) return []
+    return filteredTasks.filter((t) => {
+      const taskDate = t.deadline_at || t.created_at
+      if (!taskDate) return false
+      const d = new Date(taskDate)
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, "0")
+      const day = String(d.getDate()).padStart(2, "0")
+      return `${y}-${m}-${day}` === dailyDate
+    })
+  }, [filteredTasks, dailyDate])
+
+  const hasActiveFilters =
+    searchQuery !== "" ||
+    selectedStatus !== "all" ||
+    selectedPriority !== "all" ||
+    selectedAssignee !== "all" ||
+    sortBy !== "deadline_asc"
+
+  const handleResetFilters = () => {
+    setSearchQuery("")
+    setSelectedStatus("all")
+    setSelectedPriority("all")
+    setSelectedAssignee("all")
+    setSortBy("deadline_asc")
+  }
+
+  // Display helpers for Select Trigger values
+  const getStatusDisplay = () => {
+    if (selectedStatus === "all") return "Semua Status"
+    if (selectedStatus === "todo") return "To-Do / Antrean"
+    if (selectedStatus === "in_progress") return "Dalam Pengerjaan"
+    if (selectedStatus === "review") return "Review Atasan"
+    if (selectedStatus === "done") return "Selesai"
+    return "Status"
+  }
+
+  const getPriorityDisplay = () => {
+    if (selectedPriority === "all") return "Semua Prioritas"
+    if (selectedPriority === "urgent") return "Mendesak (Urgent)"
+    if (selectedPriority === "high") return "Tinggi (High)"
+    if (selectedPriority === "medium") return "Standar (Medium)"
+    if (selectedPriority === "low") return "Rendah (Low)"
+    return "Prioritas"
+  }
+
+
+  const getAssigneeDisplay = () => {
+    if (selectedAssignee === "all") return "Semua Personil"
+    if (selectedAssignee === "unassigned") return "Unassigned Pool"
+    const u = users.find((item) => item.id === selectedAssignee)
+    return u ? u.nama.split(" ")[0] : "Personil"
+  }
+
+  const getSortDisplay = () => {
+    if (sortBy === "deadline_asc") return "Deadline Terdekat"
+    if (sortBy === "deadline_desc") return "Deadline Terlama"
+    if (sortBy === "priority_desc") return "Prioritas Tertinggi"
+    if (sortBy === "priority_asc") return "Prioritas Terendah"
+    if (sortBy === "title_asc") return "Judul (A–Z)"
+    if (sortBy === "title_desc") return "Judul (Z–A)"
+    if (sortBy === "ticket_asc") return "No. Tiket"
+    return "Urutkan"
+  }
+
+  // KPI Calculations
+  const totalTasksCount = tasks.length
+  const inProgressCount = tasks.filter((t) => t.status === "in_progress").length
+  const underReviewCount = tasks.filter((t) => t.status === "review").length
+  const doneCount = tasks.filter((t) => t.status === "done").length
+
+  const handleOpenDetail = (task: Task) => {
     setSelectedTask(task)
     setIsDetailOpen(true)
   }
 
-  const handleUpdateStatus = (taskId: string, newStatus: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
-    )
-    if (selectedTask?.id === taskId) {
-      setSelectedTask((prev) => (prev ? { ...prev, status: newStatus } : null))
-    }
+  const handleOpenDelegate = (task: Task) => {
+    setTaskToDelegate(task)
+    setIsDelegateOpen(true)
   }
 
-  const handleCreateTask = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newTaskTitle.trim()) {
-      toast.error("Mohon isi judul task!")
-      return
-    }
-
-    const nextIdNumber = tasks.length + 1
-    const newId = `TSK-${String(nextIdNumber).padStart(3, "0")}`
-
-    const createdTask: TaskItem = {
-      id: newId,
-      judulTask: newTaskTitle,
-      assignee: newTaskAssignee,
-      departemen: newTaskDept,
-      prioritas: newTaskPriority,
-      deadline: newTaskDeadline,
-      status: "Tertunda",
-      progress: 0,
-      bukti: false,
-      deskripsi: newTaskDesc || "Penugasan baru telah dibuat oleh Admin.",
-      lokasi: newTaskLocation,
-      kategori: newTaskDept,
-    }
-
-    setTasks((prev) => [createdTask, ...prev])
-    setIsCreateModalOpen(false)
-
-    // Reset form
-    setNewTaskTitle("")
-    setNewTaskDesc("")
-    toast.success(`Task ${newId} berhasil dibuat dan ditugaskan ke ${newTaskAssignee}!`)
+  const handleOpenCreate = (status?: TaskStatus) => {
+    setCreateDefaultStatus(status || "unassigned")
+    setIsCreateOpen(true)
   }
-
-  const filteredTasks = React.useMemo(() => {
-    let result = tasks.filter((t) => {
-      const matchSearch =
-        t.judulTask.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.assignee.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.id.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchDept = selectedDept === "Semua" || t.departemen === selectedDept
-      const matchStatus = selectedStatus === "Semua" || t.status === selectedStatus
-      const matchPriority = selectedPriority === "Semua" || t.prioritas === selectedPriority
-      const matchAssignee = selectedAssignee === "Semua" || t.assignee.includes(selectedAssignee)
-      return matchSearch && matchDept && matchStatus && matchPriority && matchAssignee
-    })
-
-    // Sorting
-    return [...result].sort((a, b) => {
-      if (sortBy === "deadline") {
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-      }
-      if (sortBy === "priority") {
-        const priorityOrder: Record<string, number> = { Tinggi: 1, Sedang: 2, Rendah: 3 }
-        return (priorityOrder[a.prioritas] || 99) - (priorityOrder[b.prioritas] || 99)
-      }
-      if (sortBy === "title") {
-        return a.judulTask.localeCompare(b.judulTask)
-      }
-      if (sortBy === "progress") {
-        return (b.progress || 0) - (a.progress || 0)
-      }
-      return 0
-    })
-  }, [tasks, searchQuery, selectedDept, selectedStatus, selectedPriority, selectedAssignee, sortBy])
 
   return (
     <SidebarProvider
@@ -250,421 +358,544 @@ export default function TasksPage() {
         } as React.CSSProperties
       }
     >
-      <AiPanelProvider>
-        <AppSidebar variant="inset" />
-        <SidebarInset className="h-screen md:h-[calc(100vh-1rem)] overflow-hidden flex flex-col">
-          <SiteHeader />
-          <div className="flex flex-1 min-h-0 h-full flex-row overflow-hidden">
-            <div className="flex-1 min-h-0 overflow-y-auto pb-12">
-
-              {/* Row 1: Top Page Header */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 lg:px-6 pt-5 pb-3">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                    Task Management
+      <AppSidebar variant="inset" />
+      <SidebarInset className="overflow-x-hidden min-w-0 max-w-full">
+        <SiteHeader />
+        <div className="flex flex-1 flex-col pb-12 overflow-x-hidden min-w-0 max-w-full">
+          <div className="flex flex-1 flex-col gap-5 py-4 lg:py-6 overflow-x-hidden min-w-0 max-w-full">
+            {/* Header Title & Actions */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 lg:px-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                    Penugasan & Agenda Kerja Kantor
                   </h1>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Monitoring dan delegasi seluruh tugas teknisi lapangan, instalasi, dan pemeliharaan jaringan
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Pengawasan pengerjaan tugas divisi kantor, pendelegasian wewenang hierarkis, dan target waktu pengerjaan.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadAllData}
+                  className="h-9 px-3 rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
+                  title="Muat Ulang Data"
+                >
+                  <RefreshCwIcon className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={() => handleOpenCreate()}
+                  className="h-9 px-4 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5 cursor-pointer"
+                >
+                  <PlusIcon className="size-4" />
+                  Buat Tugas Baru
+                </Button>
+              </div>
+            </div>
+
+            {/* 4 KPI Summary Cards */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 px-4 lg:px-6">
+              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <ClipboardListIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
+                <div className="relative">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Total Penugasan Kantor</span>
+                    <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
+                      {totalTasksCount} Tugas
+                    </span>
+                  </div>
+                  <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                    {totalTasksCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Total agenda penugasan divisi</p>
+                </div>
+              </div>
+
+              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <ClockIcon className="absolute -right-2 -top-2 size-20 text-blue-100 dark:text-blue-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
+                <div className="relative">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Sedang Dikerjakan</span>
+                    <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
+                      In Progress
+                    </span>
+                  </div>
+                  <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                    {inProgressCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Dikerjakan oleh staf pelaksana</p>
+                </div>
+              </div>
+
+              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <AlertCircleIcon className="absolute -right-2 -top-2 size-20 text-purple-100 dark:text-purple-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
+                <div className="relative">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Menunggu Review Atasan</span>
+                    <span className="inline-flex items-center rounded-full bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 text-[11px] font-bold text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-900">
+                      Review
+                    </span>
+                  </div>
+                  <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                    {underReviewCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Siap diverifikasi & disetujui</p>
+                </div>
+              </div>
+
+              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-emerald-100 dark:text-emerald-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
+                <div className="relative">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground">Selesai Terverifikasi</span>
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
+                      Done
+                    </span>
+                  </div>
+                  <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
+                    {doneCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Tingkat penyelesaian: {totalTasksCount > 0 ? Math.round((doneCount / totalTasksCount) * 100) : 0}%
                   </p>
                 </div>
+              </div>
+            </div>
 
-                {/* Right: Link to Laporan Kinerja */}
-                <div className="flex items-center gap-2.5">
-                  <Link href="/admin/laporan/kinerja">
+            {dailyDate ? (
+              /* DAILY WORKSPACE DRILL-DOWN HEADER */
+              <div className="px-4 lg:px-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-card border border-border shadow-xs">
+                  {/* Left: Back to Calendar Button & Active Day Info */}
+                  <div className="flex items-center gap-3 min-w-0">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8.5 px-3 gap-1.5 rounded-[8px] text-xs font-semibold hover:bg-muted hover:text-red-600 border-border/80 cursor-pointer shadow-2xs transition-colors"
+                      onClick={() => setDailyDate(null)}
+                      className="h-9 px-3 rounded-xl gap-2 font-bold hover:bg-red-50 dark:hover:bg-red-950/40 text-foreground border-border cursor-pointer shadow-2xs shrink-0"
                     >
-                      <FileBarChartIcon className="size-3.5 text-red-600" />
-                      <span>Laporan Kinerja</span>
-                      <ArrowUpRightIcon className="size-3 text-muted-foreground" />
+                      <ArrowLeftIcon className="size-4 text-red-600" />
+                      <span>Kembali ke Kalender</span>
                     </Button>
-                  </Link>
+
+                    <div className="h-6 w-px bg-border hidden sm:block shrink-0" />
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm sm:text-base font-extrabold text-foreground capitalize truncate">
+                          {formattedDailyDateTitle}
+                        </h3>
+                        {isDailyDateToday && (
+                          <Badge className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                            Hari Ini
+                          </Badge>
+                        )}
+                        <span className="text-[11px] font-bold text-muted-foreground bg-muted/70 px-2 py-0.5 rounded-md border border-border/70">
+                          {dailyFilteredTasks.length} Tugas
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 hidden sm:block">
+                        Workspace operasional harian Telkom Akses (Kanban workflow & Jadwal per jam)
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right: Prev/Next Day + Kanban/Timeline Mode Switcher + Add Task */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+                    {/* Sub-mode Switcher: Kanban vs Timeline */}
+                    <div className="flex items-center rounded-xl bg-muted/60 p-1 border border-border/70">
+                      <button
+                        type="button"
+                        onClick={() => setDailyMode("kanban")}
+                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          dailyMode === "kanban"
+                            ? "bg-card text-red-600 dark:text-red-400 shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <KanbanIcon className="size-3.5" />
+                        <span>Kanban</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDailyMode("timeline")}
+                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          dailyMode === "timeline"
+                            ? "bg-card text-red-600 dark:text-red-400 shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <ClockIcon className="size-3.5" />
+                        <span>Timeline Jam</span>
+                      </button>
+                    </div>
+
+                    <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
+
+                    {/* Day Navigation (Prev / Next) */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handlePrevDailyDate}
+                        className="size-8 rounded-xl border-border hover:bg-muted cursor-pointer shadow-2xs"
+                        title="Hari Sebelumnya"
+                      >
+                        <ChevronLeftIcon className="size-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleNextDailyDate}
+                        className="size-8 rounded-xl border-border hover:bg-muted cursor-pointer shadow-2xs"
+                        title="Hari Berikutnya"
+                      >
+                        <ChevronRightIcon className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
+            ) : (
+              /* MACRO LEVEL NAVIGATION (KALENDER VS DAFTAR) */
+              <>
+                {/* View Switcher Tabs Bar */}
+                <div className="px-4 lg:px-6 border-b border-border">
+                  <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto scrollbar-none">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("calendar")
+                        setDailyDate(null)
+                      }}
+                      className={`flex items-center gap-2 pb-3 pt-1 text-xs font-bold transition-colors relative cursor-pointer -mb-px shrink-0 ${
+                        activeTab === "calendar"
+                          ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
+                          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
+                      }`}
+                    >
+                      <CalendarIcon className="size-3.5" />
+                      <span>Kalender Penugasan</span>
+                    </button>
 
-              {/* Row 1.5: 4 KPI Summary Cards (Matching Admin/Log Design) */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 px-4 lg:px-6 py-2">
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <ClipboardListIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Total Tugas Operasional</span>
-                      <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
-                        {tasks.length} Tiket
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("table")
+                        setDailyDate(null)
+                      }}
+                      className={`flex items-center gap-2 pb-3 pt-1 text-xs font-bold transition-colors relative cursor-pointer -mb-px shrink-0 ${
+                        activeTab === "table"
+                          ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
+                          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
+                      }`}
+                    >
+                      <TableIcon className="size-3.5" />
+                      <span>Daftar (Semua Tugas)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter & Sort Toolbar Row (For Macro Views) */}
+                <div className="px-4 lg:px-6">
+                  <div className="flex items-center justify-between gap-3 p-2 bg-card dark:bg-zinc-900 border border-border rounded-xl shadow-2xs">
+                    {/* Left Controls: Search + Styled Select Dropdowns in 1 Row */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Search Box */}
+                      <div className="relative w-44 sm:w-56 lg:w-64 shrink-0">
+                        <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                        <Input
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Cari data, tugas, personil..."
+                          className="h-8.5 pl-8 pr-3 text-xs rounded-lg bg-background border-border shadow-2xs placeholder:text-muted-foreground"
+                        />
+                      </div>
+
+                      <div className="h-4 w-px bg-border shrink-0" />
+
+                      {/* Status Filter */}
+                      <Select
+                        value={selectedStatus}
+                        onValueChange={(v) => setSelectedStatus(v || "all")}
+                      >
+                        <SelectTrigger
+                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                            selectedStatus !== "all"
+                              ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
+                              : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
+                          }`}
+                        >
+                          <SlidersHorizontalIcon className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{getStatusDisplay()}</span>
+                        </SelectTrigger>
+                        <SelectContent align="start" className="w-48">
+                          <SelectItem value="all">
+                            <span className="font-medium">Semua Status</span>
+                          </SelectItem>
+                          <SelectItem value="todo">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-amber-500 shrink-0" />
+                              <span>To-Do / Antrean</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="in_progress">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-blue-500 shrink-0" />
+                              <span>Dalam Pengerjaan</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="review">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-purple-500 shrink-0" />
+                              <span>Review Atasan</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="done">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                              <span>Selesai (Done)</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Priority Filter */}
+                      <Select
+                        value={selectedPriority}
+                        onValueChange={(v) => setSelectedPriority(v || "all")}
+                      >
+                        <SelectTrigger
+                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                            selectedPriority !== "all"
+                              ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
+                              : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
+                          }`}
+                        >
+                          <AlertCircleIcon className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{getPriorityDisplay()}</span>
+                        </SelectTrigger>
+                        <SelectContent align="start" className="w-48">
+                          <SelectItem value="all">
+                            <span className="font-medium">Semua Prioritas</span>
+                          </SelectItem>
+                          <SelectItem value="urgent">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-red-600 shrink-0" />
+                              <span>Mendesak (Urgent)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="high">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-orange-500 shrink-0" />
+                              <span>Tinggi (High)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="medium">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-yellow-500 shrink-0" />
+                              <span>Standar (Medium)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="low">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-zinc-400 shrink-0" />
+                              <span>Rendah (Low)</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Assignee Filter */}
+                      <Select
+                        value={selectedAssignee}
+                        onValueChange={(v) => setSelectedAssignee(v || "all")}
+                      >
+                        <SelectTrigger
+                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                            selectedAssignee !== "all"
+                              ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
+                              : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
+                          }`}
+                        >
+                          <UsersIcon className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{getAssigneeDisplay()}</span>
+                        </SelectTrigger>
+                        <SelectContent align="start" className="w-52">
+                          <SelectItem value="all">
+                            <span className="font-medium">Semua Pelaksana</span>
+                          </SelectItem>
+                          <SelectItem value="unassigned">
+                            <span className="font-medium text-amber-600">Belum Ditugaskan (Pool)</span>
+                          </SelectItem>
+                          {users.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={
+                                    u.avatar_url ||
+                                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                                  }
+                                  alt={u.nama}
+                                  className="size-4 rounded-full object-cover"
+                                />
+                                <span className="truncate">{u.nama}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Sort By Dropdown */}
+                      <Select
+                        value={sortBy}
+                        onValueChange={(v) => setSortBy(v || "deadline_asc")}
+                      >
+                        <SelectTrigger
+                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                            sortBy !== "deadline_asc"
+                              ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
+                              : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
+                          }`}
+                        >
+                          <ArrowUpDownIcon className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{getSortDisplay()}</span>
+                        </SelectTrigger>
+                        <SelectContent align="start" className="w-48">
+                          <SelectItem value="deadline_asc">Deadline Terdekat</SelectItem>
+                          <SelectItem value="deadline_desc">Deadline Terlama</SelectItem>
+                          <SelectItem value="priority_desc">Prioritas Tertinggi</SelectItem>
+                          <SelectItem value="priority_asc">Prioritas Terendah</SelectItem>
+                          <SelectItem value="title_asc">Judul (A–Z)</SelectItem>
+                          <SelectItem value="title_desc">Judul (Z–A)</SelectItem>
+                          <SelectItem value="ticket_asc">No. Tiket</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Reset Filter Button */}
+                      {hasActiveFilters && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleResetFilters}
+                          className="h-8.5 px-2.5 text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg gap-1.5 shrink-0 font-semibold cursor-pointer"
+                        >
+                          <RotateCcwIcon className="size-3.5" />
+                          <span>Reset</span>
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Right: Filtered Result Count Badge */}
+                    <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-muted/70 dark:bg-zinc-800 text-[11px] font-medium text-muted-foreground border border-border/60 shrink-0">
+                        Menampilkan <strong className="text-foreground mx-1 font-bold">{filteredTasks.length}</strong> dari {tasks.length} tugas
                       </span>
                     </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {tasks.length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Terdistribusi di 4 departemen</p>
                   </div>
                 </div>
+              </>
+            )}
 
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Sedang Dikerjakan</span>
-                      <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900">
-                        In Progress
-                      </span>
-                    </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {tasks.filter((t) => t.status === "Dalam Proses").length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Dikerjakan teknisi lapangan</p>
-                  </div>
-                </div>
-
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <AlertCircleIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Tertunda / Review SLA</span>
-                      <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900">
-                        Perhatian
-                      </span>
-                    </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {tasks.filter((t) => t.status === "Tertunda").length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">3 Melewati batas deadline</p>
-                  </div>
-                </div>
-
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Selesai Dikerjakan</span>
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
-                        Done
-                      </span>
-                    </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {tasks.filter((t) => t.status === "Selesai").length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Tingkat kepatuhan SLA 92%</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: View Switcher Tabs (Underline Style Matching Reference Screenshot) */}
-              <div className="px-4 lg:px-6 border-b border-border/80 flex items-center gap-6">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("table")}
-                  className={`flex items-center gap-1.5 py-2.5 text-xs font-semibold transition-colors relative cursor-pointer ${activeTab === "table"
-                    ? "text-red-600 dark:text-red-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-red-600 dark:after:bg-red-400"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                  <TableIcon className="size-3.5" />
-                  <span>Table</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("kanban")}
-                  className={`flex items-center gap-1.5 py-2.5 text-xs font-semibold transition-colors relative cursor-pointer ${activeTab === "kanban"
-                    ? "text-red-600 dark:text-red-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-red-600 dark:after:bg-red-400"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                  <KanbanIcon className="size-3.5" />
-                  <span>Kanban</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("timeline")}
-                  className={`flex items-center gap-1.5 py-2.5 text-xs font-semibold transition-colors relative cursor-pointer ${activeTab === "timeline"
-                    ? "text-red-600 dark:text-red-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-red-600 dark:after:bg-red-400"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                  <ClockIcon className="size-3.5" />
-                  <span>Timeline</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("calendar")}
-                  className={`flex items-center gap-1.5 py-2.5 text-xs font-semibold transition-colors relative cursor-pointer ${activeTab === "calendar"
-                    ? "text-red-600 dark:text-red-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-red-600 dark:after:bg-red-400"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                  <CalendarIcon className="size-3.5" />
-                  <span>Calendar</span>
-                </button>
-              </div>
-
-              {/* Row 3: Action Toolbar (Custom Premium Dropdowns, Search, Create Task +) */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 lg:px-6 py-3.5 relative z-20">
-                {/* Left Side: Filter, Sort by, Group by, Assigner */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Filter Dropdown */}
-                  <CustomDropdown
-                    label="Filter"
-                    icon={FilterIcon}
-                    value={selectedDept}
-                    onChange={setSelectedDept}
-                    options={[
-                      { label: "Semua Dept", value: "Semua" },
-                      { label: "Maintenance", value: "Maintenance" },
-                      { label: "Deployment", value: "Deployment" },
-                      { label: "Customer Service", value: "Customer Service" },
-                      { label: "Survey", value: "Survey" },
-                    ]}
-                  />
-
-                  {/* Sort By Dropdown */}
-                  <CustomDropdown
-                    label="Sort by"
-                    icon={ArrowUpDownIcon}
-                    value={sortBy}
-                    onChange={setSortBy}
-                    options={[
-                      { label: "Deadline", value: "deadline" },
-                      { label: "Prioritas", value: "priority" },
-                      { label: "Judul (A-Z)", value: "title" },
-                      { label: "Progress", value: "progress" },
-                    ]}
-                  />
-
-                  {/* Group by / Status Dropdown */}
-                  <CustomDropdown
-                    label="Group by"
-                    icon={LayersIcon}
-                    value={selectedStatus}
-                    onChange={setSelectedStatus}
-                    options={[
-                      { label: "Semua Status", value: "Semua" },
-                      { label: "Tertunda", value: "Tertunda" },
-                      { label: "Dalam Proses", value: "Dalam Proses" },
-                      { label: "Selesai", value: "Selesai" },
-                    ]}
-                  />
-
-                  {/* Assigner / PIC Dropdown */}
-                  <CustomDropdown
-                    label="Assigner"
-                    icon={UserIcon}
-                    value={selectedAssignee}
-                    onChange={setSelectedAssignee}
-                    options={[
-                      { label: "Semua Teknisi", value: "Semua" },
-                      ...teknisiList.map((t) => ({ label: t.name, value: t.name })),
-                    ]}
-                  />
-                </div>
-
-                {/* Right Side: Search + Create Task + Button */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="relative">
-                    <SearchIcon className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground pointer-events-none" />
-                    <input
-                      type="text"
-                      placeholder="Cari tugas atau teknisi..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-8.5 pl-8 pr-3 w-36 sm:w-44 focus:w-56 transition-all rounded-[8px] border bg-background text-xs placeholder:text-muted-foreground outline-none focus:border-red-500 shadow-2xs"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    size="sm"
-                    className="h-8.5 px-3.5 gap-1 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
-                  >
-                    <span>Buat Task Baru</span>
-                    <PlusIcon className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Row 4: Main View Canvas Container */}
-              <div className="mt-2">
-                {activeTab === "table" && (
-                  <DataTable data={filteredTasks} />
-                )}
-
-                {activeTab === "kanban" && (
+            {/* Active View Container */}
+            <div className="flex-1">
+              {dailyDate ? (
+                /* DAILY WORKSPACE CONTAINER */
+                dailyMode === "kanban" ? (
                   <KanbanView
-                    tasks={filteredTasks}
-                    onUpdateStatus={handleUpdateStatus}
+                    tasks={dailyFilteredTasks}
                     onSelectTask={handleOpenDetail}
+                    onOpenDelegate={handleOpenDelegate}
+                    onOpenCreate={handleOpenCreate}
+                    onUpdateStatus={async (taskId, status) => {
+                      await updateTaskStatus(taskId, status)
+                      loadAllData()
+                    }}
                   />
-                )}
-
-                {activeTab === "timeline" && (
-                  <TimelineView tasks={filteredTasks} onSelectTask={handleOpenDetail} />
-                )}
-
-                {activeTab === "calendar" && (
-                  <CalendarView tasks={filteredTasks} onSelectTask={handleOpenDetail} />
-                )}
-              </div>
-
-              {/* Task Detail Drawer Sheet */}
-              <TaskDetailSheet
-                task={selectedTask}
-                open={isDetailOpen}
-                onOpenChange={setIsDetailOpen}
-                onUpdateStatus={handleUpdateStatus}
-              />
-            </div>
-
-            {/* Integrated Right AI Column Panel */}
-            <div className="hidden lg:block">
-              <AiIntegratedPanel />
-            </div>
-          </div>
-        </SidebarInset>
-
-        {/* Modal Dialog: Buat Task Baru */}
-        {isCreateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-            <div className="w-full max-w-lg rounded-[8px] border bg-card shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
-              {/* Modal Header */}
-              <div className="p-4 border-b flex items-center justify-between bg-muted/20">
-                <div className="flex items-center gap-2">
-                  <div className="flex size-8 items-center justify-center rounded-[8px] bg-red-600 text-white shadow-xs">
-                    <PlusIcon className="size-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">Buat Tugas Baru</h3>
-                    <p className="text-[11px] text-muted-foreground">Isi rincian tugas dan tentukan teknisi penanggung jawab</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                >
-                  <XIcon className="size-4" />
-                </button>
-              </div>
-
-              {/* Modal Form Body */}
-              <form onSubmit={handleCreateTask} className="p-5 overflow-y-auto space-y-4 text-xs">
-                {/* Judul Task */}
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Judul Tugas / Pekerjaan *</label>
-                  <Input
-                    required
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    placeholder="Contoh: Perbaikan Kabel Feeder 96 Core STO Gambir"
-                    className="h-9 text-xs rounded-[8px]"
+                ) : (
+                  <TimelineView
+                    tasks={dailyFilteredTasks}
+                    onSelectTask={handleOpenDetail}
+                    onOpenDelegate={handleOpenDelegate}
+                    selectedDate={dailyDate}
+                    onSelectDate={(d) => setDailyDate(d)}
+                    onOpenCreate={handleOpenCreate}
                   />
-                </div>
-
-                {/* Grid: Departemen & Prioritas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-foreground">Departemen / Kategori</label>
-                    <select
-                      value={newTaskDept}
-                      onChange={(e) => setNewTaskDept(e.target.value)}
-                      className="w-full h-9 px-3 rounded-[8px] border bg-background text-xs outline-none cursor-pointer"
-                    >
-                      <option value="Maintenance">Maintenance</option>
-                      <option value="Deployment">Deployment</option>
-                      <option value="Customer Service">Customer Service</option>
-                      <option value="Survey">Survey</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-foreground">Tingkat Prioritas</label>
-                    <select
-                      value={newTaskPriority}
-                      onChange={(e) => setNewTaskPriority(e.target.value)}
-                      className="w-full h-9 px-3 rounded-[8px] border bg-background text-xs outline-none cursor-pointer"
-                    >
-                      <option value="Tinggi">Tinggi (Critical SLA)</option>
-                      <option value="Sedang">Sedang (Normal SLA)</option>
-                      <option value="Rendah">Rendah (Routine)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* PIC / Teknisi Assignment */}
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Teknisi / PIC yang Ditugaskan</label>
-                  <select
-                    value={newTaskAssignee}
-                    onChange={(e) => setNewTaskAssignee(e.target.value)}
-                    className="w-full h-9 px-3 rounded-[8px] border bg-background text-xs outline-none cursor-pointer font-medium"
-                  >
-                    {teknisiList.map((t) => (
-                      <option key={t.name} value={t.name}>
-                        {t.name} — {t.role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Grid: Lokasi & Deadline */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-foreground">Lokasi STO / Titik Kerja</label>
-                    <Input
-                      value={newTaskLocation}
-                      onChange={(e) => setNewTaskLocation(e.target.value)}
-                      placeholder="Contoh: STO Gambir / ODP Depok"
-                      className="h-9 text-xs rounded-[8px]"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-foreground">Tenggat Waktu (Deadline)</label>
-                    <Input
-                      type="date"
-                      value={newTaskDeadline}
-                      onChange={(e) => setNewTaskDeadline(e.target.value)}
-                      className="h-9 text-xs rounded-[8px]"
-                    />
-                  </div>
-                </div>
-
-                {/* Deskripsi & Instruksi */}
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-foreground">Instruksi & Keterangan Pengerjaan</label>
-                  <textarea
-                    rows={3}
-                    value={newTaskDesc}
-                    onChange={(e) => setNewTaskDesc(e.target.value)}
-                    placeholder="Tuliskan instruksi teknis, SOP redaman, atau detail material yang diperlukan..."
-                    className="w-full p-2.5 rounded-[8px] border bg-background text-xs outline-none focus:border-red-500"
+                )
+              ) : (
+                /* MACRO VIEWS CONTAINER */
+                activeTab === "calendar" ? (
+                  <CalendarView
+                    tasks={filteredTasks}
+                    onSelectDate={handleSelectDateFromCalendar}
+                    onOpenCreate={handleOpenCreate}
                   />
-                </div>
-
-                {/* Modal Actions */}
-                <div className="pt-3 border-t flex items-center justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="h-8.5 text-xs font-semibold rounded-[8px]"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="h-8.5 px-4 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs cursor-pointer"
-                  >
-                    Buat Tugas Baru
-                  </Button>
-                </div>
-              </form>
+                ) : (
+                  <DataTable
+                    tasks={filteredTasks}
+                    onRefresh={loadAllData}
+                    hideTitle
+                    hideToolbar
+                    className="px-4 lg:px-6"
+                  />
+                )
+              )}
             </div>
           </div>
-        )}
-      </AiPanelProvider>
+        </div>
+
+        {/* Modals & Sheets */}
+        <TaskDetailSheet
+          taskId={selectedTask?.id || null}
+          open={isDetailOpen}
+          onOpenChange={(open) => {
+            setIsDetailOpen(open)
+            if (!open) {
+              setSelectedTask(null)
+              loadAllData()
+            }
+          }}
+          onTaskUpdated={() => loadAllData()}
+          onOpenDelegate={handleOpenDelegate}
+        />
+
+        <CreateTaskModal
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          defaultStatus={createDefaultStatus}
+          onSuccess={() => loadAllData()}
+        />
+
+        <DelegateTaskModal
+          task={taskToDelegate}
+          open={isDelegateOpen}
+          onOpenChange={(open) => {
+            setIsDelegateOpen(open)
+            if (!open) setTaskToDelegate(null)
+          }}
+          onSuccess={() => loadAllData()}
+        />
+      </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+export default function AdminTasksPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex h-screen w-full items-center justify-center">
+          <div className="size-8 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+        </div>
+      }
+    >
+      <AdminTasksContent />
+    </React.Suspense>
   )
 }

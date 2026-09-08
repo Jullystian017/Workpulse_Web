@@ -46,9 +46,9 @@ const services = [
   },
   {
     id: "srv-2",
-    name: "MyIndiHome Dispatch Gateway",
-    category: "Customer Incident & Tiket",
-    description: "Pengambilan tiket insiden pelanggan korporasi/residensial dan dispatch otomatis ke teknisi terdekat.",
+    name: "Enterprise ERP & Document Gateway",
+    category: "Workflow & Penugasan Kantor",
+    description: "Sinkronisasi dokumen Nota Dinas, approval anggaran proyek internal, dan bridging data SAP/ERP Telkom Group.",
     status: "online",
     latency: "42 ms",
     uptime: "99.95%",

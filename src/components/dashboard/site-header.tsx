@@ -6,9 +6,11 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { BellIcon, SearchIcon, SparklesIcon } from "lucide-react"
 import { useAiPanel } from "@/components/dashboard/ai-panel-context"
+import { CommandPalette } from "@/components/dashboard/command-palette"
 
 export function SiteHeader() {
   const pathname = usePathname()
+  const [isCommandOpen, setIsCommandOpen] = React.useState(false)
 
   let aiPanel: ReturnType<typeof useAiPanel> | null = null
   try {
@@ -218,19 +220,24 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <SearchIcon className="absolute left-2.5 top-2 h-4 w-4 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Cari data, tugas..."
-              className="h-8 w-56 lg:w-72 rounded-md border border-zinc-200 bg-zinc-50 pl-8 pr-3 text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
-            />
-          </div>
+          {/* Command Palette Interactive Search Button */}
+          <button
+            type="button"
+            onClick={() => setIsCommandOpen(true)}
+            className="hidden md:flex items-center justify-between gap-3 h-8.5 w-60 lg:w-72 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 px-3 text-xs text-muted-foreground hover:border-red-500/40 hover:text-foreground transition-all cursor-pointer shadow-2xs"
+          >
+            <div className="flex items-center gap-2">
+              <SearchIcon className="size-3.5 text-muted-foreground" />
+              <span className="truncate">Cari tugas, agenda, aksi...</span>
+            </div>
+            <kbd className="inline-flex items-center gap-0.5 rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono font-bold text-muted-foreground">
+              Ctrl K
+            </kbd>
+          </button>
 
           {/* Notif Bell */}
           <a
-            href="/dashboard/notifikasi"
+            href="/admin/notifikasi"
             className="relative rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
           >
             <BellIcon className="h-4 w-4" />
@@ -238,6 +245,9 @@ export function SiteHeader() {
           </a>
         </div>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} />
     </header>
   )
 }

@@ -61,51 +61,50 @@ interface ChatSession {
 }
 
 const suggestedPrompts = [
-  { id: "p1", icon: CalendarIcon, label: "Jadwal shift hari ini & besok", query: "Bagaimana pembagian jadwal shift teknisi hari ini dan besok?" },
-  { id: "p2", icon: AlertTriangleIcon, label: "Analisis task overdue & resiko SLA", query: "Tunjukkan daftar task overdue yang berisiko melanggar SLA hari ini" },
-  { id: "p3", icon: MapPinIcon, label: "Verifikasi presensi geofence", query: "Berapa persentase presensi geofence karyawan dan siapa saja yang di luar area?" },
-  { id: "p4", icon: ZapIcon, label: "Strategi restorasi STO Gambir", query: "Bagaimana strategi dan langkah mitigasi untuk insiden Fiber Cut di STO Gambir?" },
+  { id: "p1", icon: CalendarIcon, label: "Rekomendasi Delegasi Proposal Q4", query: "Siapa personil yang paling tepat untuk didelegasikan penyusunan proposal pengadaan B2B Q4?" },
+  { id: "p2", icon: AlertTriangleIcon, label: "Analisis Task Overdue & SLA", query: "Tunjukkan daftar penugasan kantor yang mendekati deadline SLA hari ini." },
+  { id: "p3", icon: MapPinIcon, label: "Kapasitas & Beban Kerja Tim", query: "Bagaimana sebaran beban kerja staf saat ini? Siapa yang sedang overcapacity atau siaga?" },
+  { id: "p4", icon: ZapIcon, label: "Drafting Nota Dinas & Berkas SPJ", query: "Buatkan draf nota dinas permohonan justifikasi anggaran pengadaan perangkat IT kantor." },
 ]
 
 const todaySchedule = [
   {
     id: "sch-1",
-    title: "Maintenance Core Fiber Jabar-3",
+    title: "Penyusunan Proposal Pengadaan B2B Q4",
     time: "10:00 - 11:30 WIB",
     status: "active",
     statusColor: "bg-amber-500",
-    details: "Pembersihan konektor OLT dan uji redaman OTDR rutin untuk segmen backbone Bekasi - Karawang.",
-    link: "https://telkomakses.co.id/ticket/OLT-9921",
+    details: "Penyusunan berkas proposal teknis dan justifikasi anggaran kebutuhan kantor untuk pengadaan perangkat pendukung enterprise.",
+    link: "/admin/tasks",
     participants: [
-      { name: "Andi Pratama", role: "Field Lead Engineer", avatar: "" },
-      { name: "Kevin Pratama", role: "Network Specialist", avatar: "" },
+      { name: "Dimas Wicaksono", role: "Officer 3 Pengadaan", avatar: "" },
+      { name: "Hendro Kusumo", role: "Manager Operasional", avatar: "" },
     ],
   },
   {
     id: "sch-2",
-    title: "Audit Kepatuhan Presensi & SOP Lapangan",
+    title: "Audit Kepatuhan Nota Dinas & Verifikasi SPJ",
     time: "13:00 - 14:00 WIB",
     status: "upcoming",
     statusColor: "bg-zinc-400",
-    details: "Review bulanan akurasi geotagging presensi mobile dan evaluasi upload nota material teknisi mitra.",
-    link: "https://telkomakses.co.id/audit/Q3-2026",
+    details: "Review kelengkapan bukti nota pengeluaran operasional dan verifikasi approval berjenjang.",
+    link: "/admin/tasks",
     participants: [
-      { name: "Siti Rahayu", role: "HR & Compliance", avatar: "" },
-      { name: "Rudi Hermawan", role: "HR Ops Lead", avatar: "" },
+      { name: "Siti Rahayu", role: "Officer 2 Keuangan", avatar: "" },
+      { name: "Budi Santoso", role: "SGM Regional III", avatar: "" },
     ],
   },
   {
     id: "sch-3",
-    title: "STO Gambir // Tim Restorasi Fiber",
+    title: "Evaluasi SLA & Beban Kerja Divisi Kantor",
     time: "15:00 - 17:00 WIB",
     status: "critical",
     statusColor: "bg-emerald-500",
-    details: "Penanganan darurat kabel feeder 96 core putus akibat galian utilitas. Memulihkan 1,200 pelanggan korporasi Ring-1.",
-    link: "https://telkomakses.co.id/ticket/FBR-8821",
+    details: "Rapat koordinasi mingguan monitoring akuntabilitas pengerjaan tugas dan pencapaian target SLA divisi.",
+    link: "/admin/tasks",
     participants: [
-      { name: "Bambang Susanto", role: "Supervisor Lapangan Telkom", avatar: "" },
-      { name: "Irfan Maulana", role: "Splicing Specialist (Mitra)", avatar: "" },
-      { name: "Oscar Budiman", role: "Mitra Support Team", avatar: "" },
+      { name: "Hendro Kusumo", role: "Manager Operasional", avatar: "" },
+      { name: "Rian Pratama", role: "Staff Administrasi", avatar: "" },
     ],
   },
 ]
@@ -113,80 +112,80 @@ const todaySchedule = [
 const initialMemorySessions: ChatSession[] = [
   {
     id: "session-1",
-    title: "Mitigasi Insiden STO Gambir (Fiber Cut)",
+    title: "Rekomendasi Delegasi Proposal Pengadaan B2B",
     dateGroup: "Hari Ini",
     updatedAt: "10:30 WIB",
     messages: [
       {
         id: "u-1",
         sender: "user",
-        text: "Bagaimana strategi dan mitigasi untuk insiden Fiber Cut di STO Gambir?",
+        text: "Siapa personil yang paling tepat untuk didelegasikan penyusunan proposal pengadaan B2B Q4?",
       },
       {
         id: "a-1",
         sender: "ai",
-        title: "Strategi & Rencana Mitigasi Insiden STO Gambir",
+        title: "Rekomendasi Pendelegasian Berdasarkan Analisis AI",
         contextCard: {
-          title: "STO Gambir - Fiber Cut Restoration",
-          time: "14 Agt, 15:00 – 17:00 WIB",
-          subtext: "Tiket #FBR-8821 • Segmen Ring-1 Jakarta Pusat",
+          title: "Divisi Operasional & Pengadaan",
+          time: "Target SLA: 24 Jam Kerja",
+          subtext: "Tiket #TLK-KNT-101 • Kantor Regional III Bandung",
           participants: [
-            { name: "Bambang Susanto", role: "Supervisor Telkom" },
-            { name: "Irfan Maulana", role: "Splicer Mitra" },
+            { name: "Hendro Kusumo", role: "Manager Operasional" },
+            { name: "Dimas Wicaksono", role: "Officer 3 (Beban: 2 Tugas Aktif)" },
           ],
-          tags: ["3 Teknisi Siaga", "OTDR Ready", "Priority High"],
+          tags: ["Personil Tersedia", "Keahlian Sesuai", "Skor Efisiensi: 94%"],
           statusColor: "border-l-emerald-500",
         },
         points: [
           {
-            title: "1. Dampak Insiden",
-            desc: "Mempengaruhi 1,200 pelanggan korporasi di Ring-1 Gambir. Sisa toleransi MTTR adalah 2 jam 15 menit.",
+            title: "1. Rekomendasi Utama: Dimas Wicaksono (Officer 3)",
+            desc: "Memiliki riwayat penyelesaian proposal pengadaan serupa dengan skor on-time SLA 96% dan kapasitas saat ini sedang optimal (2 tugas aktif).",
           },
           {
-            title: "2. Kesiapan Material & Tim",
-            desc: "Closure 96 core dan kabel drop optic 250m sudah dialokasikan dari gudang Cilandak.",
+            title: "2. Estimasi Waktu Pengerjaan",
+            desc: "Penyusunan draf justifikasi teknis dan rincian RAB diperkirakan memakan waktu 4–6 jam kerja.",
           },
           {
-            title: "3. Jalur Backup Sementara",
-            desc: "AI menyarankan pengalihan rute traffic prioritas via jalur OLT Hayam Wuruk.",
+            title: "3. Jalur Verifikasi & Rantai Komando",
+            desc: "Setelah disubmit oleh Dimas Wicaksono, berkas akan diteruskan otomatis ke Hendro Kusumo (Manager) untuk review dan persetujuan.",
           },
         ],
-        followUpPrompt: "Apakah Anda ingin saya membuat draf Surat Perintah Kerja (SPK) otomatis?",
+        followUpPrompt: "Apakah Anda ingin saya langsung menerbitkan delegasi tugas ini ke Dimas Wicaksono?",
       },
     ],
   },
   {
     id: "session-2",
-    title: "Audit Task Overdue Area Depok & SLA",
+    title: "Analisis Ketercapaian SLA & Penugasan Mendekati Deadline",
     dateGroup: "Hari Ini",
     updatedAt: "08:45 WIB",
     messages: [
       {
         id: "u-2",
         sender: "user",
-        text: "Tunjukkan daftar task overdue yang berisiko melanggar SLA hari ini",
+        text: "Tunjukkan daftar penugasan kantor yang mendekati deadline SLA hari ini",
       },
       {
         id: "a-2",
         sender: "ai",
-        title: "Analisis Task Overdue & Risiko Pelanggaran SLA",
+        title: "Daftar Tugas Kritis Berdasarkan SLA Monitor",
         points: [
           {
-            title: "1. TSK-006: Audit Jaringan Area Depok",
-            desc: "Keterlambatan disebabkan izin akses perumahan.",
+            title: "1. TLK-KNT-103: Rekonsiliasi SPJ Operasional Kantor",
+            desc: "Sisa SLA: 3 Jam. Pelaksana: Siti Rahayu. Status: Menunggu upload nota kelengkapan.",
           },
           {
-            title: "2. TSK-015: Penggantian ONT Rusak",
-            desc: "Re-alokasi spare part ONT dari pool terdekat sedang diproses.",
+            title: "2. TLK-KNT-108: Evaluasi Kinerja Vendor Layanan IT",
+            desc: "Sisa SLA: 5 Jam. Pelaksana: Rian Pratama. Status: Dalam tahap review kuesioner evaluasi.",
           },
         ],
-        followUpPrompt: "Ingin saya kirimkan alert pengingat otomatis ke supervisor?",
+        followUpPrompt: "Ingin saya kirimkan alert pengingat otomatis ke PIC tugas?",
       },
     ],
   },
   {
     id: "session-3",
-    title: "Rekap Presensi Geofence Teknisi Q3",
+    title: "Rekap Akuntabilitas Kerja & Kepatuhan SOP Kantor",
     dateGroup: "Kemarin",
     updatedAt: "Kemarin, 16:20",
     messages: [
@@ -356,7 +355,7 @@ export default function AIAssistantPage() {
           contextCard: {
             title: "STO Gambir - Fiber Cut Restoration",
             time: "14 Agt, 15:00 – 17:00 WIB",
-            subtext: "Tiket #FBR-8821 • Segmen Ring-1 Jakarta Pusat",
+            subtext: "Penugasan #TSK-8821 • Gd. Telkom Akses Lt. 4",
             participants: [
               { name: "Bambang Susanto", role: "Supervisor Telkom" },
               { name: "Irfan Maulana", role: "Splicer Mitra" },
@@ -770,7 +769,7 @@ export default function AIAssistantPage() {
                 {isGenerating && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse p-3 rounded-[8px] bg-muted/30">
                     <SparklesIcon className="size-4 text-red-600 animate-spin" />
-                    <span>WorkPulse AI sedang menganalisis data riwayat tiket & shift...</span>
+                    <span>WorkPulse AI sedang menganalisis data riwayat tugas & log kinerja...</span>
                   </div>
                 )}
 

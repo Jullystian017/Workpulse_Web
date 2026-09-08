@@ -3,295 +3,1549 @@
 import * as React from "react"
 import {
   XIcon,
-  PencilIcon,
-  Trash2Icon,
   PaperclipIcon,
   FileTextIcon,
-  ImageIcon,
   SendIcon,
   CheckCircle2Icon,
   ClockIcon,
   AlertCircleIcon,
   UserIcon,
-  CalendarIcon,
-  ChevronRightIcon,
   UploadIcon,
+  CheckSquareIcon,
+  SquareIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  CornerDownRightIcon,
+  ReceiptIcon,
+  PencilIcon,
+  TagIcon,
+  UserCheckIcon,
+  CalendarIcon,
+  Trash2Icon,
+  ExternalLinkIcon,
+  ImageIcon,
+  FileIcon,
+  AlertTriangleIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
 } from "@/components/ui/sheet"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Task,
+  Subtask,
+  User,
+  Channel,
+  TaskPriority,
+  TaskStatus,
+  TaskAttachment,
+  TASK_PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
+} from "@/types/database"
+import {
+  getTaskById,
+  getActiveUserFromStorage,
+  toggleSubtask,
+  addSubtask,
+  deleteSubtask,
+  submitTaskForReview,
+  approveTask,
+  returnTaskForRevision,
+  addComment,
+  deleteComment,
+  addAttachment,
+  deleteAttachment,
+  claimTask,
+  updateTask,
+  updateTaskStatus,
+  deleteTask,
+  getChannels,
+  getAllUsers,
+} from "@/lib/api"
 
-export interface TaskItem {
-  id: string
-  judulTask: string
-  assignee: string
-  departemen: string
-  prioritas: string
-  deadline: string
-  status: string
-  progress: number
-  bukti: boolean
-  deskripsi?: string
-  lokasi?: string
-  kategori?: string
-}
+export type { Task as TaskItem } from "@/types/database"
 
 interface TaskDetailSheetProps {
-  task: TaskItem | null
+  taskId: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onUpdateStatus?: (taskId: string, newStatus: string) => void
+  onTaskUpdated?: () => void
+  onOpenDelegate?: (task: Task) => void
 }
 
-const steps = ["Tertunda", "Dalam Proses", "Review Atasan", "Selesai"]
-
 export function TaskDetailSheet({
-  task,
+  taskId,
   open,
   onOpenChange,
-  onUpdateStatus,
+  onTaskUpdated,
+  onOpenDelegate,
 }: TaskDetailSheetProps) {
+  const [task, setTask] = React.useState<Task | null>(null)
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null)
+  const [isLoading, setIsLoading] = React.useState(false)
+
+  // Edit Mode States
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [editTitle, setEditTitle] = React.useState("")
+  const [editDescription, setEditDescription] = React.useState("")
+  const [editChannelId, setEditChannelId] = React.useState("")
+  const [editPriority, setEditPriority] = React.useState<TaskPriority>("high")
+  const [editAssignedTo, setEditAssignedTo] = React.useState("")
+  const [availableChannels, setAvailableChannels] = React.useState<Channel[]>([])
+  const [availableUsers, setAvailableUsers] = React.useState<User[]>([])
+  const [isSavingEdit, setIsSavingEdit] = React.useState(false)
+
+  // Subtask creation state
+  const [newSubtaskTitle, setNewSubtaskTitle] = React.useState("")
+  const [isAddingSubtask, setIsAddingSubtask] = React.useState(false)
+
+  // Tab Navigation State
+  const [activeDetailTab, setActiveDetailTab] = React.useState<"subtasks" | "comments" | "attachments">("subtasks")
+
+  // Comment state
   const [commentText, setCommentText] = React.useState("")
-  const [history, setHistory] = React.useState([
-    {
-      id: "h1",
-      time: "08:30 AM",
-      date: "12 Ags 2026",
-      user: "Budi Admin",
-      action: "Task Dibuat",
-      note: "Task ditugaskan untuk penanganan perbaikan jaringan di lapangan.",
-    },
-    {
-      id: "h2",
-      time: "10:15 AM",
-      date: "12 Ags 2026",
-      user: task?.assignee || "Teknisi",
-      action: "Mulai Pengerjaan",
-      note: "Karyawan sudah berada di lokasi dan mulai proses pengecekan ODP.",
-      attachment: "foto-lokasi-awal.jpg",
-    },
-  ])
+  const [isSubmittingComment, setIsSubmittingComment] = React.useState(false)
 
-  if (!task) return null
+  // Verification Dialog States
+  const [isSubmitReviewOpen, setIsSubmitReviewOpen] = React.useState(false)
+  const [submitNotes, setSubmitNotes] = React.useState("")
+  const [isRevisionOpen, setIsRevisionOpen] = React.useState(false)
+  const [revisionNotes, setRevisionNotes] = React.useState("")
 
-  const handleSendUpdate = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!commentText.trim()) return
+  // Real Upload Modal States
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
+  const [isUploadOpen, setIsUploadOpen] = React.useState(false)
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
+  const [uploadFileName, setUploadFileName] = React.useState("")
+  const [uploadType, setUploadType] = React.useState<"evidence" | "receipt_nota" | "document">("evidence")
+  const [uploadAmount, setUploadAmount] = React.useState("")
+  const [isActionLoading, setIsActionLoading] = React.useState(false)
 
-    const newLog = {
-      id: `h-${Date.now()}`,
-      time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
-      date: "Hari ini",
-      user: "Budi Admin",
-      action: "Progress Update",
-      note: commentText,
+  // Delete Task Confirmation Modal State
+  const [isDeleteTaskOpen, setIsDeleteTaskOpen] = React.useState(false)
+  const [isDeletingTask, setIsDeletingTask] = React.useState(false)
+
+  // Fetch Full Task Data
+  const loadTaskData = React.useCallback(async () => {
+    if (!taskId) return
+    setIsLoading(true)
+    try {
+      const activeUser = getActiveUserFromStorage()
+      setCurrentUser(activeUser)
+      const data = await getTaskById(taskId)
+      setTask(data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
     }
+  }, [taskId])
 
-    setHistory((prev) => [newLog, ...prev])
-    setCommentText("")
-    toast.success("Update progress berhasil ditambahkan!")
+  React.useEffect(() => {
+    if (open && taskId) {
+      loadTaskData()
+      setIsEditing(false)
+    }
+  }, [open, taskId, loadTaskData])
+
+  // Load Channels & Users when entering edit mode
+  const handleStartEdit = async () => {
+    if (!task) return
+    setEditTitle(task.title)
+    setEditDescription(task.description || "")
+    setEditChannelId(task.channel_id || "")
+    setEditPriority(task.priority)
+    setEditAssignedTo(task.assigned_to || "")
+
+    try {
+      const [chs, usrs] = await Promise.all([getChannels(), getAllUsers()])
+      setAvailableChannels(chs)
+      setAvailableUsers(usrs)
+      setIsEditing(true)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
-  const currentStepIndex = steps.indexOf(
-    task.status === "Tertunda"
-      ? "Tertunda"
-      : task.status === "Selesai"
-      ? "Selesai"
-      : "Dalam Proses"
-  )
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!task || !editTitle.trim()) {
+      toast.error("Judul penugasan wajib diisi.")
+      return
+    }
+
+    setIsSavingEdit(true)
+    try {
+      const updated = await updateTask(
+        task.id,
+        {
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          channel_id: editChannelId || undefined,
+          priority: editPriority,
+          assigned_to: editAssignedTo || null,
+        },
+        currentUser?.id
+      )
+
+      if (updated) {
+        setTask(updated)
+        setIsEditing(false)
+        toast.success("Penugasan berhasil diperbarui!")
+        onTaskUpdated?.()
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal memperbarui penugasan.")
+    } finally {
+      setIsSavingEdit(false)
+    }
+  }
+
+  // Quick Status Changer
+  const handleQuickStatusChange = async (newStatus: TaskStatus) => {
+    if (!task) return
+    const ok = await updateTaskStatus(task.id, newStatus, currentUser?.id)
+    if (ok) {
+      setTask((prev) => (prev ? { ...prev, status: newStatus } : null))
+      toast.success(`Status diubah ke ${TASK_STATUS_LABELS[newStatus]?.label || newStatus}`)
+      onTaskUpdated?.()
+    }
+  }
+
+  // Delete Task Handler
+  const handleDeleteTask = async () => {
+    if (!task) return
+    setIsDeletingTask(true)
+    try {
+      const ok = await deleteTask(task.id)
+      if (ok) {
+        toast.success(`Penugasan [${task.ticket_code}] berhasil dihapus.`)
+        setIsDeleteTaskOpen(false)
+        onOpenChange(false)
+        onTaskUpdated?.()
+      } else {
+        toast.error("Gagal menghapus penugasan.")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Terjadi kesalahan saat menghapus penugasan.")
+    } finally {
+      setIsDeletingTask(false)
+    }
+  }
+
+  const priorityMeta = task ? TASK_PRIORITY_LABELS[task.priority] : null
+  const statusMeta = task ? TASK_STATUS_LABELS[task.status] : null
+  const subtasks = task?.subtasks || []
+  const completedSubtasks = subtasks.filter((s) => s.is_completed).length
+  const isStaff = currentUser?.role === "staff"
+  const progressPercent =
+    subtasks.length > 0
+      ? Math.round((completedSubtasks / subtasks.length) * 100)
+      : task?.status === "done"
+      ? 100
+      : task?.status === "review"
+      ? 85
+      : 20
+
+  // Subtask Toggle Handler
+  const handleToggleSubtask = async (st: Subtask) => {
+    if (!task) return
+    const nextState = !st.is_completed
+    const ok = await toggleSubtask(st.id, nextState)
+    if (ok) {
+      setTask((prev) => {
+        if (!prev) return null
+        return {
+          ...prev,
+          subtasks: (prev.subtasks || []).map((item) =>
+            item.id === st.id ? { ...item, is_completed: nextState } : item
+          ),
+        }
+      })
+      onTaskUpdated?.()
+    }
+  }
+
+  // Add Subtask Handler
+  const handleAddSubtask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!task || !newSubtaskTitle.trim()) return
+    setIsAddingSubtask(true)
+    try {
+      const created = await addSubtask(task.id, newSubtaskTitle.trim())
+      if (created) {
+        setTask((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            subtasks: [...(prev.subtasks || []), created],
+          }
+        })
+        setNewSubtaskTitle("")
+        toast.success("Subtask ditambahkan")
+        onTaskUpdated?.()
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal menambahkan subtask")
+    } finally {
+      setIsAddingSubtask(false)
+    }
+  }
+
+  // Delete Subtask Handler
+  const handleDeleteSubtask = async (subtaskId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!task) return
+    const ok = await deleteSubtask(subtaskId)
+    if (ok) {
+      setTask((prev) => {
+        if (!prev) return null
+        return {
+          ...prev,
+          subtasks: (prev.subtasks || []).filter((item) => item.id !== subtaskId),
+        }
+      })
+      toast.info("Subtask dihapus")
+      onTaskUpdated?.()
+    }
+  }
+
+  // Submit Task For Review
+  const handleSubmitForReview = async () => {
+    if (!task || !currentUser) return
+    setIsActionLoading(true)
+    try {
+      const ok = await submitTaskForReview(task.id, currentUser.id, submitNotes)
+      if (ok) {
+        toast.success("Tugas diajukan untuk review atasan!")
+        setIsSubmitReviewOpen(false)
+        loadTaskData()
+        onTaskUpdated?.()
+      }
+    } catch (err) {
+      toast.error("Gagal mengajukan review")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Supervisor Approve Task
+  const handleApprove = async () => {
+    if (!task || !currentUser) return
+    setIsActionLoading(true)
+    try {
+      const ok = await approveTask(task.id, currentUser.id)
+      if (ok) {
+        toast.success("Tugas Disetujui & Selesai!")
+        loadTaskData()
+        onTaskUpdated?.()
+      }
+    } catch (err) {
+      toast.error("Gagal menyetujui tugas")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Supervisor Return for Revision
+  const handleReturnRevision = async () => {
+    if (!task || !currentUser || !revisionNotes.trim()) {
+      toast.error("Harap isi catatan revisi.")
+      return
+    }
+    setIsActionLoading(true)
+    try {
+      const ok = await returnTaskForRevision(task.id, currentUser.id, revisionNotes)
+      if (ok) {
+        toast.warning("Tugas dikembalikan untuk revisi.")
+        setIsRevisionOpen(false)
+        setRevisionNotes("")
+        loadTaskData()
+        onTaskUpdated?.()
+      }
+    } catch (err) {
+      toast.error("Gagal mengembalikan tugas")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Claim Task
+  const handleClaim = async () => {
+    if (!task || !currentUser) return
+    setIsActionLoading(true)
+    try {
+      const ok = await claimTask(task.id, currentUser.id)
+      if (ok) {
+        toast.success("Tugas berhasil Anda klaim!")
+        loadTaskData()
+        onTaskUpdated?.()
+      }
+    } catch (err) {
+      toast.error("Gagal mengklaim tugas")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // File Picker Change Handler
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      setUploadFileName(file.name)
+      if (file.type.startsWith("image/")) {
+        setUploadType("evidence")
+      } else if (file.type === "application/pdf") {
+        setUploadType("document")
+      }
+    }
+  }
+
+  // Upload Evidence/Receipt/File
+  const handleUploadAttachment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!task || !currentUser) return
+    if (!uploadFileName.trim()) {
+      toast.error("Harap beri nama berkas.")
+      return
+    }
+
+    setIsActionLoading(true)
+    try {
+      let fileUrl = "https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop&q=80"
+
+      if (selectedFile) {
+        fileUrl = URL.createObjectURL(selectedFile)
+      }
+
+      const att = await addAttachment({
+        task_id: task.id,
+        uploaded_by: currentUser.id,
+        file_name: uploadFileName.trim(),
+        file_url: fileUrl,
+        attachment_type: uploadType,
+        amount: uploadAmount ? parseFloat(uploadAmount) : undefined,
+      })
+
+      if (att) {
+        toast.success("Berkas berhasil diunggah!")
+        setIsUploadOpen(false)
+        setSelectedFile(null)
+        setUploadFileName("")
+        setUploadAmount("")
+        loadTaskData()
+        onTaskUpdated?.()
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal mengunggah lampiran")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Delete Attachment Handler
+  const handleDeleteAttachment = async (attId: string) => {
+    if (!task) return
+    const ok = await deleteAttachment(attId)
+    if (ok) {
+      setTask((prev) => {
+        if (!prev) return null
+        return {
+          ...prev,
+          attachments: (prev.attachments || []).filter((a) => a.id !== attId),
+        }
+      })
+      toast.info("Lampiran berhasil dihapus.")
+      onTaskUpdated?.()
+    }
+  }
+
+  // Send Comment
+  const handleSendComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!task || !currentUser || !commentText.trim()) return
+    setIsSubmittingComment(true)
+    try {
+      const c = await addComment(task.id, currentUser.id, commentText.trim())
+      if (c) {
+        setTask((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            comments: [...(prev.comments || []), { ...c, user: currentUser }],
+          }
+        })
+        setCommentText("")
+        toast.success("Komentar terkirim!")
+      }
+    } catch (err) {
+      toast.error("Gagal mengirim komentar")
+    } finally {
+      setIsSubmittingComment(false)
+    }
+  }
+
+  // Delete Comment Handler
+  const handleDeleteComment = async (commentId: string) => {
+    if (!task) return
+    const ok = await deleteComment(commentId)
+    if (ok) {
+      setTask((prev) => {
+        if (!prev) return null
+        return {
+          ...prev,
+          comments: (prev.comments || []).filter((c) => c.id !== commentId),
+        }
+      })
+      toast.info("Komentar dihapus.")
+    }
+  }
+
+  // Role-based access control (isStaff is already declared above from currentUser)
+  // canDelegate: Officer+, Manager, SGM, and Admin can delegate
+  const canDelegate = currentUser?.role !== 'staff'
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-xl overflow-y-auto p-0 border-l bg-background">
-        {/* Top Header Bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 backdrop-blur px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400">
-              {task.departemen}
-            </Badge>
-            <Badge
-              variant="outline"
-              className={`text-xs ${
-                task.prioritas === "Tinggi"
-                  ? "bg-red-100 text-red-800 border-red-200"
-                  : task.prioritas === "Sedang"
-                  ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              Prioritas {task.prioritas}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-foreground">
-              <PencilIcon className="size-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="size-8 text-red-600 hover:bg-red-50">
-              <Trash2Icon className="size-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-6 p-6">
-          {/* Title & Info */}
-          <div>
-            <span className="text-xs font-mono text-muted-foreground">{task.id}</span>
-            <h2 className="text-xl font-bold text-foreground mt-0.5">{task.judulTask}</h2>
-            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <UserIcon className="size-3.5 text-primary" />
-                <span className="font-medium text-foreground">{task.assignee}</span>
-              </div>
-              <span>·</span>
-              <div className="flex items-center gap-1.5">
-                <CalendarIcon className="size-3.5" />
-                <span>Deadline: {new Date(task.deadline).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
-              </div>
+      <SheetContent
+        showCloseButton={false}
+        className="w-full sm:max-w-md md:max-w-lg overflow-y-auto p-0 border-l border-border bg-background font-sans shadow-2xl"
+      >
+        {isLoading || !task ? (
+          <div className="flex h-full items-center justify-center p-12">
+            <div className="flex flex-col items-center gap-3">
+              <div className="size-7 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+              <p className="text-xs text-muted-foreground">Memuat data penugasan...</p>
             </div>
           </div>
+        ) : (
+          <div className="flex flex-col min-h-full">
+            {/* Top Navigation Bar (Clean & Minimalist) */}
+            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-5 py-3">
+              {/* Left: Clean Ticket Code */}
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2 py-0.5 rounded border border-red-200 dark:border-red-900">
+                  {task.ticket_code}
+                </span>
+                <span className="text-xs text-muted-foreground font-semibold">
+                  {task.channel?.name || "Divisi Operasional"}
+                </span>
+              </div>
 
-          {/* Status Progress Stepper */}
-          <div className="rounded-[8px] border bg-muted/30 p-4">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">
-              Alur Status Pekerjaan
-            </span>
-            <div className="flex items-center justify-between text-xs">
-              {steps.map((st, idx) => {
-                const isCurrent = idx === currentStepIndex
-                const isPast = idx < currentStepIndex
-                return (
-                  <React.Fragment key={st}>
+              {/* Right: Clean Compact Action Buttons */}
+              <div className="flex items-center gap-1.5">
+                {!isEditing && !isStaff && task.status !== "done" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onOpenDelegate?.(task)}
+                    className="h-7 px-2 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg gap-1 cursor-pointer"
+                  >
+                    <CornerDownRightIcon className="size-3.5" />
+                    <span>Delegasikan</span>
+                  </Button>
+                )}
+
+                {!isEditing && !isStaff && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleStartEdit}
+                    className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg gap-1 cursor-pointer"
+                  >
+                    <PencilIcon className="size-3.5" />
+                    <span>Edit</span>
+                  </Button>
+                )}
+
+                {!isEditing && !isStaff && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsDeleteTaskOpen(true)}
+                    className="size-7 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                    title="Hapus Penugasan"
+                  >
+                    <Trash2Icon className="size-3.5" />
+                  </Button>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onOpenChange(false)}
+                  className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+                  title="Tutup Panel"
+                >
+                  <XIcon className="size-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* EDIT MODE CONTAINER */}
+            {isEditing ? (
+              <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
+                <div className="border-b border-border pb-2">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <PencilIcon className="size-3.5 text-red-600" />
+                    Edit Penugasan
+                  </h3>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      Judul Tugas *
+                    </label>
+                    <Input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      required
+                      className="h-9 rounded-lg text-xs font-semibold bg-background"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                        Kategori / Divisi
+                      </label>
+                      <Select value={editChannelId} onValueChange={(val) => setEditChannelId(val || "")}>
+                        <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2.5 text-xs font-medium">
+                          <span className="truncate font-semibold text-foreground">
+                            {availableChannels.find((c) => c.id === editChannelId)?.name || "Pilih Kategori"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent className="w-full max-h-52">
+                          {availableChannels.map((ch) => (
+                            <SelectItem key={ch.id} value={ch.id}>
+                              {ch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                        Prioritas
+                      </label>
+                      <Select value={editPriority} onValueChange={(val) => setEditPriority((val as TaskPriority) || "high")}>
+                        <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2.5 text-xs font-medium">
+                          <span className="truncate font-semibold text-foreground">
+                            {TASK_PRIORITY_LABELS[editPriority]?.label || editPriority}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent className="w-full">
+                          <SelectItem value="urgent">
+                            <div className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full bg-red-600 shrink-0" />
+                              <span>Mendesak (Urgent)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="high">
+                            <div className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full bg-amber-500 shrink-0" />
+                              <span>Tinggi (High)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="medium">
+                            <div className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full bg-blue-500 shrink-0" />
+                              <span>Standar (Medium)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="low">
+                            <div className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                              <span>Rendah (Low)</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      Deskripsi Tugas
+                    </label>
+                    <Textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      rows={3}
+                      className="rounded-lg text-xs resize-none bg-background"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      Pelaksana Tugas (PIC)
+                    </label>
+                    <Select
+                      value={editAssignedTo || "unassigned"}
+                      onValueChange={(val) => setEditAssignedTo(val === "unassigned" ? "" : (val || ""))}
+                    >
+                      <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2.5 text-xs font-medium">
+                        <span className="truncate font-semibold text-foreground">
+                          {availableUsers.find((u) => u.id === editAssignedTo)?.nama || "Belum Ditugaskan"}
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent className="w-full max-h-52">
+                        <SelectItem value="unassigned">
+                          <span className="text-muted-foreground font-medium">Belum Ditugaskan</span>
+                        </SelectItem>
+                        {availableUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                                alt={u.nama}
+                                className="size-4.5 rounded-full object-cover shrink-0"
+                              />
+                              <span className="font-medium text-foreground">{u.nama}</span>
+                              <span className="text-[10px] text-muted-foreground">({u.position_title || u.role})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditing(false)}
+                    className="h-8 px-3 text-xs rounded-lg cursor-pointer"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="h-8 px-4 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer"
+                  >
+                    {isSavingEdit ? "Menyimpan..." : "Simpan Perubahan"}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              /* VIEW MODE (Clean, Linear / Notion Style with Subtasks & Comments Tabs) */
+              <div className="flex flex-col gap-4 p-5">
+                {/* 1. Task Title */}
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-foreground leading-snug tracking-tight">
+                    {task.title}
+                  </h2>
+                </div>
+
+                {/* 2. Clean Key-Value Properties Table */}
+                <div className="rounded-xl border border-border/70 bg-card p-3 divide-y divide-border/60 text-xs">
+                  {/* Status */}
+                  <div className="flex items-center justify-between py-1.5 first:pt-0">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <TagIcon className="size-3.5 text-muted-foreground/70" />
+                      Status
+                    </span>
+                    {isStaff ? (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 border border-border text-xs font-semibold">
+                        <span
+                          className={`size-2 rounded-full shrink-0 ${
+                            task.status === "done"
+                              ? "bg-emerald-500"
+                              : task.status === "in_progress"
+                              ? "bg-blue-500"
+                              : task.status === "review"
+                              ? "bg-purple-500"
+                              : task.status === "todo"
+                              ? "bg-amber-500"
+                              : "bg-slate-400"
+                          }`}
+                        />
+                        <span className="truncate">{TASK_STATUS_LABELS[task.status]?.label || task.status}</span>
+                      </div>
+                    ) : (
+                      <Select
+                        value={task.status}
+                        onValueChange={(val) => handleQuickStatusChange((val as TaskStatus) || task.status)}
+                      >
+                        <SelectTrigger className="h-7 text-xs font-semibold rounded-lg bg-muted/60 border-border px-2 py-0 gap-1.5 shadow-2xs">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span
+                              className={`size-2 rounded-full shrink-0 ${
+                                task.status === "done"
+                                  ? "bg-emerald-500"
+                                  : task.status === "in_progress"
+                                  ? "bg-blue-500"
+                                  : task.status === "review"
+                                  ? "bg-purple-500"
+                                  : task.status === "todo"
+                                  ? "bg-amber-500"
+                                  : "bg-slate-400"
+                              }`}
+                            />
+                            <span className="truncate">{TASK_STATUS_LABELS[task.status]?.label || task.status}</span>
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent align="end" className="w-48">
+                          <SelectItem value="unassigned">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-slate-400 shrink-0" />
+                              <span>Unassigned (Pool)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="todo">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-amber-500 shrink-0" />
+                              <span>To Do (Antrean)</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="in_progress">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-blue-500 shrink-0" />
+                              <span>Dalam Pengerjaan</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="review">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-purple-500 shrink-0" />
+                              <span>Review Atasan</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="done">
+                            <div className="flex items-center gap-2">
+                              <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                              <span>Selesai (Done)</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Prioritas */}
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <AlertCircleIcon className="size-3.5 text-muted-foreground/70" />
+                      Prioritas
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {priorityMeta?.label || task.priority}
+                    </span>
+                  </div>
+
+                  {/* Pelaksana (PIC) */}
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <UserCheckIcon className="size-3.5 text-muted-foreground/70" />
+                      Pelaksana (PIC)
+                    </span>
+                    {task.assignee ? (
+                      <div className="flex items-center gap-1.5">
+                        <img
+                          src={
+                            task.assignee.avatar_url ||
+                            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                          }
+                          alt={task.assignee.nama}
+                          className="size-4.5 rounded-full object-cover"
+                        />
+                        <span className="font-bold text-foreground">
+                          {task.assignee.nama}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-semibold text-amber-600 text-[11px]">
+                        Belum Ditugaskan
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Pemberi Delegasi */}
+                  <div className="flex items-center justify-between py-1.5">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <UserIcon className="size-3.5 text-muted-foreground/70" />
+                      Delegator
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {task.delegator?.nama || task.creator?.nama || "Atasan"}
+                    </span>
+                  </div>
+
+                  {/* Deadline SLA */}
+                  <div className="flex items-center justify-between py-1.5 last:pb-0">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <CalendarIcon className="size-3.5 text-muted-foreground/70" />
+                      Target Selesai
+                    </span>
+                    <span className="font-bold text-red-600 dark:text-red-400 font-mono">
+                      {task.deadline_at
+                        ? new Date(task.deadline_at).toLocaleString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "24 Jam"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Action Workflow Banner (If Actionable) */}
+                {task.status === "review" && (
+                  <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50/70 dark:bg-amber-950/40 flex items-center justify-between gap-2">
+                    <div className="text-xs">
+                      <span className="font-bold text-amber-900 dark:text-amber-200 block">
+                        Menunggu Persetujuan Atasan
+                      </span>
+                      {task.review_notes ? (
+                        <span className="text-[11px] text-amber-800 dark:text-amber-300 italic line-clamp-1">
+                          &ldquo;{task.review_notes}&rdquo;
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
+                          {isStaff
+                            ? "Laporan & berkas Anda sedang diverifikasi oleh atasan."
+                            : "Silakan periksa berkas SPJ sebelum menyetujui."}
+                        </span>
+                      )}
+                    </div>
+                    {!isStaff && (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          size="sm"
+                          onClick={handleApprove}
+                          disabled={isActionLoading}
+                          className="h-7 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer"
+                        >
+                          Setujui
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsRevisionOpen(true)}
+                          disabled={isActionLoading}
+                          className="h-7 px-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 border-amber-300 rounded-lg cursor-pointer"
+                        >
+                          Revisi
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {task.status === "unassigned" && (
+                  <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-blue-900 dark:text-blue-200">
+                      Tugas ini belum memiliki pelaksana.
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={handleClaim}
+                      disabled={isActionLoading}
+                      className="h-7 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer"
+                    >
+                      Klaim Tugas
+                    </Button>
+                  </div>
+                )}
+
+                {(task.status === "in_progress" || task.status === "todo") && (
+                  <div className="p-3 rounded-xl border border-border bg-card flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Pekerjaan telah selesai?
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => setIsSubmitReviewOpen(true)}
+                      className="h-7 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg gap-1 cursor-pointer"
+                    >
+                      <CheckCircle2Icon className="size-3.5" />
+                      Submit Review
+                    </Button>
+                  </div>
+                )}
+
+                {/* 4. Deskripsi */}
+                {task.description && (
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Deskripsi
+                    </span>
+                    <p className="text-xs text-foreground leading-relaxed bg-muted/30 p-2.5 rounded-lg border border-border/50">
+                      {task.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* 5. TAB BAR: Subtasks [ count ] | Comments [ count ] | Lampiran [ count ] */}
+                <div className="pt-2">
+                  <div className="flex items-center border-b border-border/80 gap-6">
+                    {/* Subtasks Tab */}
                     <button
-                      onClick={() => onUpdateStatus?.(task.id, st)}
-                      className={`flex flex-col items-center gap-1 transition-all ${
-                        isCurrent
-                          ? "text-primary font-bold scale-105"
-                          : isPast
-                          ? "text-emerald-600 font-medium"
-                          : "text-muted-foreground"
+                      type="button"
+                      onClick={() => setActiveDetailTab("subtasks")}
+                      className={`flex items-center gap-2 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px ${
+                        activeDetailTab === "subtasks"
+                          ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
+                          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
                       }`}
                     >
-                      <div
-                        className={`size-6 rounded-full flex items-center justify-center text-[10px] ${
-                          isCurrent
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : isPast
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                            : "bg-muted text-muted-foreground border"
+                      <span>Subtasks</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
+                          activeDetailTab === "subtasks"
+                            ? "bg-red-50 text-red-600 dark:bg-red-950/80 dark:text-red-300 border border-red-100 dark:border-red-900/50"
+                            : "bg-muted text-muted-foreground border border-border/40"
                         }`}
                       >
-                        {isPast ? "✓" : idx + 1}
-                      </div>
-                      <span>{st}</span>
+                        {subtasks.length}
+                      </span>
                     </button>
-                    {idx < steps.length - 1 && (
-                      <ChevronRightIcon className="size-3.5 text-muted-foreground/50 shrink-0" />
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </div>
-          </div>
 
-          {/* Description */}
-          <div className="flex flex-col gap-2">
-            <h4 className="text-xs font-semibold text-foreground tracking-wide uppercase">Deskripsi Tugas</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed bg-card p-3 rounded-[8px] border">
-              {task.deskripsi ||
-                `Pelaksanaan tugas ${task.judulTask} oleh teknisi ${task.assignee}. Pastikan mengambil foto lokasi ODP sebelum & sesudah pengerjaan serta menyimpan bukti nota material yang digunakan.`}
-            </p>
-          </div>
+                    {/* Comments Tab */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveDetailTab("comments")}
+                      className={`flex items-center gap-2 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px ${
+                        activeDetailTab === "comments"
+                          ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
+                          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
+                      }`}
+                    >
+                      <span>Comments</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
+                          activeDetailTab === "comments"
+                            ? "bg-red-50 text-red-600 dark:bg-red-950/80 dark:text-red-300 border border-red-100 dark:border-red-900/50"
+                            : "bg-muted text-muted-foreground border border-border/40"
+                        }`}
+                      >
+                        {(task.comments || []).length}
+                      </span>
+                    </button>
 
-          {/* Attachments Section (Bukti Foto / Nota) */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-foreground tracking-wide uppercase flex items-center gap-1.5">
-                <PaperclipIcon className="size-3.5" /> Lampiran & Bukti Pekerjaan
-              </h4>
-              <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
-                <UploadIcon className="size-3" /> Upload Bukti
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="flex items-center gap-2.5 p-2.5 rounded-[8px] border bg-card hover:bg-accent/40 transition-colors">
-                <div className="size-8 rounded bg-red-50 dark:bg-red-950 flex items-center justify-center shrink-0">
-                  <ImageIcon className="size-4 text-red-600" />
-                </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs font-medium truncate">foto_odp_selesai.jpg</span>
-                  <span className="text-[10px] text-muted-foreground">1.2 MB · Lapangan</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5 p-2.5 rounded-[8px] border bg-card hover:bg-accent/40 transition-colors">
-                <div className="size-8 rounded bg-blue-50 dark:bg-blue-950 flex items-center justify-center shrink-0">
-                  <FileTextIcon className="size-4 text-blue-600" />
-                </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs font-medium truncate">nota_material_kabel.pdf</span>
-                  <span className="text-[10px] text-muted-foreground">340 KB · Material</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Task Progress Activity Log */}
-          <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-semibold text-foreground tracking-wide uppercase flex items-center gap-1.5">
-              <ClockIcon className="size-3.5" /> Riwayat & Progress Timeline
-            </h4>
-
-            <div className="relative pl-4 space-y-4 border-l-2 border-muted">
-              {history.map((log) => (
-                <div key={log.id} className="relative group">
-                  <div className="absolute -left-[21px] top-1 size-2.5 rounded-full bg-primary ring-4 ring-background" />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground">{log.action}</span>
-                    <span className="text-[11px] text-muted-foreground">{log.time}</span>
+                    {/* Lampiran Tab */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveDetailTab("attachments")}
+                      className={`flex items-center gap-2 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px ${
+                        activeDetailTab === "attachments"
+                          ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
+                          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
+                      }`}
+                    >
+                      <span>Lampiran</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
+                          activeDetailTab === "attachments"
+                            ? "bg-red-50 text-red-600 dark:bg-red-950/80 dark:text-red-300 border border-red-100 dark:border-red-900/50"
+                            : "bg-muted text-muted-foreground border border-border/40"
+                        }`}
+                      >
+                        {(task.attachments || []).length}
+                      </span>
+                    </button>
                   </div>
-                  <span className="text-[11px] font-medium text-primary block">{log.user}</span>
-                  <p className="text-xs text-muted-foreground mt-1 bg-card p-2.5 rounded-[8px] border">
-                    {log.note}
-                  </p>
-                  {log.attachment && (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 mt-1 font-medium">
-                      <PaperclipIcon className="size-3" /> {log.attachment}
-                    </span>
+
+                  {/* TAB CONTENT: SUBTASKS */}
+                  {activeDetailTab === "subtasks" && (
+                    <div className="space-y-2 pt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-muted-foreground">
+                          Progres: {completedSubtasks}/{subtasks.length} Selesai ({progressPercent}%)
+                        </span>
+                      </div>
+
+                      {/* Checklist Items */}
+                      <div className="space-y-1">
+                        {subtasks.map((st) => (
+                          <div
+                            key={st.id}
+                            onClick={() => handleToggleSubtask(st)}
+                            className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-colors text-xs ${
+                              st.is_completed
+                                ? "bg-muted/30 border-border/50 text-muted-foreground line-through"
+                                : "bg-card border-border hover:border-red-300 text-foreground font-medium"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              {st.is_completed ? (
+                                <CheckCircle2Icon className="size-3.5 text-emerald-600 shrink-0" />
+                              ) : (
+                                <SquareIcon className="size-3.5 text-muted-foreground shrink-0" />
+                              )}
+                              <span className="truncate">{st.title}</span>
+                            </div>
+                            {!isStaff && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteSubtask(st.id, e)}
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-1 transition-opacity cursor-pointer"
+                                title="Hapus subtask"
+                              >
+                                <Trash2Icon className="size-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {subtasks.length === 0 && (
+                          <p className="text-xs text-muted-foreground italic py-1">
+                            {isStaff ? "Belum ada subtask yang ditambahkan." : "Belum ada subtask. Tambahkan di bawah."}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Add Subtask Inline Form — hidden for staff */}
+                      {!isStaff && (
+                        <form onSubmit={handleAddSubtask} className="flex items-center gap-1.5 pt-1">
+                          <Input
+                            value={newSubtaskTitle}
+                            onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                            placeholder="Tambah subtask baru..."
+                            className="h-8 rounded-lg text-xs bg-muted/20"
+                          />
+                          <Button
+                            type="submit"
+                            size="sm"
+                            disabled={isAddingSubtask || !newSubtaskTitle.trim()}
+                            className="h-8 px-2.5 rounded-lg text-xs font-bold bg-foreground text-background shrink-0 cursor-pointer"
+                          >
+                            <PlusIcon className="size-3" />
+                          </Button>
+                        </form>
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB CONTENT: COMMENTS */}
+                  {activeDetailTab === "comments" && (
+                    <div className="space-y-2.5 pt-3">
+                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                        {(task.comments || []).map((cmt) => (
+                          <div
+                            key={cmt.id}
+                            className="group p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-[11px] text-foreground">
+                                {cmt.user?.nama || "User"}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground">
+                                  {cmt.created_at
+                                    ? new Date(cmt.created_at).toLocaleTimeString("id-ID", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : ""}
+                                </span>
+                                {!isStaff && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteComment(cmt.id)}
+                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-0.5 transition-opacity cursor-pointer"
+                                    title="Hapus komentar"
+                                  >
+                                    <Trash2Icon className="size-2.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-muted-foreground text-[11px] leading-relaxed">
+                              {cmt.comment}
+                            </p>
+                          </div>
+                        ))}
+                        {(task.comments || []).length === 0 && (
+                          <p className="text-xs text-muted-foreground italic py-1">
+                            Belum ada komentar.
+                          </p>
+                        )}
+                      </div>
+
+                      <form onSubmit={handleSendComment} className="flex items-center gap-1.5 pt-1">
+                        <Input
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Tulis pesan atau catatan..."
+                          className="h-8 rounded-lg text-xs bg-muted/20"
+                        />
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={isSubmittingComment || !commentText.trim()}
+                          className="h-8 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white shrink-0 cursor-pointer"
+                        >
+                          <SendIcon className="size-3" />
+                        </Button>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* TAB CONTENT: ATTACHMENTS / LAMPIRAN */}
+                  {activeDetailTab === "attachments" && (
+                    <div className="space-y-2.5 pt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground font-medium">
+                          Berkas & Bukti Terlampir
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setSelectedFile(null)
+                            setUploadFileName("")
+                            setUploadAmount("")
+                            setIsUploadOpen(true)
+                          }}
+                          className="h-6 px-2 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded gap-1 cursor-pointer"
+                        >
+                          <UploadIcon className="size-3" /> Unggah File
+                        </Button>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                        {(task.attachments || []).map((att) => (
+                          <div
+                            key={att.id}
+                            className="p-2.5 rounded-lg border border-border bg-card flex items-center justify-between text-xs group hover:border-blue-300 transition-colors"
+                          >
+                            <a
+                              href={att.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
+                              title="Buka / lihat file"
+                            >
+                              {att.attachment_type === "receipt_nota" ? (
+                                <ReceiptIcon className="size-4 text-amber-600 shrink-0" />
+                              ) : att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                <ImageIcon className="size-4 text-emerald-600 shrink-0" />
+                              ) : (
+                                <FileTextIcon className="size-4 text-blue-600 shrink-0" />
+                              )}
+                              <span className="truncate font-medium text-foreground">
+                                {att.file_name}
+                              </span>
+                              <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </a>
+
+                            <div className="flex items-center gap-2 shrink-0 pl-2">
+                              {att.amount && (
+                                <span className="text-[11px] font-bold text-emerald-600">
+                                  Rp {att.amount.toLocaleString("id-ID")}
+                                </span>
+                              )}
+                              {!isStaff && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteAttachment(att.id)}
+                                  className="text-muted-foreground hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                  title="Hapus lampiran"
+                                >
+                                  <Trash2Icon className="size-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {(task.attachments || []).length === 0 && (
+                          <p className="text-xs text-muted-foreground italic py-1">
+                            Belum ada lampiran file atau foto.
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* Add Progress Comment Form */}
-          <form onSubmit={handleSendUpdate} className="flex flex-col gap-2 pt-2 border-t">
-            <label className="text-xs font-semibold text-foreground">Update Status / Catatan Lapangan</label>
-            <Textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Tulis update pengerjaan atau kendala di lokasi..."
-              className="text-xs min-h-[70px] resize-none"
-            />
-            <div className="flex items-center justify-between pt-1">
-              <Button type="button" variant="ghost" size="sm" className="h-8 text-xs gap-1 text-muted-foreground">
-                <PaperclipIcon className="size-3.5" /> Lampirkan Foto
-              </Button>
-              <Button type="submit" size="sm" className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground">
-                <SendIcon className="size-3" /> Kirim Update
-              </Button>
-            </div>
-          </form>
-        </div>
+            {/* DIALOG 1: SUBMIT FOR REVIEW */}
+            <Dialog open={isSubmitReviewOpen} onOpenChange={setIsSubmitReviewOpen}>
+              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <CheckCircle2Icon className="size-4 text-red-600" />
+                    Ajukan Review ke Atasan
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Kirimkan penugasan ini untuk diperiksa dan disetujui atasan.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-2.5 mt-2">
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground">
+                      Catatan (Opsional)
+                    </label>
+                    <Textarea
+                      value={submitNotes}
+                      onChange={(e) => setSubmitNotes(e.target.value)}
+                      placeholder="Contoh: Seluruh pekerjaan dan berkas telah selesai."
+                      className="mt-1 text-xs min-h-[60px] rounded-lg"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsSubmitReviewOpen(false)}
+                      className="h-7.5 text-xs rounded-lg"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      onClick={handleSubmitForReview}
+                      disabled={isActionLoading}
+                      className="h-7.5 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                    >
+                      {isActionLoading ? "Mengirim..." : "Kirim"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* DIALOG 2: RETURN FOR REVISION */}
+            <Dialog open={isRevisionOpen} onOpenChange={setIsRevisionOpen}>
+              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <RotateCcwIcon className="size-4 text-amber-600" />
+                    Kembalikan untuk Revisi
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Berikan catatan bagian mana yang perlu diperbaiki.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-2.5 mt-2">
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground">
+                      Catatan Revisi *
+                    </label>
+                    <Textarea
+                      value={revisionNotes}
+                      onChange={(e) => setRevisionNotes(e.target.value)}
+                      placeholder="Contoh: Mohon lengkapi berkas lampiran."
+                      required
+                      className="mt-1 text-xs min-h-[70px] rounded-lg"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsRevisionOpen(false)}
+                      className="h-7.5 text-xs rounded-lg"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      onClick={handleReturnRevision}
+                      disabled={isActionLoading || !revisionNotes.trim()}
+                      className="h-7.5 px-3 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
+                    >
+                      {isActionLoading ? "Memproses..." : "Kembalikan"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* DIALOG 3: REAL FILE & PHOTO UPLOAD */}
+            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <UploadIcon className="size-4 text-blue-600" />
+                    Unggah Berkas / Foto / Nota
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Pilih file PDF, foto bukti, atau nota biaya dari perangkat Anda.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleUploadAttachment} className="space-y-3 mt-2">
+                  {/* File Picker Button Area */}
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      Pilih File / Foto Dari Perangkat *
+                    </label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.zip"
+                      className="hidden"
+                    />
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border border-dashed border-border hover:border-blue-500 rounded-xl p-3 text-center cursor-pointer transition-colors bg-muted/20 hover:bg-muted/40"
+                    >
+                      {selectedFile ? (
+                        <div className="flex items-center justify-center gap-2 text-xs font-semibold text-foreground">
+                          {selectedFile.type.startsWith("image/") ? (
+                            <ImageIcon className="size-4 text-emerald-600" />
+                          ) : (
+                            <FileTextIcon className="size-4 text-blue-600" />
+                          )}
+                          <span className="truncate max-w-[200px]">{selectedFile.name}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({(selectedFile.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                          <UploadIcon className="size-5 text-blue-500" />
+                          <span className="text-xs font-semibold text-foreground">
+                            Klik untuk cari file (PDF, Foto, Dokumen)
+                          </span>
+                          <span className="text-[10px]">Mendukung PDF, JPG, PNG, DOCX, ZIP</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      Jenis Lampiran
+                    </label>
+                    <Select
+                      value={uploadType}
+                      onValueChange={(val) => setUploadType((val as any) || "evidence")}
+                    >
+                      <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2 text-xs font-medium">
+                        <span className="truncate">
+                          {uploadType === "evidence"
+                            ? "Foto Bukti / Hasil Pengerjaan"
+                            : uploadType === "document"
+                            ? "Dokumen Laporan / Proposal (PDF)"
+                            : "Kwitansi / Nota Biaya SPJ"}
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent className="w-full">
+                        <SelectItem value="evidence">Foto Bukti / Hasil Pengerjaan</SelectItem>
+                        <SelectItem value="document">Dokumen Laporan / Proposal (PDF)</SelectItem>
+                        <SelectItem value="receipt_nota">Kwitansi / Nota Biaya SPJ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      Nama File / Keterangan *
+                    </label>
+                    <Input
+                      value={uploadFileName}
+                      onChange={(e) => setUploadFileName(e.target.value)}
+                      placeholder="Contoh: Foto_Hasil_Pekerjaan.jpg"
+                      required
+                      className="h-8 rounded-lg text-xs"
+                    />
+                  </div>
+
+                  {uploadType === "receipt_nota" && (
+                    <div>
+                      <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                        Nominal Kwitansi (Rp)
+                      </label>
+                      <Input
+                        type="number"
+                        value={uploadAmount}
+                        onChange={(e) => setUploadAmount(e.target.value)}
+                        placeholder="Contoh: 150000"
+                        className="h-8 rounded-lg text-xs"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsUploadOpen(false)}
+                      className="h-7.5 text-xs rounded-lg cursor-pointer"
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isActionLoading || !uploadFileName.trim()}
+                      className="h-7.5 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer"
+                    >
+                      {isActionLoading ? "Mengunggah..." : "Simpan Lampiran"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* DIALOG 4: DELETE TASK CONFIRMATION */}
+            <Dialog open={isDeleteTaskOpen} onOpenChange={setIsDeleteTaskOpen}>
+              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold text-red-600 flex items-center gap-1.5">
+                    <AlertTriangleIcon className="size-4" />
+                    Hapus Penugasan?
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Penugasan <strong>[{task.ticket_code}] {task.title}</strong> beserta subtask dan lampirannya akan dihapus secara permanen dari sistem.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDeleteTaskOpen(false)}
+                    className="h-8 text-xs rounded-lg cursor-pointer"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={isDeletingTask}
+                    onClick={handleDeleteTask}
+                    className="h-8 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer"
+                  >
+                    {isDeletingTask ? "Menghapus..." : "Ya, Hapus Penugasan"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   )
 }
+

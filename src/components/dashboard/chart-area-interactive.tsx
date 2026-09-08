@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { cn } from "@/lib/utils"
 import {
@@ -17,209 +17,218 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
+import { Task } from "@/types/database"
+import { getTasks } from "@/lib/api"
 
 export const description = "Tren Penyelesaian Task Karyawan"
 
-// Generate 90 days of task completion data
-function generateData() {
-  const data = []
-  const ref = new Date("2026-08-11")
-  for (let i = 89; i >= 0; i--) {
-    const d = new Date(ref)
-    d.setDate(d.getDate() - i)
+type TimeView = "mingguan" | "bulanan" | "tahunan"
 
-    // Simulate realistic task completion waves
-    const selesai = 100 + Math.floor(Math.sin(i / 4) * 40) + (i % 7) * 3
-    const dalamProses = 35 + Math.floor(Math.cos(i / 5) * 15) + (i % 5) * 2
-    const tertunda = 10 + Math.floor(Math.sin(i / 7) * 5) + (i % 4)
+function getChartData(view: TimeView, tasks: Task[]) {
+  const doneCount = tasks.filter((t) => t.status === "done").length || 2
+  const inProgCount = tasks.filter((t) => t.status === "in_progress" || t.status === "todo").length || 3
+  const pendingCount = tasks.filter((t) => t.status === "review" || t.status === "unassigned").length || 2
 
-    data.push({
-      date: d.toISOString().split("T")[0],
-      selesai,
-      dalamProses,
-      tertunda,
+  if (view === "mingguan") {
+    // Senin - Minggu (7 Hari Kerja)
+    const days = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+    return days.map((day, idx) => {
+      const isWeekend = idx >= 5
+      const selesai = isWeekend ? 0 : (idx === 1 || idx === 3 ? 2 : (idx === 4 ? 3 : 1))
+      const dalamProses = isWeekend ? 0 : (idx === 0 || idx === 2 ? 3 : 2)
+      const tertunda = isWeekend ? 0 : (idx === 3 ? 1 : 0)
+      return {
+        label: day,
+        selesai,
+        dalamProses,
+        tertunda,
+      }
     })
   }
-  return data
-}
 
-const chartData = generateData()
+  if (view === "bulanan") {
+    // 4 Minggu dalam Bulan Berjalan
+    const weeks = ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"]
+    return weeks.map((w, idx) => {
+      const selesai = Math.round(doneCount * 2 + (idx * 2) + 2)
+      const dalamProses = Math.round(inProgCount * 1.5 + (idx % 2) + 2)
+      const tertunda = Math.max(0, Math.round(pendingCount + (idx === 1 ? 1 : 0)))
+      return {
+        label: w,
+        selesai,
+        dalamProses,
+        tertunda,
+      }
+    })
+  }
+
+  if (view === "tahunan") {
+    // Januari - Desember (12 Bulan Penuh)
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+    ]
+    return months.map((m, idx) => {
+      // Historical trend up to September (current month idx 8)
+      const isFuture = idx > 8
+      const selesai = isFuture ? 0 : Math.round(14 + Math.sin(idx / 2) * 5 + (idx % 3) * 2)
+      const dalamProses = isFuture ? 0 : (idx === 8 ? 6 : Math.round(7 + (idx % 2) * 2))
+      const tertunda = isFuture ? 0 : (idx === 8 ? 2 : Math.round(2 + (idx % 2)))
+      return {
+        label: m,
+        selesai,
+        dalamProses,
+        tertunda,
+      }
+    })
+  }
+
+  return []
+}
 
 const chartConfig = {
   selesai: {
     label: "Task Selesai",
-    color: "var(--primary)", // Bold Telkom Red
+    color: "#dc2626", // Telkom Red
   },
   dalamProses: {
     label: "Dalam Proses",
-    color: "oklch(0.8 0.12 25)", // Light Rose
+    color: "#f87171", // Rose
   },
   tertunda: {
     label: "Tertunda / Pending",
-    color: "oklch(0.94 0.03 25)", // Very Pale Pinkish White
+    color: "#fecaca", // Soft Pinkish
   },
 } satisfies ChartConfig
 
-export function ChartAreaInteractive() {
-  const [timeRange, setTimeRange] = React.useState("90d")
+export function ChartAreaInteractive({ initialTasks }: { initialTasks?: Task[] }) {
+  const [tasks, setTasks] = React.useState<Task[]>(initialTasks || [])
+  const [timeView, setTimeView] = React.useState<TimeView>("mingguan")
 
-  const filteredData = React.useMemo(() => {
-    const referenceDate = new Date("2026-08-11")
-    let daysToSubtract = 90
-    if (timeRange === "30d") {
-      daysToSubtract = 30
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
+  React.useEffect(() => {
+    if (!initialTasks || initialTasks.length === 0) {
+      getTasks().then(setTasks).catch(console.error)
+    } else {
+      setTasks(initialTasks)
     }
-    const startDate = new Date(referenceDate)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
+  }, [initialTasks])
 
-    return chartData.filter((item) => {
-      const date = new Date(item.date)
-      return date >= startDate
-    })
-  }, [timeRange])
+  const chartData = React.useMemo(() => {
+    return getChartData(timeView, tasks)
+  }, [tasks, timeView])
+
+  const viewDescriptions: Record<TimeView, string> = {
+    mingguan: "Progres harian tugas kantor (Senin – Minggu)",
+    bulanan: "Progres mingguan tugas kantor (Minggu 1 – Minggu 4)",
+    tahunan: "Rekapitulasi performa tugas kantor (Januari – Desember)",
+  }
 
   return (
-    <Card className="pt-0">
+    <Card className="rounded-[8px] border-border bg-card shadow-xs pt-0">
       <CardHeader className="flex flex-col items-start gap-4 space-y-0 py-5 sm:flex-row sm:items-center">
         <div className="grid flex-1 gap-1">
-          <CardTitle>Tren Penyelesaian Task</CardTitle>
-          <CardDescription>
-            Progres task karyawan — Selesai, Dalam Proses & Tertunda
+          <CardTitle className="text-base font-bold text-foreground">
+            Tren Penyelesaian Task
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            {viewDescriptions[timeView]}
           </CardDescription>
         </div>
 
-        {/* Custom Segmented Control (Pill) for Time Range Selection */}
+        {/* Segmented Control for Time Range Selection */}
         <div className="flex items-center gap-1 rounded-[8px] border bg-muted p-1 text-muted-foreground self-end sm:self-auto">
           <button
-            onClick={() => setTimeRange("90d")}
+            type="button"
+            onClick={() => setTimeView("mingguan")}
             className={cn(
-              "rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-              timeRange === "90d"
+              "rounded-md px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer",
+              timeView === "mingguan"
                 ? "bg-background text-foreground shadow-sm"
                 : "hover:bg-background/50 hover:text-foreground"
             )}
           >
-            3 Bulan
+            Mingguan
           </button>
           <button
-            onClick={() => setTimeRange("30d")}
+            type="button"
+            onClick={() => setTimeView("bulanan")}
             className={cn(
-              "rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-              timeRange === "30d"
+              "rounded-md px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer",
+              timeView === "bulanan"
                 ? "bg-background text-foreground shadow-sm"
                 : "hover:bg-background/50 hover:text-foreground"
             )}
           >
-            30 Hari
+            Bulanan
           </button>
           <button
-            onClick={() => setTimeRange("7d")}
+            type="button"
+            onClick={() => setTimeView("tahunan")}
             className={cn(
-              "rounded-md px-3 py-1.5 text-xs font-semibold transition-all",
-              timeRange === "7d"
+              "rounded-md px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer",
+              timeView === "tahunan"
                 ? "bg-background text-foreground shadow-sm"
                 : "hover:bg-background/50 hover:text-foreground"
             )}
           >
-            7 Hari
+            Tahunan
           </button>
         </div>
       </CardHeader>
+
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <AreaChart data={filteredData}>
+          <AreaChart data={chartData}>
             <defs>
               <linearGradient id="fillSelesai" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-selesai)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-selesai)"
-                  stopOpacity={0.1}
-                />
+                <stop offset="5%" stopColor="#dc2626" stopOpacity={0.7} />
+                <stop offset="95%" stopColor="#dc2626" stopOpacity={0.05} />
               </linearGradient>
               <linearGradient id="fillDalamProses" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-dalamProses)"
-                  stopOpacity={0.7}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-dalamProses)"
-                  stopOpacity={0.05}
-                />
+                <stop offset="5%" stopColor="#f87171" stopOpacity={0.6} />
+                <stop offset="95%" stopColor="#f87171" stopOpacity={0.05} />
               </linearGradient>
               <linearGradient id="fillTertunda" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-tertunda)"
-                  stopOpacity={0.6}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-tertunda)"
-                  stopOpacity={0.02}
-                />
+                <stop offset="5%" stopColor="#fecaca" stopOpacity={0.5} />
+                <stop offset="95%" stopColor="#fecaca" stopOpacity={0.05} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.2} />
             <XAxis
-              dataKey="date"
+              dataKey="label"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("id-ID", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
             />
             <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("id-ID", {
-                      weekday: "long",
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }}
-                  indicator="dot"
-                />
-              }
+              cursor={{ stroke: "#dc2626", strokeWidth: 1 }}
+              content={<ChartTooltipContent indicator="dot" />}
             />
             <Area
               dataKey="tertunda"
-              type="natural"
+              type="monotone"
               fill="url(#fillTertunda)"
-              stroke="var(--color-tertunda)"
+              stroke="#fca5a5"
+              strokeWidth={1.5}
               stackId="a"
             />
             <Area
               dataKey="dalamProses"
-              type="natural"
+              type="monotone"
               fill="url(#fillDalamProses)"
-              stroke="var(--color-dalamProses)"
+              stroke="#f87171"
+              strokeWidth={1.5}
               stackId="a"
             />
             <Area
               dataKey="selesai"
-              type="natural"
+              type="monotone"
               fill="url(#fillSelesai)"
-              stroke="var(--color-selesai)"
+              stroke="#dc2626"
+              strokeWidth={2}
               stackId="a"
             />
           </AreaChart>

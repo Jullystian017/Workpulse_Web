@@ -8,24 +8,27 @@ import {
   MailIcon,
   PhoneIcon,
   Building2Icon,
-  CheckCircle2Icon,
-  ClockIcon,
   ShieldCheckIcon,
-  MoreVerticalIcon,
   KeyRoundIcon,
   LayoutGridIcon,
   ListIcon,
-  AlertTriangleIcon,
-  MapPinOffIcon,
-  CheckCircleIcon
+  GitForkIcon,
+  RefreshCwIcon,
+  SparklesIcon,
+  Edit2Icon,
+  Trash2Icon,
+  CopyIcon,
+  CheckIcon,
+  LockIcon,
+  DicesIcon,
+  UserCheckIcon,
+  MoreVerticalIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AiPanelProvider } from "@/components/dashboard/ai-panel-context"
-import { AiIntegratedPanel } from "@/components/dashboard/ai-integrated-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -43,378 +46,254 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Label } from "@/components/ui/label"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  getAllUsers,
+  getDepartments,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetUserPassword,
+  generateAutoNik,
+  generateAutoEmail,
+  generateAutoPassword,
+} from "@/lib/api"
+import { User, Department, UserRole, ROLE_LABELS, ROLE_HIERARCHY_LEVEL } from "@/types/database"
 
-export interface KaryawanItem {
-  nik: string
-  nama: string
-  email: string
-  telepon: string
-  departemen: "IT" | "Operations" | "Finance" | "HR" | "Marketing"
-  jabatan: string
-  tipeUser: "Telkom" | "Non-Telkom (Mitra)"
-  unit: string
-  role: "Staff" | "Admin"
-  avatarUrl?: string
-  avatarInitials: string
-  avatarBgColor?: string
-  score: number
-  scoreTitle: string
-  scoreSubtitle: string
-  scoreVariant: "high" | "low" | "good" | "medium"
-  geofenceStatus: "valid_telkom" | "outside_area" | "remote_verified" | "late_checkin"
-  geofenceText: string
-  tasksDone: number
-  lateMinutes: number
-}
-
-const initialKaryawan: KaryawanItem[] = [
-  {
-    nik: "948102",
-    nama: "Ahmad Fauzi",
-    email: "ahmad.fauzi@telkomakses.co.id",
-    telepon: "0812-3456-7890",
-    departemen: "IT",
-    jabatan: "Senior Network Engineer",
-    tipeUser: "Telkom",
-    unit: "Area 1",
-    role: "Staff",
-    avatarInitials: "AF",
-    avatarBgColor: "bg-blue-100 text-blue-700",
-    score: 94,
-    scoreTitle: "Kinerja Sangat Baik",
-    scoreSubtitle: "Top 10% bulan ini",
-    scoreVariant: "high",
-    geofenceStatus: "valid_telkom",
-    geofenceText: "Valid Area Telkom • 07:45 AM",
-    tasksDone: 24,
-    lateMinutes: 0,
-  },
-  {
-    nik: "881204",
-    nama: "Budi Santoso",
-    email: "budi.s@mitra.telkom.co.id",
-    telepon: "0813-9876-5432",
-    departemen: "Operations",
-    jabatan: "Staff Support Operasional",
-    tipeUser: "Non-Telkom (Mitra)",
-    unit: "Support",
-    role: "Staff",
-    avatarInitials: "BS",
-    avatarBgColor: "bg-indigo-100 text-indigo-700",
-    score: 58,
-    scoreTitle: "Perlu Intervensi",
-    scoreSubtitle: "Penurunan berturut-turut",
-    scoreVariant: "low",
-    geofenceStatus: "outside_area",
-    geofenceText: "Di Luar Area Valid • 08:15 AM",
-    tasksDone: 5,
-    lateMinutes: 45,
-  },
-  {
-    nik: "910283",
-    nama: "Siti Rahma",
-    email: "siti.rahma@telkomakses.co.id",
-    telepon: "0817-1122-3344",
-    departemen: "HR",
-    jabatan: "HR & Talent Admin",
-    tipeUser: "Telkom",
-    unit: "Non-Telkom",
-    role: "Admin",
-    avatarInitials: "SR",
-    avatarBgColor: "bg-amber-100 text-amber-700",
-    score: 88,
-    scoreTitle: "Kinerja Baik",
-    scoreSubtitle: "Stabil 3 bulan terakhir",
-    scoreVariant: "good",
-    geofenceStatus: "remote_verified",
-    geofenceText: "Remote Terverifikasi • 08:02 AM",
-    tasksDone: 18,
-    lateMinutes: 0,
-  },
-  {
-    nik: "773192",
-    nama: "Dedi Kurniawan",
-    email: "dedi.k@telkomakses.co.id",
-    telepon: "0818-5544-3322",
-    departemen: "IT",
-    jabatan: "Staff Hardware & Server",
-    tipeUser: "Telkom",
-    unit: "Area 2",
-    role: "Staff",
-    avatarInitials: "DK",
-    avatarBgColor: "bg-purple-100 text-purple-700",
-    score: 79,
-    scoreTitle: "Kinerja Cukup",
-    scoreSubtitle: "Mendekati batas target",
-    scoreVariant: "medium",
-    geofenceStatus: "late_checkin",
-    geofenceText: "Terlambat Check-in • 08:35 AM",
-    tasksDone: 11,
-    lateMinutes: 35,
-  },
-  {
-    nik: "10293841",
-    nama: "Andi Pratama",
-    email: "andi.pratama@telkomakses.co.id",
-    telepon: "0811-2233-4455",
-    departemen: "IT",
-    jabatan: "Infrastructure Specialist",
-    tipeUser: "Telkom",
-    unit: "Area 1",
-    role: "Staff",
-    avatarInitials: "AP",
-    avatarBgColor: "bg-emerald-100 text-emerald-700",
-    score: 95,
-    scoreTitle: "Kinerja Sangat Baik",
-    scoreSubtitle: "Konsisten tepat waktu",
-    scoreVariant: "high",
-    geofenceStatus: "valid_telkom",
-    geofenceText: "Valid Area Telkom • 07:50 AM",
-    tasksDone: 22,
-    lateMinutes: 0,
-  },
-  {
-    nik: "10293846",
-    nama: "Rudi Hermawan",
-    email: "rudi.h@telkomakses.co.id",
-    telepon: "0815-6677-8899",
-    departemen: "Operations",
-    jabatan: "Operations Lead",
-    tipeUser: "Telkom",
-    unit: "Area 1",
-    role: "Admin",
-    avatarInitials: "RH",
-    avatarBgColor: "bg-rose-100 text-rose-700",
-    score: 91,
-    scoreTitle: "Kinerja Sangat Baik",
-    scoreSubtitle: "Target sprint tercapai",
-    scoreVariant: "high",
-    geofenceStatus: "valid_telkom",
-    geofenceText: "Valid Area Telkom • 07:40 AM",
-    tasksDone: 26,
-    lateMinutes: 0,
-  },
-  {
-    nik: "10293847",
-    nama: "Oscar Budiman",
-    email: "oscar.b@mitra.telkom.co.id",
-    telepon: "0819-9988-7766",
-    departemen: "Operations",
-    jabatan: "Field Mitra Coordinator",
-    tipeUser: "Non-Telkom (Mitra)",
-    unit: "Support",
-    role: "Staff",
-    avatarInitials: "OB",
-    avatarBgColor: "bg-amber-100 text-amber-700",
-    score: 62,
-    scoreTitle: "Perlu Intervensi",
-    scoreSubtitle: "3x terlambat minggu ini",
-    scoreVariant: "low",
-    geofenceStatus: "late_checkin",
-    geofenceText: "Terlambat Check-in • 09:10 AM",
-    tasksDone: 8,
-    lateMinutes: 70,
-  },
-  {
-    nik: "10293848",
-    nama: "Julia Sari",
-    email: "julia.sari@telkomakses.co.id",
-    telepon: "0821-3344-5566",
-    departemen: "Finance",
-    jabatan: "Financial Controller",
-    tipeUser: "Telkom",
-    unit: "Area 2",
-    role: "Staff",
-    avatarInitials: "JS",
-    avatarBgColor: "bg-teal-100 text-teal-700",
-    score: 89,
-    scoreTitle: "Kinerja Baik",
-    scoreSubtitle: "Laporan anggaran selesai",
-    scoreVariant: "good",
-    geofenceStatus: "valid_telkom",
-    geofenceText: "Valid Area Telkom • 07:55 AM",
-    tasksDone: 17,
-    lateMinutes: 0,
-  },
-  {
-    nik: "10293849",
-    nama: "Qomar Siddiq",
-    email: "qomar.s@telkomakses.co.id",
-    telepon: "0822-7788-9900",
-    departemen: "IT",
-    jabatan: "DevOps Engineer",
-    tipeUser: "Telkom",
-    unit: "Area 1",
-    role: "Staff",
-    avatarInitials: "QS",
-    avatarBgColor: "bg-cyan-100 text-cyan-700",
-    score: 87,
-    scoreTitle: "Kinerja Baik",
-    scoreSubtitle: "Uptime sistem 99.9%",
-    scoreVariant: "good",
-    geofenceStatus: "valid_telkom",
-    geofenceText: "Valid Area Telkom • 08:00 AM",
-    tasksDone: 19,
-    lateMinutes: 0,
-  },
-  {
-    nik: "10293850",
-    nama: "Fajar Nugroho",
-    email: "fajar.n@telkomakses.co.id",
-    telepon: "0823-1111-2222",
-    departemen: "Finance",
-    jabatan: "Budget Analyst",
-    tipeUser: "Telkom",
-    unit: "Area 2",
-    role: "Staff",
-    avatarInitials: "FN",
-    avatarBgColor: "bg-blue-100 text-blue-700",
-    score: 93,
-    scoreTitle: "Kinerja Sangat Baik",
-    scoreSubtitle: "Efisiensi biaya 12%",
-    scoreVariant: "high",
-    geofenceStatus: "valid_telkom",
-    geofenceText: "Valid Area Telkom • 07:48 AM",
-    tasksDone: 21,
-    lateMinutes: 0,
-  },
-  {
-    nik: "10293851",
-    nama: "Dewi Lestari",
-    email: "dewi.l@telkomakses.co.id",
-    telepon: "0856-3333-4444",
-    departemen: "Marketing",
-    jabatan: "Corporate Relations",
-    tipeUser: "Telkom",
-    unit: "Non-Telkom",
-    role: "Staff",
-    avatarInitials: "DL",
-    avatarBgColor: "bg-pink-100 text-pink-700",
-    score: 78,
-    scoreTitle: "Kinerja Cukup",
-    scoreSubtitle: "Progress deal klien B2B",
-    scoreVariant: "medium",
-    geofenceStatus: "remote_verified",
-    geofenceText: "Remote Terverifikasi • 08:21 AM",
-    tasksDone: 13,
-    lateMinutes: 21,
-  },
-  {
-    nik: "10293852",
-    nama: "Citra Dewi",
-    email: "citra.d@mitra.telkom.co.id",
-    telepon: "0857-5555-6666",
-    departemen: "Operations",
-    jabatan: "Quality Assurance Mitra",
-    tipeUser: "Non-Telkom (Mitra)",
-    unit: "Support",
-    role: "Staff",
-    avatarInitials: "CD",
-    avatarBgColor: "bg-orange-100 text-orange-700",
-    score: 55,
-    scoreTitle: "Perlu Intervensi",
-    scoreSubtitle: "Task pending melebihi batas",
-    scoreVariant: "low",
-    geofenceStatus: "outside_area",
-    geofenceText: "Di Luar Area Valid • 08:40 AM",
-    tasksDone: 4,
-    lateMinutes: 40,
-  },
-]
-
-export default function Page() {
-  const [karyawanList, setKaryawanList] = React.useState<KaryawanItem[]>(initialKaryawan)
+export default function AdminKaryawanPage() {
+  const [users, setUsers] = React.useState<User[]>([])
+  const [departments, setDepartments] = React.useState<Department[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [selectedFilterPill, setSelectedFilterPill] = React.useState("Semua Sub-Unit")
-  const [selectedUser, setSelectedUser] = React.useState<KaryawanItem | null>(null)
+  const [selectedRole, setSelectedRole] = React.useState<string>("all")
+  const [viewMode, setViewMode] = React.useState<"grid" | "list" | "organogram">("grid")
+
+  // Create Modal State
   const [isAddOpen, setIsAddOpen] = React.useState(false)
-  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid")
+  const [newNik, setNewNik] = React.useState("")
+  const [newNama, setNewNama] = React.useState("")
+  const [newEmail, setNewEmail] = React.useState("")
+  const [newPassword, setNewPassword] = React.useState("")
+  const [newPhone, setNewPhone] = React.useState("0812-3456-7890")
+  const [newRole, setNewRole] = React.useState<UserRole>("staff")
+  const [newDeptId, setNewDeptId] = React.useState("")
+  const [newSupervisorId, setNewSupervisorId] = React.useState("")
+  const [newPositionTitle, setNewPositionTitle] = React.useState("")
+  const [copiedPassword, setCopiedPassword] = React.useState(false)
 
-  // Filter Logic
-  const filteredKaryawan = React.useMemo(() => {
-    return karyawanList.filter((k) => {
-      // Search
-      const matchSearch =
-        k.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        k.nik.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        k.jabatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        k.unit.toLowerCase().includes(searchQuery.toLowerCase())
+  // Edit Modal State
+  const [isEditOpen, setIsEditOpen] = React.useState(false)
+  const [editingUser, setEditingUser] = React.useState<User | null>(null)
+  const [editNama, setEditNama] = React.useState("")
+  const [editEmail, setEditEmail] = React.useState("")
+  const [editRole, setEditRole] = React.useState<UserRole>("staff")
+  const [editDeptId, setEditDeptId] = React.useState("")
+  const [editSupervisorId, setEditSupervisorId] = React.useState("")
+  const [editPositionTitle, setEditPositionTitle] = React.useState("")
+  const [editPhone, setEditPhone] = React.useState("")
 
-      // Filter Pill
-      let matchPill = true
-      if (selectedFilterPill === "Teknisi Area 1") {
-        matchPill = k.unit === "Area 1"
-      } else if (selectedFilterPill === "Support Offline") {
-        matchPill = k.unit === "Support"
-      } else if (selectedFilterPill === "Non-Telkom") {
-        matchPill = k.tipeUser === "Non-Telkom (Mitra)" || k.unit === "Non-Telkom"
-      } else if (selectedFilterPill === "Perlu Intervensi") {
-        matchPill = k.scoreVariant === "low" || k.score < 70
-      }
+  // Delete Confirm Modal State
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
+  const [userToDelete, setUserToDelete] = React.useState<User | null>(null)
 
-      return matchSearch && matchPill
-    })
-  }, [karyawanList, searchQuery, selectedFilterPill])
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const handleResetPassword = (nik: string, nama: string) => {
-    toast.success(`Password untuk ${nama} (NIK: ${nik}) berhasil di-reset ke default!`)
+  const loadData = React.useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const [uList, dList] = await Promise.all([getAllUsers(), getDepartments()])
+      setUsers(uList)
+      setDepartments(dList)
+      if (dList.length > 0) setNewDeptId(dList[0].id)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  // Auto-fill when opening Create Modal
+  const handleOpenAddModal = () => {
+    const autoNik = generateAutoNik(users)
+    const autoPass = generateAutoPassword()
+    setNewNik(autoNik)
+    setNewPassword(autoPass)
+    setNewNama("")
+    setNewEmail("")
+    setNewPositionTitle("Staff Teknisi Lapangan")
+    setNewRole("staff")
+    setNewSupervisorId("")
+    setIsAddOpen(true)
   }
 
-  const handleAddKaryawan = (e: React.FormEvent<HTMLFormElement>) => {
+  // Auto-generate email when Name changes
+  const handleNamaChange = (val: string) => {
+    setNewNama(val)
+    if (val.trim()) {
+      setNewEmail(generateAutoEmail(val))
+    }
+  }
+
+  // Copy Generated Password
+  const handleCopyPassword = (pass: string) => {
+    navigator.clipboard.writeText(pass)
+    setCopiedPassword(true)
+    toast.success("Password disalin ke clipboard!")
+    setTimeout(() => setCopiedPassword(false), 2000)
+  }
+
+  // Create User Handler
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
-    const form = e.currentTarget
-    const formData = new FormData(form)
-
-    const nama = formData.get("nama") as string
-    const nik = formData.get("nik") as string
-    const email = formData.get("email") as string
-    const telepon = formData.get("telepon") as string
-    const departemen = formData.get("departemen") as KaryawanItem["departemen"]
-    const jabatan = formData.get("jabatan") as string
-    const tipeUser = formData.get("tipeUser") as KaryawanItem["tipeUser"]
-    const unit = (formData.get("unit") as string) || "Area 1"
-
-    const initials = nama
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase()
-
-    const newK: KaryawanItem = {
-      nik,
-      nama,
-      email,
-      telepon,
-      departemen,
-      jabatan,
-      tipeUser,
-      unit,
-      role: "Staff",
-      avatarInitials: initials,
-      avatarBgColor: "bg-blue-100 text-blue-700",
-      score: 85,
-      scoreTitle: "Kinerja Baik",
-      scoreSubtitle: "Akun baru terdaftar",
-      scoreVariant: "good",
-      geofenceStatus: "valid_telkom",
-      geofenceText: "Valid Area Telkom • 08:00 AM",
-      tasksDone: 0,
-      lateMinutes: 0,
+    if (!newNik.trim() || !newNama.trim() || !newEmail.trim()) {
+      toast.error("Semua kolom data wajib diisi.")
+      return
     }
 
-    setKaryawanList([newK, ...karyawanList])
-    setIsAddOpen(false)
-    toast.success(`Akun karyawan baru ${nama} berhasil didaftarkan!`)
+    setIsSubmitting(true)
+    try {
+      const created = await createUser({
+        nik: newNik.trim(),
+        nama: newNama.trim(),
+        email: newEmail.trim(),
+        password: newPassword || "password123",
+        role: newRole,
+        department_id: newDeptId || null,
+        supervisor_id: newSupervisorId || null,
+        position_title: newPositionTitle || `${ROLE_LABELS[newRole]?.label}`,
+        phone: newPhone,
+      })
+
+      if (created) {
+        toast.success(`Akun karyawan ${created.nama} berhasil dibuat!`, {
+          description: `NIK ${created.nik} • Password: ${newPassword}`,
+        })
+        setIsAddOpen(false)
+        loadData()
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal mendaftarkan karyawan. Pastikan NIK/Email belum terdaftar.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
+
+  // Open Edit Modal
+  const handleOpenEdit = (user: User) => {
+    setEditingUser(user)
+    setEditNama(user.nama)
+    setEditEmail(user.email)
+    setEditRole(user.role)
+    setEditDeptId(user.department_id || (departments[0]?.id || ""))
+    setEditSupervisorId(user.supervisor_id || "")
+    setEditPositionTitle(user.position_title || "")
+    setEditPhone(user.phone || "0812-3456-7890")
+    setIsEditOpen(true)
+  }
+
+  // Submit Edit User
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUser) return
+
+    setIsSubmitting(true)
+    try {
+      const updated = await updateUser(editingUser.id, {
+        nama: editNama.trim(),
+        email: editEmail.trim(),
+        role: editRole,
+        department_id: editDeptId || null,
+        supervisor_id: editSupervisorId || null,
+        position_title: editPositionTitle,
+        phone: editPhone,
+      })
+
+      if (updated) {
+        toast.success(`Data karyawan ${updated.nama} berhasil diperbarui!`)
+        setIsEditOpen(false)
+        loadData()
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal memperbarui data karyawan.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Open Delete Modal
+  const handleOpenDelete = (user: User) => {
+    setUserToDelete(user)
+    setIsDeleteOpen(true)
+  }
+
+  // Confirm Delete User
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return
+
+    setIsSubmitting(true)
+    try {
+      const ok = await deleteUser(userToDelete.id)
+      if (ok) {
+        toast.success(`Akun karyawan ${userToDelete.nama} berhasil dihapus dari sistem.`)
+        setIsDeleteOpen(false)
+        loadData()
+      } else {
+        toast.error("Gagal menghapus akun karyawan.")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Terjadi kendala saat menghapus akun.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Reset Password Handler
+  const handleResetPassword = async (user: User) => {
+    try {
+      const newPass = await resetUserPassword(user.id)
+      navigator.clipboard.writeText(newPass)
+      toast.success(`Password baru ${user.nama} di-reset!`, {
+        description: `Password: ${newPass} (Telah disalin ke clipboard)`,
+      })
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal mereset password.")
+    }
+  }
+
+  // Filtered Users
+  const filteredUsers = React.useMemo(() => {
+    return users.filter((u) => {
+      const matchRole = selectedRole === "all" || u.role === selectedRole
+      const matchSearch =
+        !searchQuery ||
+        u.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.nik.includes(searchQuery) ||
+        (u.position_title && u.position_title.toLowerCase().includes(searchQuery.toLowerCase()))
+      return matchRole && matchSearch
+    })
+  }, [users, selectedRole, searchQuery])
+
+  // Potential supervisors dropdown for Create
+  const potentialSupervisorsForNew = users.filter((u) => {
+    const level = ROLE_HIERARCHY_LEVEL[u.role] || 1
+    const newLevel = ROLE_HIERARCHY_LEVEL[newRole] || 1
+    return level > newLevel
+  })
+
+  // Potential supervisors dropdown for Edit
+  const potentialSupervisorsForEdit = users.filter((u) => {
+    if (!editingUser || u.id === editingUser.id) return false
+    const level = ROLE_HIERARCHY_LEVEL[u.role] || 1
+    const editLevel = ROLE_HIERARCHY_LEVEL[editRole] || 1
+    return level > editLevel
+  })
 
   return (
     <SidebarProvider
@@ -425,723 +304,197 @@ export default function Page() {
         } as React.CSSProperties
       }
     >
-      <AiPanelProvider>
-        <AppSidebar variant="inset" />
-        <SidebarInset className="h-screen md:h-[calc(100vh-1rem)] overflow-hidden flex flex-col">
-          <SiteHeader />
-          <div className="flex flex-1 min-h-0 h-full flex-row overflow-hidden">
-            {/* Main Center Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-6">
-
-              {/* Header Title & Add Button */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                    Manajemen Karyawan Telkom Akses
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col font-sans">
+          <div className="flex flex-1 flex-col gap-5 py-4 lg:py-6">
+            {/* Header Title & Actions */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 lg:px-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                    Direktori Karyawan & Organogram
                   </h1>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Monitoring kinerja, kehadiran GPS geofencing, dan log aktivitas 17 akun kantor
-                  </p>
+                  <span className="px-2.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-900">
+                    {users.length} Akun Terdaftar
+                  </span>
                 </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="relative hidden md:block w-56">
-                    <SearchIcon className="absolute left-3 top-2.5 size-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder="Cari karyawan..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-8.5 h-9 text-xs rounded-[8px]"
-                    />
-                  </div>
-
-                  <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                    <Button
-                      onClick={() => setIsAddOpen(true)}
-                      className="h-9 gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
-                    >
-                      <PlusIcon className="size-4" />
-                      Tambah Karyawan
-                    </Button>
-                    <DialogContent className="sm:max-w-lg p-6 rounded-[8px] border bg-card shadow-lg">
-                      <DialogHeader className="pb-2 border-b border-border/60">
-                        <DialogTitle className="text-base font-bold text-foreground">
-                          Daftarkan Karyawan Baru
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-muted-foreground">
-                          Tambahkan akun pegawai tetap Telkom Akses atau mitra operasional ke sistem.
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <form onSubmit={handleAddKaryawan} className="flex flex-col gap-4 pt-3 text-xs">
-                        <div className="flex flex-col gap-1.5">
-                          <Label htmlFor="nama" className="text-xs font-semibold text-foreground">
-                            Nama Lengkap <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="nama"
-                            name="nama"
-                            placeholder="Contoh: Rian Hidayat"
-                            required
-                            className="h-9 text-xs rounded-[8px]"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="nik" className="text-xs font-semibold text-foreground">
-                              NIK Unik <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="nik"
-                              name="nik"
-                              placeholder="Contoh: 10293858"
-                              required
-                              className="h-9 text-xs font-mono rounded-[8px]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="telepon" className="text-xs font-semibold text-foreground">
-                              No. Telepon / WhatsApp <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="telepon"
-                              name="telepon"
-                              placeholder="0812-xxxx-xxxx"
-                              required
-                              className="h-9 text-xs rounded-[8px]"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <Label htmlFor="email" className="text-xs font-semibold text-foreground">
-                            Email Kantor <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            placeholder="nama@telkomakses.co.id"
-                            required
-                            className="h-9 text-xs rounded-[8px]"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5">
-                            <Label className="text-xs font-semibold text-foreground">Departemen</Label>
-                            <Select name="departemen" defaultValue="IT">
-                              <SelectTrigger className="h-9 text-xs rounded-[8px]">
-                                <SelectValue placeholder="Pilih Departemen" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-[8px] text-xs">
-                                <SelectItem value="IT">IT & Network</SelectItem>
-                                <SelectItem value="Operations">Operations</SelectItem>
-                                <SelectItem value="Finance">Finance</SelectItem>
-                                <SelectItem value="HR">HR & GA</SelectItem>
-                                <SelectItem value="Marketing">Marketing</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <Label className="text-xs font-semibold text-foreground">Tipe Akun</Label>
-                            <Select name="tipeUser" defaultValue="Telkom">
-                              <SelectTrigger className="h-9 text-xs rounded-[8px]">
-                                <SelectValue placeholder="Tipe Karyawan" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-[8px] text-xs">
-                                <SelectItem value="Telkom">Telkom Organik</SelectItem>
-                                <SelectItem value="Non-Telkom (Mitra)">Mitra Non-Telkom</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="jabatan" className="text-xs font-semibold text-foreground">
-                              Jabatan Pekerjaan
-                            </Label>
-                            <Input
-                              id="jabatan"
-                              name="jabatan"
-                              placeholder="Contoh: Staff Operasional"
-                              required
-                              className="h-9 text-xs rounded-[8px]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <Label className="text-xs font-semibold text-foreground">Sub-Unit Area</Label>
-                            <Select name="unit" defaultValue="Area 1">
-                              <SelectTrigger className="h-9 text-xs rounded-[8px]">
-                                <SelectValue placeholder="Pilih Sub-Unit" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-[8px] text-xs">
-                                <SelectItem value="Area 1">Teknisi Area 1</SelectItem>
-                                <SelectItem value="Area 2">Teknisi Area 2</SelectItem>
-                                <SelectItem value="Support">Support Offline</SelectItem>
-                                <SelectItem value="Non-Telkom">Non-Telkom Partner</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-2.5 pt-3 mt-1 border-t border-border/60">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setIsAddOpen(false)}
-                            className="h-9 px-4 text-xs font-semibold rounded-[8px]"
-                          >
-                            Batal
-                          </Button>
-                          <Button
-                            type="submit"
-                            className="h-9 px-5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
-                          >
-                            Simpan & Daftarkan Akun
-                          </Button>
-                        </div>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Admin Provisioning: Auto-generator NIK, Email, Password, CRUD Karyawan, dan Pemetaan Rantai Komando.
+                </p>
               </div>
 
-              {/* Quick Metrics Bar (Matching Telkom Red Design System) */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <UsersIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Total Akun Kantor</span>
-                      <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
-                        17 Akun
-                      </span>
-                    </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {karyawanList.length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Terdaftar di sistem kantor</p>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadData}
+                  className="h-9 px-3 rounded-xl text-xs font-semibold gap-1.5"
+                >
+                  <RefreshCwIcon className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
 
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <ShieldCheckIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Telkom Organik</span>
-                      <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
-                        Pegawai Tetap
-                      </span>
-                    </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {karyawanList.filter((k) => k.tipeUser === "Telkom").length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Pegawai tetap Telkom Akses</p>
-                  </div>
-                </div>
-
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <Building2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Mitra Non-Telkom</span>
-                      <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
-                        Partner
-                      </span>
-                    </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {karyawanList.filter((k) => k.tipeUser === "Non-Telkom (Mitra)").length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Staff & teknisi mitra</p>
-                  </div>
-                </div>
-
-                <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Hadir Hari Ini</span>
-                      <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
-                        Presensi GPS
-                      </span>
-                    </div>
-                    <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
-                      {karyawanList.filter((k) => k.geofenceStatus !== "outside_area").length}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Tercatat clock-in kantor</p>
-                  </div>
-                </div>
+                <Button
+                  size="sm"
+                  onClick={handleOpenAddModal}
+                  className="h-9 px-4 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5"
+                >
+                  <PlusIcon className="size-4" />
+                  Tambah Karyawan Baru
+                </Button>
               </div>
+            </div>
 
-              {/* Top Filter Pills Bar (Matching Screenshot Exactly) */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-                {/* Pills List */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Pill 1: Semua Sub-Unit (Active Red) */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFilterPill("Semua Sub-Unit")}
-                    className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold transition-all ${selectedFilterPill === "Semua Sub-Unit"
-                        ? "bg-red-600 text-white shadow-xs"
-                        : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
-                  >
-                    Semua Sub-Unit ({karyawanList.length})
-                  </button>
-
-                  {/* Pill 2: Teknisi Area 1 */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFilterPill("Teknisi Area 1")}
-                    className={`px-4 py-1.5 rounded-[8px] text-xs font-medium transition-all ${selectedFilterPill === "Teknisi Area 1"
-                        ? "bg-red-600 text-white shadow-xs"
-                        : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
-                  >
-                    Teknisi Area 1
-                  </button>
-
-                  {/* Pill 3: Support Offline */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFilterPill("Support Offline")}
-                    className={`px-4 py-1.5 rounded-[8px] text-xs font-medium transition-all ${selectedFilterPill === "Support Offline"
-                        ? "bg-red-600 text-white shadow-xs"
-                        : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
-                  >
-                    Support Offline
-                  </button>
-
-                  {/* Pill 4: Non-Telkom */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFilterPill("Non-Telkom")}
-                    className={`px-4 py-1.5 rounded-[8px] text-xs font-medium transition-all ${selectedFilterPill === "Non-Telkom"
-                        ? "bg-red-600 text-white shadow-xs"
-                        : "border border-zinc-200 dark:border-zinc-800 bg-card text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
-                  >
-                    Non-Telkom
-                  </button>
-
-                  {/* Pill 5: Perlu Intervensi / Low Score (Red Highlighted with Alert Icon) */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFilterPill("Perlu Intervensi")}
-                    className={`px-4 py-1.5 rounded-[8px] text-xs font-semibold flex items-center gap-1.5 transition-all ${selectedFilterPill === "Perlu Intervensi"
-                        ? "bg-red-700 text-white shadow-xs ring-2 ring-red-400"
-                        : "bg-red-100/70 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-900 hover:bg-red-200/60"
-                      }`}
-                  >
-                    <AlertTriangleIcon className="size-3.5 text-red-600" />
-                    <span>Perlu Intervensi / Low Score</span>
-                  </button>
-                </div>
-
-                {/* View Mode Toggle (Grid / List) */}
-                <div className="flex items-center rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-card p-0.5">
+            {/* View Switcher & Filters */}
+            <div className="px-4 lg:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex p-1 bg-muted/60 rounded-xl border border-border">
                   <button
                     type="button"
                     onClick={() => setViewMode("grid")}
-                    title="Tampilan Grid"
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === "grid"
-                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                        : "text-zinc-400 hover:text-zinc-700"
-                      }`}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                      viewMode === "grid" ? "bg-white dark:bg-zinc-800 text-foreground shadow-xs" : "text-muted-foreground"
+                    }`}
                   >
-                    <LayoutGridIcon className="size-4" />
+                    <LayoutGridIcon className="size-3.5" />
+                    <span>Grid View</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewMode("list")}
-                    title="Tampilan List"
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === "list"
-                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                        : "text-zinc-400 hover:text-zinc-700"
-                      }`}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                      viewMode === "list" ? "bg-white dark:bg-zinc-800 text-foreground shadow-xs" : "text-muted-foreground"
+                    }`}
                   >
-                    <ListIcon className="size-4" />
+                    <ListIcon className="size-3.5" />
+                    <span>Tabel List</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("organogram")}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                      viewMode === "organogram" ? "bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-xs" : "text-muted-foreground"
+                    }`}
+                  >
+                    <GitForkIcon className="size-3.5" />
+                    <span>Pohon Organogram</span>
                   </button>
                 </div>
               </div>
 
-              {/* View Mode: GRID vs LIST */}
-              {viewMode === "grid" ? (
-                /* Employee Cards Grid (Exact Design from Screenshot) */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4.5">
-                  {filteredKaryawan.map((karyawan) => {
-                    const isLowScore = karyawan.scoreVariant === "low" || karyawan.score < 70
-                    const isHighScore = karyawan.scoreVariant === "high" || karyawan.score >= 90
-                    const isGoodScore = karyawan.scoreVariant === "good" || (karyawan.score >= 80 && karyawan.score < 90)
+              <div className="flex items-center gap-2.5">
+                <div className="relative">
+                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari NIK / Nama / Posisi..."
+                    className="h-8.5 w-48 lg:w-64 pl-8 rounded-xl text-xs bg-muted/30"
+                  />
+                </div>
 
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="h-8.5 px-3 rounded-xl text-xs font-semibold bg-card border border-border text-foreground"
+                >
+                  <option value="all">Semua Jabatan</option>
+                  <option value="sgm">Senior General Manager (SGM)</option>
+                  <option value="manager">Manager Divisi</option>
+                  <option value="officer_3">Officer 3 (Project Lead)</option>
+                  <option value="officer_2">Officer 2 (Specialist)</option>
+                  <option value="officer_1">Officer 1 (Shift Lead)</option>
+                  <option value="staff">Staff Lapangan / Teknisi</option>
+                  <option value="admin">System Admin</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="px-4 lg:px-6">
+              {viewMode === "grid" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredUsers.map((u) => {
+                    const roleMeta = ROLE_LABELS[u.role] || { label: "User", badge: "User", color: "bg-zinc-100" }
                     return (
                       <div
-                        key={karyawan.nik}
-                        className="rounded-[8px] border border-zinc-200/90 dark:border-zinc-800 bg-card p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                        key={u.id}
+                        className="p-4 rounded-2xl border border-border bg-card shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-3 relative group"
                       >
-                        {/* 1. Header: Avatar + Name + NIK & Unit Badge + 3-dots */}
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            {/* Avatar Circle with Initials */}
-                            <div
-                              className={`size-10.5 rounded-full ${karyawan.avatarBgColor || "bg-indigo-100 text-indigo-700"
-                                } font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs`}
-                            >
-                              {karyawan.avatarInitials}
-                            </div>
-
-                            <div>
-                              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
-                                {karyawan.nama}
-                              </h3>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <span className="text-[11px] font-mono text-zinc-500">
-                                  NIK: {karyawan.nik}
-                                </span>
-                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none">
-                                  {karyawan.unit}
-                                </span>
-                              </div>
+                        {/* Top Profile */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3">
+                            <img
+                              src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"}
+                              alt={u.nama}
+                              className="size-12 rounded-xl object-cover border border-border shrink-0"
+                            />
+                            <div className="overflow-hidden space-y-1">
+                              <h3 className="text-xs font-bold text-foreground truncate">{u.nama}</h3>
+                              <span className={`inline-block px-2 py-0.2 rounded text-[10px] font-extrabold ${roleMeta.color}`}>
+                                {roleMeta.badge}
+                              </span>
+                              <p className="text-[11px] text-muted-foreground truncate">{u.position_title}</p>
                             </div>
                           </div>
 
-                          {/* Options Dropdown */}
+                          {/* Quick Action Menu */}
                           <DropdownMenu>
-                            <DropdownMenuTrigger render={
-                              <Button variant="ghost" size="icon" className="size-7 text-zinc-400 hover:text-zinc-700 -mr-2">
-                                <MoreVerticalIcon className="size-4" />
-                              </Button>
-                            } />
-                            <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem onClick={() => setSelectedUser(karyawan)}>
-                                Lihat Detail Log
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 text-muted-foreground hover:text-foreground rounded-lg"
+                                />
+                              }
+                            >
+                              <MoreVerticalIcon className="size-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44 rounded-xl p-1">
+                              <DropdownMenuItem
+                                onClick={() => handleOpenEdit(u)}
+                                className="text-xs gap-2 py-1.5 cursor-pointer rounded-lg"
+                              >
+                                <Edit2Icon className="size-3.5 text-blue-500" />
+                                <span>Edit Karyawan</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleResetPassword(karyawan.nik, karyawan.nama)}>
-                                Reset Password
+                              <DropdownMenuItem
+                                onClick={() => handleResetPassword(u)}
+                                className="text-xs gap-2 py-1.5 cursor-pointer rounded-lg"
+                              >
+                                <KeyRoundIcon className="size-3.5 text-amber-500" />
+                                <span>Reset Password</span>
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem variant="destructive">Nonaktifkan Akun</DropdownMenuItem>
+                              <DropdownMenuSeparator className="my-1" />
+                              <DropdownMenuItem
+                                onClick={() => handleOpenDelete(u)}
+                                className="text-xs gap-2 py-1.5 text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/40 cursor-pointer rounded-lg font-semibold"
+                              >
+                                <Trash2Icon className="size-3.5" />
+                                <span>Hapus Akun</span>
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
 
-                        {/* 2. Performance Ring & Score Description */}
-                        <div className="flex items-center gap-3.5">
-                          {/* Circular Ring Badge */}
-                          <div
-                            className={`size-11.5 rounded-full border-[2.5px] flex items-center justify-center font-bold text-sm shrink-0 ${isHighScore
-                                ? "border-emerald-700 text-emerald-800 dark:text-emerald-400 dark:border-emerald-500"
-                                : isLowScore
-                                  ? "border-red-700 text-red-800 dark:text-red-400 dark:border-red-600"
-                                  : isGoodScore
-                                    ? "border-emerald-600 text-emerald-800 dark:text-emerald-400 dark:border-emerald-500"
-                                    : "border-amber-600 text-amber-800 dark:text-amber-400 dark:border-amber-500"
-                              }`}
-                          >
-                            {karyawan.score}
+                        {/* Details */}
+                        <div className="pt-3 border-t border-border/60 space-y-1 text-[11px] text-muted-foreground">
+                          <div className="flex items-center justify-between">
+                            <span>NIK:</span>
+                            <strong className="text-foreground font-mono">{u.nik}</strong>
                           </div>
-
-                          {/* Text Title & Subtitle */}
-                          <div>
-                            <p
-                              className={`text-xs font-bold leading-snug ${isLowScore ? "text-red-700 dark:text-red-400" : "text-zinc-900 dark:text-zinc-100"
-                                }`}
-                            >
-                              {karyawan.scoreTitle}
-                            </p>
-                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                              {karyawan.scoreSubtitle}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* 3. Geofence / Presence Status Banner */}
-                        <div>
-                          {karyawan.geofenceStatus === "valid_telkom" && (
-                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 p-2.5 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
-                              <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
-                              <span className="font-semibold text-[11px] truncate">
-                                {karyawan.geofenceText}
-                              </span>
+                          {u.supervisor && (
+                            <div className="flex items-center justify-between">
+                              <span>Atasan:</span>
+                              <span className="text-foreground font-semibold truncate max-w-[130px]">{u.supervisor.nama}</span>
                             </div>
                           )}
-
-                          {karyawan.geofenceStatus === "outside_area" && (
-                            <div className="rounded-[8px] bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 p-2.5 flex items-center gap-2 text-xs text-red-800 dark:text-red-300">
-                              <MapPinOffIcon className="size-4 text-red-600 shrink-0" />
-                              <span className="font-semibold text-[11px] truncate">
-                                {karyawan.geofenceText}
-                              </span>
-                            </div>
-                          )}
-
-                          {karyawan.geofenceStatus === "remote_verified" && (
-                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 p-2.5 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
-                              <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
-                              <span className="font-semibold text-[11px] truncate">
-                                {karyawan.geofenceText}
-                              </span>
-                            </div>
-                          )}
-
-                          {karyawan.geofenceStatus === "late_checkin" && (
-                            <div className="rounded-[8px] bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 p-2.5 flex items-center gap-2 text-xs text-amber-900 dark:text-amber-300">
-                              <ClockIcon className="size-4 text-amber-600 shrink-0" />
-                              <span className="font-semibold text-[11px] truncate">
-                                {karyawan.geofenceText}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 4. Stats Footer: Tasks Done | Late (Min) | Role Badge */}
-                        <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-3 flex items-center justify-between text-center">
-                          <div className="flex flex-col items-center">
-                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                              {karyawan.tasksDone}
-                            </span>
-                            <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">
-                              Tasks Done
-                            </span>
-                          </div>
-
-                          <div className="flex flex-col items-center">
-                            <span
-                              className={`text-sm font-bold ${karyawan.lateMinutes > 0
-                                  ? isLowScore
-                                    ? "text-red-600"
-                                    : "text-amber-600"
-                                  : "text-zinc-900 dark:text-zinc-100"
-                                }`}
-                            >
-                              {karyawan.lateMinutes}
-                            </span>
-                            <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">
-                              Late (Min)
-                            </span>
-                          </div>
-
-                          <div>
-                            {karyawan.role === "Admin" ? (
-                              <span className="bg-red-600 text-white font-bold px-2.5 py-0.5 rounded text-[10px]">
-                                Admin
-                              </span>
-                            ) : (
-                              <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold px-2 py-0.5 rounded text-[10px]">
-                                Staff
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 5. Bottom Action Button: Lihat Detail Log */}
-                        <div>
-                          {isLowScore ? (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedUser(karyawan)}
-                              className="w-full h-9 rounded-[8px] border border-red-200 dark:border-red-900/60 bg-red-50/90 dark:bg-red-950/50 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-2xs"
-                            >
-                              Lihat Detail Log
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedUser(karyawan)}
-                              className="w-full h-9 rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-2xs"
-                            >
-                              Lihat Detail Log
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                /* Employee Cards LIST View */
-                <div className="flex flex-col gap-3">
-                  {filteredKaryawan.map((karyawan) => {
-                    const isLowScore = karyawan.scoreVariant === "low" || karyawan.score < 70
-                    const isHighScore = karyawan.scoreVariant === "high" || karyawan.score >= 90
-                    const isGoodScore = karyawan.scoreVariant === "good" || (karyawan.score >= 80 && karyawan.score < 90)
-
-                    return (
-                      <div
-                        key={karyawan.nik}
-                        className="rounded-[8px] border border-zinc-200/90 dark:border-zinc-800 bg-card p-4 shadow-2xs hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-                      >
-                        {/* Left: Avatar + Name + NIK + Unit */}
-                        <div className="flex items-center gap-3.5 min-w-[220px]">
-                          <div
-                            className={`size-11 rounded-full ${karyawan.avatarBgColor || "bg-indigo-100 text-indigo-700"
-                              } font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs`}
-                          >
-                            {karyawan.avatarInitials}
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                              {karyawan.nama}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[11px] font-mono text-zinc-500">
-                                NIK: {karyawan.nik}
-                              </span>
-                              <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none">
-                                {karyawan.unit}
-                              </span>
-                            </div>
-                            <span className="text-[11px] text-zinc-400 block mt-0.5">
-                              {karyawan.jabatan}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Middle 1: Score Badge */}
-                        <div className="flex items-center gap-3 min-w-[180px]">
-                          <div
-                            className={`size-10.5 rounded-full border-[2.5px] flex items-center justify-center font-bold text-xs shrink-0 ${isHighScore
-                                ? "border-emerald-700 text-emerald-800 dark:text-emerald-400 dark:border-emerald-500"
-                                : isLowScore
-                                  ? "border-red-700 text-red-800 dark:text-red-400 dark:border-red-600"
-                                  : isGoodScore
-                                    ? "border-emerald-600 text-emerald-800 dark:text-emerald-400 dark:border-emerald-500"
-                                    : "border-amber-600 text-amber-800 dark:text-amber-400 dark:border-amber-500"
-                              }`}
-                          >
-                            {karyawan.score}
-                          </div>
-                          <div>
-                            <p
-                              className={`text-xs font-bold ${isLowScore ? "text-red-700 dark:text-red-400" : "text-zinc-900 dark:text-zinc-100"
-                                }`}
-                            >
-                              {karyawan.scoreTitle}
-                            </p>
-                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                              {karyawan.scoreSubtitle}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Middle 2: Geofence Status */}
-                        <div className="min-w-[210px]">
-                          {karyawan.geofenceStatus === "valid_telkom" && (
-                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 px-3 py-2 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
-                              <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
-                              <span className="font-semibold text-xs truncate">
-                                {karyawan.geofenceText}
-                              </span>
-                            </div>
-                          )}
-
-                          {karyawan.geofenceStatus === "outside_area" && (
-                            <div className="rounded-[8px] bg-red-50/80 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 px-3 py-2 flex items-center gap-2 text-xs text-red-800 dark:text-red-300">
-                              <MapPinOffIcon className="size-4 text-red-600 shrink-0" />
-                              <span className="font-semibold text-xs truncate">
-                                {karyawan.geofenceText}
-                              </span>
-                            </div>
-                          )}
-
-                          {karyawan.geofenceStatus === "remote_verified" && (
-                            <div className="rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-900/60 px-3 py-2 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
-                              <CheckCircleIcon className="size-4 text-emerald-600 shrink-0" />
-                              <span className="font-semibold text-xs truncate">
-                                {karyawan.geofenceText}
-                              </span>
-                            </div>
-                          )}
-
-                          {karyawan.geofenceStatus === "late_checkin" && (
-                            <div className="rounded-[8px] bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 px-3 py-2 flex items-center gap-2 text-xs text-amber-900 dark:text-amber-300">
-                              <ClockIcon className="size-4 text-amber-600 shrink-0" />
-                              <span className="font-semibold text-xs truncate">
-                                {karyawan.geofenceText}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Right Stats & Actions */}
-                        <div className="flex items-center justify-between lg:justify-end gap-5">
-                          <div className="flex items-center gap-4 text-center">
-                            <div className="flex flex-col items-center">
-                              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                                {karyawan.tasksDone}
-                              </span>
-                              <span className="text-[9px] font-semibold text-zinc-400 uppercase">
-                                Tasks
-                              </span>
-                            </div>
-                            <div className="flex flex-col items-center">
-                              <span
-                                className={`text-xs font-bold ${karyawan.lateMinutes > 0
-                                    ? isLowScore
-                                      ? "text-red-600"
-                                      : "text-amber-600"
-                                    : "text-zinc-900 dark:text-zinc-100"
-                                  }`}
-                              >
-                                {karyawan.lateMinutes}m
-                              </span>
-                              <span className="text-[9px] font-semibold text-zinc-400 uppercase">
-                                Late
-                              </span>
-                            </div>
-                            <div>
-                              {karyawan.role === "Admin" ? (
-                                <span className="bg-red-600 text-white font-bold px-2 py-0.5 rounded text-[10px]">
-                                  Admin
-                                </span>
-                              ) : (
-                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold px-2 py-0.5 rounded text-[10px]">
-                                  Staff
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {isLowScore ? (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedUser(karyawan)}
-                                className="h-8.5 px-3.5 rounded-[8px] border border-red-200 dark:border-red-900/60 bg-red-50/90 dark:bg-red-950/50 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-100 transition-colors shadow-2xs"
-                              >
-                                Lihat Detail Log
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedUser(karyawan)}
-                                className="h-8.5 px-3.5 rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 transition-colors shadow-2xs"
-                              >
-                                Lihat Detail Log
-                              </button>
-                            )}
-
-                            <DropdownMenu>
-                              <DropdownMenuTrigger render={
-                                <Button variant="ghost" size="icon" className="size-8 text-zinc-400 hover:text-zinc-700">
-                                  <MoreVerticalIcon className="size-4" />
-                                </Button>
-                              } />
-                              <DropdownMenuContent align="end" className="w-44">
-                                <DropdownMenuItem onClick={() => setSelectedUser(karyawan)}>
-                                  Lihat Detail Log
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleResetPassword(karyawan.nik, karyawan.nama)}>
-                                  Reset Password
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive">Nonaktifkan Akun</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                          <div className="flex items-center justify-between">
+                            <span>Email:</span>
+                            <span className="truncate max-w-[140px]">{u.email}</span>
                           </div>
                         </div>
                       </div>
@@ -1150,87 +503,502 @@ export default function Page() {
                 </div>
               )}
 
-              {/* Detail Log Modal / Dialog */}
-              {selectedUser && (
-                <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Detail Log Karyawan - {selectedUser.nama}</DialogTitle>
-                      <DialogDescription>
-                        NIK: {selectedUser.nik} &bull; Unit: {selectedUser.unit} &bull; {selectedUser.tipeUser}
-                      </DialogDescription>
-                    </DialogHeader>
+              {viewMode === "list" && (
+                <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold border-b border-border">
+                      <tr>
+                        <th className="py-3 px-4">Karyawan</th>
+                        <th className="py-3 px-4">NIK</th>
+                        <th className="py-3 px-4">Jabatan</th>
+                        <th className="py-3 px-4">Posisi Spesifik</th>
+                        <th className="py-3 px-4">Atasan Langsung</th>
+                        <th className="py-3 px-4">Email</th>
+                        <th className="py-3 px-4 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {filteredUsers.map((u) => (
+                        <tr key={u.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2.5">
+                              <img
+                                src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"}
+                                alt={u.nama}
+                                className="size-8 rounded-full object-cover border"
+                              />
+                              <span className="font-bold text-foreground">{u.nama}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-mono font-bold text-red-600">{u.nik}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ROLE_LABELS[u.role]?.color}`}>
+                              {ROLE_LABELS[u.role]?.badge}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-foreground font-medium">{u.position_title}</td>
+                          <td className="py-3 px-4 text-muted-foreground font-semibold">
+                            {u.supervisor?.nama || "Puncak Struktur / SGM"}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">{u.email}</td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenEdit(u)}
+                                className="h-7 px-2 text-[11px] font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg gap-1"
+                              >
+                                <Edit2Icon className="size-3" /> Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenDelete(u)}
+                                className="h-7 px-2 text-[11px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
+                              >
+                                <Trash2Icon className="size-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-                    <div className="flex flex-col gap-4 py-2 text-xs">
-                      <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-[8px]">
-                        <div
-                          className={`size-12 rounded-[8px] ${selectedUser.avatarBgColor || "bg-primary text-primary-foreground"
-                            } font-bold text-base flex items-center justify-center shadow-xs`}
-                        >
-                          {selectedUser.avatarInitials}
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-foreground">{selectedUser.nama}</h4>
-                          <span className="text-muted-foreground">{selectedUser.jabatan}</span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 border rounded-[8px]">
-                          <span className="text-muted-foreground block text-[10px] uppercase font-bold">Skor Kinerja</span>
-                          <span className="font-mono font-bold text-base text-foreground">{selectedUser.score} / 100</span>
-                          <span className="text-[10px] text-muted-foreground block">{selectedUser.scoreTitle}</span>
-                        </div>
-                        <div className="p-3 border rounded-[8px]">
-                          <span className="text-muted-foreground block text-[10px] uppercase font-bold">Status Presensi</span>
-                          <span className="font-semibold text-xs text-foreground block mt-1">{selectedUser.geofenceText}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-2 p-3 border rounded-[8px]">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Email:</span>
-                          <span className="font-semibold">{selectedUser.email}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">No. Telepon:</span>
-                          <span className="font-semibold">{selectedUser.telepon}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Tugas Selesai:</span>
-                          <span className="font-semibold">{selectedUser.tasksDone} Tugas</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Total Keterlambatan:</span>
-                          <span className="font-semibold text-red-600">{selectedUser.lateMinutes} Menit</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-end gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleResetPassword(selectedUser.nik, selectedUser.nama)}
-                          className="gap-1 text-xs"
-                        >
-                          <KeyRoundIcon className="size-3.5" /> Reset Password
-                        </Button>
-                        <Button size="sm" onClick={() => setSelectedUser(null)} className="text-xs bg-red-600 hover:bg-red-700 text-white">
-                          Tutup
-                        </Button>
-                      </div>
+              {viewMode === "organogram" && (
+                <div className="p-6 rounded-2xl border border-border bg-card space-y-6">
+                  <div className="flex items-center gap-2 pb-3 border-b border-border">
+                    <GitForkIcon className="size-5 text-red-600" />
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Struktur Rantai Komando Organisasi</h3>
+                      <p className="text-[11px] text-muted-foreground">Pohon hierarki pelimpahan dan delegasi wewenang operasional.</p>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                  </div>
+
+                  {/* SGM Level */}
+                  <div className="space-y-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-red-600 flex items-center gap-1.5">
+                      <span>👑 Level 6: Senior General Manager (SGM)</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-4 border-l-2 border-red-500">
+                      {users.filter((u) => u.role === "sgm").map((u) => (
+                        <div key={u.id} className="p-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 flex items-center gap-3">
+                          <img
+                            src={u.avatar_url || "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80"}
+                            alt={u.nama}
+                            className="size-10 rounded-lg object-cover"
+                          />
+                          <div>
+                            <h4 className="text-xs font-bold text-foreground">{u.nama}</h4>
+                            <p className="text-[10px] text-muted-foreground">{u.position_title}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Manager Level */}
+                    <div className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5 mt-4">
+                      <span>👔 Level 5: Manager Divisi</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-4 border-l-2 border-amber-500">
+                      {users.filter((u) => u.role === "manager").map((u) => (
+                        <div key={u.id} className="p-3 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20 flex items-center gap-3">
+                          <img
+                            src={u.avatar_url || "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80"}
+                            alt={u.nama}
+                            className="size-9 rounded-lg object-cover"
+                          />
+                          <div>
+                            <h4 className="text-xs font-bold text-foreground">{u.nama}</h4>
+                            <p className="text-[10px] text-muted-foreground">{u.position_title}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Officer Level */}
+                    <div className="text-xs font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5 mt-4">
+                      <span>Level 2-4: Officer 1 / 2 / 3 (Project & Coordination Leads)</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pl-4 border-l-2 border-blue-500">
+                      {users.filter((u) => u.role.startsWith("officer")).map((u) => (
+                        <div key={u.id} className="p-3 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 flex items-center gap-2.5">
+                          <img
+                            src={u.avatar_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"}
+                            alt={u.nama}
+                            className="size-8 rounded-lg object-cover"
+                          />
+                          <div className="overflow-hidden">
+                            <h4 className="text-xs font-bold text-foreground truncate">{u.nama}</h4>
+                            <span className="text-[10px] text-muted-foreground truncate block">{ROLE_LABELS[u.role]?.badge}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Staff Level */}
+                    <div className="text-xs font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-1.5 mt-4">
+                      <span>Level 1: Staff Administrasi & Operasional Kantor</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pl-4 border-l-2 border-zinc-400">
+                      {users.filter((u) => u.role === "staff").map((u) => (
+                        <div key={u.id} className="p-2.5 rounded-xl border border-border bg-card flex items-center gap-2">
+                          <img
+                            src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"}
+                            alt={u.nama}
+                            className="size-7 rounded-full object-cover"
+                          />
+                          <div className="overflow-hidden">
+                            <h4 className="text-[11px] font-bold text-foreground truncate">{u.nama}</h4>
+                            <span className="text-[9px] text-muted-foreground truncate block">{u.position_title || "Staff Kantor"}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
-
             </div>
-
-            {/* Integrated Right AI Column */}
-            <AiIntegratedPanel />
           </div>
-        </SidebarInset>
-      </AiPanelProvider>
+        </div>
+
+        {/* ======================================================== */}
+        {/* MODAL 1: TAMBAH KARYAWAN BARU (WITH AUTO-GENERATOR)       */}
+        {/* ======================================================== */}
+        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <DialogContent className="max-w-xl rounded-2xl p-6 font-sans">
+            <DialogHeader className="space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
+                <SparklesIcon className="size-4 text-amber-500" />
+                <span>Smart Admin Provisioning & Auto-Generator</span>
+              </div>
+              <DialogTitle className="text-xl font-extrabold tracking-tight text-foreground">
+                Daftarkan Akun Karyawan Baru
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                NIK, Email resmi, dan Password di-generate secara otomatis dan dapat disesuaikan.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleCreateUser} className="space-y-3.5 mt-3">
+              {/* Nama Lengkap & NIK */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Nama Lengkap *
+                  </label>
+                  <Input
+                    value={newNama}
+                    onChange={(e) => handleNamaChange(e.target.value)}
+                    placeholder="Contoh: Rian Hidayat, S.T."
+                    required
+                    className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      NIK Otomatis *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setNewNik(generateAutoNik(users))}
+                      className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-1"
+                    >
+                      <DicesIcon className="size-3" /> Re-roll
+                    </button>
+                  </div>
+                  <Input
+                    value={newNik}
+                    onChange={(e) => setNewNik(e.target.value)}
+                    placeholder="Contoh: 10293880"
+                    required
+                    className="mt-1 h-10 rounded-xl text-xs font-mono font-bold tracking-wider text-red-600"
+                  />
+                </div>
+              </div>
+
+              {/* Email & Password Auto-Generator */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Email Resmi (Auto-Generated) *
+                  </label>
+                  <Input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="nama.lengkap@telkomakses.co.id"
+                    required
+                    className="mt-1 h-10 rounded-xl text-xs font-semibold text-foreground"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Password Sementara *
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setNewPassword(generateAutoPassword())}
+                        className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-0.5"
+                        title="Acak Password"
+                      >
+                        <DicesIcon className="size-3" /> Acak
+                      </button>
+                      <span>•</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyPassword(newPassword)}
+                        className="text-[11px] font-bold text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 flex items-center gap-0.5"
+                        title="Salin Password"
+                      >
+                        {copiedPassword ? <CheckIcon className="size-3 text-emerald-500" /> : <CopyIcon className="size-3" />}
+                        {copiedPassword ? "Tersalin" : "Salin"}
+                      </button>
+                    </div>
+                  </div>
+                  <Input
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Password awal"
+                    required
+                    className="mt-1 h-10 rounded-xl text-xs font-mono font-bold text-foreground"
+                  />
+                </div>
+              </div>
+
+              {/* Tingkat Jabatan & Atasan Langsung */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Tingkat Jabatan (Role) *
+                  </label>
+                  <select
+                    value={newRole}
+                    onChange={(e) => {
+                      const r = e.target.value as UserRole
+                      setNewRole(r)
+                      setNewPositionTitle(ROLE_LABELS[r]?.label)
+                    }}
+                    className="w-full mt-1 h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground"
+                  >
+                    <option value="staff">Level 1: Staff Lapangan / Teknisi</option>
+                    <option value="officer_1">Level 2: Officer 1 (Shift Lead)</option>
+                    <option value="officer_2">Level 3: Officer 2 (Specialist)</option>
+                    <option value="officer_3">Level 4: Officer 3 (Project Lead)</option>
+                    <option value="manager">Level 5: Manager Divisi</option>
+                    <option value="sgm">Level 6: Senior General Manager (SGM)</option>
+                    <option value="admin">System & HR Administrator</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Atasan Langsung (Rantai Komando)
+                  </label>
+                  <select
+                    value={newSupervisorId}
+                    onChange={(e) => setNewSupervisorId(e.target.value)}
+                    className="w-full mt-1 h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground"
+                  >
+                    <option value="">-- Puncak Struktur / Tanpa Atasan --</option>
+                    {potentialSupervisorsForNew.map((sup) => (
+                      <option key={sup.id} value={sup.id}>
+                        {sup.nama} ({ROLE_LABELS[sup.role]?.badge})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Posisi Spesifik */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Deskripsi Posisi Spesifik
+                </label>
+                <Input
+                  value={newPositionTitle}
+                  onChange={(e) => setNewPositionTitle(e.target.value)}
+                  placeholder="Contoh: Staff Teknisi Splicing Core FO Area Bandung Barat"
+                  className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddOpen(false)}
+                  className="h-10 px-4 text-xs font-semibold rounded-xl"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-10 px-6 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                >
+                  {isSubmitting ? "Mendaftarkan..." : "Daftarkan Akun Karyawan"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* ======================================================== */}
+        {/* MODAL 2: EDIT DATA KARYAWAN (UPDATE CRUD)                */}
+        {/* ======================================================== */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent className="max-w-xl rounded-2xl p-6 font-sans">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-xl font-extrabold tracking-tight text-foreground">
+                Edit Data Karyawan: {editingUser?.nama}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Perbarui informasi akun, tingkat jabatan, dan atasan langsung.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleUpdateUser} className="space-y-3.5 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Nama Lengkap *
+                  </label>
+                  <Input
+                    value={editNama}
+                    onChange={(e) => setEditNama(e.target.value)}
+                    required
+                    className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Email Resmi *
+                  </label>
+                  <Input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    required
+                    className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Tingkat Jabatan (Role) *
+                  </label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as UserRole)}
+                    className="w-full mt-1 h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground"
+                  >
+                    <option value="staff">Level 1: Staff Lapangan / Teknisi</option>
+                    <option value="officer_1">Level 2: Officer 1 (Shift Lead)</option>
+                    <option value="officer_2">Level 3: Officer 2 (Specialist)</option>
+                    <option value="officer_3">Level 4: Officer 3 (Project Lead)</option>
+                    <option value="manager">Level 5: Manager Divisi</option>
+                    <option value="sgm">Level 6: Senior General Manager (SGM)</option>
+                    <option value="admin">System & HR Administrator</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Atasan Langsung
+                  </label>
+                  <select
+                    value={editSupervisorId}
+                    onChange={(e) => setEditSupervisorId(e.target.value)}
+                    className="w-full mt-1 h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground"
+                  >
+                    <option value="">-- Puncak Struktur / Tanpa Atasan --</option>
+                    {potentialSupervisorsForEdit.map((sup) => (
+                      <option key={sup.id} value={sup.id}>
+                        {sup.nama} ({ROLE_LABELS[sup.role]?.badge})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Deskripsi Posisi Spesifik
+                </label>
+                <Input
+                  value={editPositionTitle}
+                  onChange={(e) => setEditPositionTitle(e.target.value)}
+                  className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditOpen(false)}
+                  className="h-10 px-4 text-xs font-semibold rounded-xl"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-10 px-6 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+                >
+                  {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* ======================================================== */}
+        {/* MODAL 3: KONFIRMASI HAPUS AKUN (DELETE CRUD)             */}
+        {/* ======================================================== */}
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <DialogContent className="max-w-md rounded-2xl p-6 font-sans">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                <Trash2Icon className="size-5 text-red-600" />
+                Hapus Akun Karyawan?
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Apakah Anda yakin ingin menghapus akun <strong>{userToDelete?.nama}</strong> (NIK: {userToDelete?.nik}) dari database sistem? Tindakan ini tidak dapat dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex items-center justify-end gap-3 pt-3 mt-4 border-t border-border">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteOpen(false)}
+                className="h-9 px-4 text-xs font-semibold rounded-xl"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={isSubmitting}
+                className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+              >
+                {isSubmitting ? "Menghapus..." : "Ya, Hapus Akun"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </SidebarInset>
     </SidebarProvider>
   )
 }

@@ -914,9 +914,9 @@ export default function JadwalPage() {
                         <SelectValue placeholder="Prioritas" />
                       </SelectTrigger>
                       <SelectContent className="rounded-[8px] text-xs">
-                        <SelectItem value="HIGH">🔴 High Priority</SelectItem>
-                        <SelectItem value="MEDIUM">🟡 Medium Priority</SelectItem>
-                        <SelectItem value="LOW">🟢 Low Priority</SelectItem>
+                        <SelectItem value="HIGH">Tinggi (High Priority)</SelectItem>
+                        <SelectItem value="MEDIUM">Standar (Medium Priority)</SelectItem>
+                        <SelectItem value="LOW">Rendah (Low Priority)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
