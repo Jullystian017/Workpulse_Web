@@ -171,9 +171,6 @@ export function CreateTaskModal({
       <DialogContent className="max-w-2xl md:max-w-3xl rounded-2xl p-6 md:p-7 font-sans max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-1.5 border-b border-border pb-4">
           <DialogTitle className="text-lg md:text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <div className="size-8 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <PlusIcon className="size-4.5" />
-            </div>
             Buat Penugasan Baru
           </DialogTitle>
           <DialogDescription className="text-xs md:text-sm text-muted-foreground">

@@ -330,7 +330,7 @@ export default function AdminKaryawanPage() {
                   variant="outline"
                   size="sm"
                   onClick={loadData}
-                  className="h-9 px-3 rounded-xl text-xs font-semibold gap-1.5"
+                  className="h-9 px-3 rounded-[8px] text-xs font-semibold gap-1.5"
                 >
                   <RefreshCwIcon className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
                   Refresh
@@ -339,7 +339,7 @@ export default function AdminKaryawanPage() {
                 <Button
                   size="sm"
                   onClick={handleOpenAddModal}
-                  className="h-9 px-4 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5"
+                  className="h-9 px-4 rounded-[6px] text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5"
                 >
                   <PlusIcon className="size-4" />
                   Tambah Karyawan Baru
@@ -350,11 +350,11 @@ export default function AdminKaryawanPage() {
             {/* View Switcher & Filters */}
             <div className="px-4 lg:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-3">
               <div className="flex items-center gap-2">
-                <div className="flex p-1 bg-muted/60 rounded-xl border border-border">
+                <div className="flex p-1 bg-muted/60 rounded-[6px] border border-border">
                   <button
                     type="button"
                     onClick={() => setViewMode("grid")}
-                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[3px] transition-all ${
                       viewMode === "grid" ? "bg-white dark:bg-zinc-800 text-foreground shadow-xs" : "text-muted-foreground"
                     }`}
                   >
@@ -391,14 +391,14 @@ export default function AdminKaryawanPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cari NIK / Nama / Posisi..."
-                    className="h-8.5 w-48 lg:w-64 pl-8 rounded-xl text-xs bg-muted/30"
+                    className="h-8.5 w-48 lg:w-64 pl-8 rounded-[6px] text-xs bg-muted/30"
                   />
                 </div>
 
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="h-8.5 px-3 rounded-xl text-xs font-semibold bg-card border border-border text-foreground"
+                  className="h-8.5 px-3 rounded-[5px] text-xs font-semibold bg-card border border-border text-foreground"
                 >
                   <option value="all">Semua Jabatan</option>
                   <option value="sgm">Senior General Manager (SGM)</option>
@@ -421,7 +421,7 @@ export default function AdminKaryawanPage() {
                     return (
                       <div
                         key={u.id}
-                        className="p-4 rounded-2xl border border-border bg-card shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-3 relative group"
+                        className="p-4 rounded-[8px] border border-border bg-card shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-3 relative group"
                       >
                         {/* Top Profile */}
                         <div className="flex items-start justify-between gap-2">
@@ -453,7 +453,7 @@ export default function AdminKaryawanPage() {
                             >
                               <MoreVerticalIcon className="size-4" />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44 rounded-xl p-1">
+                            <DropdownMenuContent align="end" className="w-44 rounded-[5px] p-1">
                               <DropdownMenuItem
                                 onClick={() => handleOpenEdit(u)}
                                 className="text-xs gap-2 py-1.5 cursor-pointer rounded-lg"
@@ -669,12 +669,8 @@ export default function AdminKaryawanPage() {
         {/* MODAL 1: TAMBAH KARYAWAN BARU (WITH AUTO-GENERATOR)       */}
         {/* ======================================================== */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="max-w-xl rounded-2xl p-6 font-sans">
+          <DialogContent className="sm:max-w-2xl rounded-[16px] p-6 sm:p-8 font-sans">
             <DialogHeader className="space-y-1">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
-                <SparklesIcon className="size-4 text-amber-500" />
-                <span>Smart Admin Provisioning & Auto-Generator</span>
-              </div>
               <DialogTitle className="text-xl font-extrabold tracking-tight text-foreground">
                 Daftarkan Akun Karyawan Baru
               </DialogTitle>
@@ -856,7 +852,7 @@ export default function AdminKaryawanPage() {
         {/* MODAL 2: EDIT DATA KARYAWAN (UPDATE CRUD)                */}
         {/* ======================================================== */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="max-w-xl rounded-2xl p-6 font-sans">
+          <DialogContent className="sm:max-w-2xl rounded-[16px] p-6 sm:p-8 font-sans">
             <DialogHeader className="space-y-1">
               <DialogTitle className="text-xl font-extrabold tracking-tight text-foreground">
                 Edit Data Karyawan: {editingUser?.nama}

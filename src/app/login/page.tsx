@@ -516,11 +516,6 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 gap-2 mt-6">
           <span>© 2026 PT Telkom Akses. All rights reserved.</span>
-          <div className="flex items-center gap-3">
-            <span>SOP Manajemen Tugas Kantor</span>
-            <span>•</span>
-            <span>Versi 2.0 Web</span>
-          </div>
         </div>
       </div>
 

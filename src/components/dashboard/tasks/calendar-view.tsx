@@ -195,7 +195,7 @@ export function CalendarView({ tasks, onSelectDate, onOpenCreate }: CalendarView
   return (
     <div className="flex flex-col gap-4 font-sans px-4 lg:px-6">
       {/* Calendar Header Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-2xl border border-border shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-[8px] border border-border shadow-xs">
         {/* Left: Title with Month & Year Selectors */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="size-9 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center border border-red-200 dark:border-red-900 shrink-0">
@@ -209,7 +209,7 @@ export function CalendarView({ tasks, onSelectDate, onOpenCreate }: CalendarView
 
               {/* Year Dropdown */}
               <Select value={String(year)} onValueChange={handleSelectYear}>
-                <SelectTrigger className="h-8 px-2.5 text-xs sm:text-sm font-extrabold rounded-xl border-border bg-muted/40 hover:bg-muted text-foreground transition-colors cursor-pointer shadow-2xs">
+                <SelectTrigger className="h-8 px-2.5 text-xs sm:text-sm font-extrabold rounded-[5px] border-border bg-muted/40 hover:bg-muted text-foreground transition-colors cursor-pointer shadow-2xs">
                   <SelectValue placeholder="Tahun" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
@@ -234,7 +234,7 @@ export function CalendarView({ tasks, onSelectDate, onOpenCreate }: CalendarView
         {/* Right: View switcher & Prev/Next Month/Week controls */}
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
           {/* View Mode Switcher */}
-          <div className="flex items-center rounded-xl bg-muted/60 p-1 border border-border/70">
+          <div className="flex items-center rounded-[5px] bg-muted/60 p-1 border border-border/70">
             <button
               type="button"
               onClick={() => setViewMode("month")}
@@ -266,7 +266,7 @@ export function CalendarView({ tasks, onSelectDate, onOpenCreate }: CalendarView
             variant="outline"
             size="sm"
             onClick={handleToday}
-            className="h-8 px-3 text-xs font-bold rounded-xl border-border text-foreground hover:bg-muted cursor-pointer"
+            className="h-8 px-3 text-xs font-bold rounded-[5px] border-border text-foreground hover:bg-muted cursor-pointer"
           >
             Hari Ini
           </Button>
@@ -296,7 +296,7 @@ export function CalendarView({ tasks, onSelectDate, onOpenCreate }: CalendarView
       </div>
 
       {/* Calendar Days Grid Card */}
-      <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+      <div className="rounded-[8px] border border-border bg-card shadow-xs overflow-hidden">
         {/* Day Names Header */}
         <div className="grid grid-cols-7 border-b border-border bg-muted/40 text-center text-xs font-extrabold py-3 text-muted-foreground">
           {daysOfWeek.map((day, idx) => (

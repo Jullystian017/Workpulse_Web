@@ -292,7 +292,7 @@ function KaryawanTasksContent() {
               variant="outline"
               size="sm"
               onClick={loadAllData}
-              className="h-9 px-3 rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
+              className="h-9 px-3 rounded-[8px] text-xs font-semibold gap-1.5 cursor-pointer"
               title="Muat Ulang Data"
             >
               <RefreshCwIcon className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -303,7 +303,7 @@ function KaryawanTasksContent() {
 
         {/* 4 KPI Summary Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 px-4 lg:px-6">
-          <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <ClipboardListIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
             <div className="relative">
               <div className="flex items-center justify-between">
@@ -319,7 +319,7 @@ function KaryawanTasksContent() {
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <ClockIcon className="absolute -right-2 -top-2 size-20 text-blue-100 dark:text-blue-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
             <div className="relative">
               <div className="flex items-center justify-between">
@@ -335,7 +335,7 @@ function KaryawanTasksContent() {
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-purple-100 dark:text-purple-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
             <div className="relative">
               <div className="flex items-center justify-between">
@@ -351,7 +351,7 @@ function KaryawanTasksContent() {
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-emerald-100 dark:text-emerald-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
             <div className="relative">
               <div className="flex items-center justify-between">

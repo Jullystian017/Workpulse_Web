@@ -381,7 +381,7 @@ function AdminTasksContent() {
                   variant="outline"
                   size="sm"
                   onClick={loadAllData}
-                  className="h-9 px-3 rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
+                  className="h-9 px-3 rounded-[8px] text-xs font-semibold gap-1.5 cursor-pointer"
                   title="Muat Ulang Data"
                 >
                   <RefreshCwIcon className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -391,7 +391,7 @@ function AdminTasksContent() {
                 <Button
                   size="sm"
                   onClick={() => handleOpenCreate()}
-                  className="h-9 px-4 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5 cursor-pointer"
+                  className="h-9 px-4 rounded-[8px] text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5 cursor-pointer"
                 >
                   <PlusIcon className="size-4" />
                   Buat Tugas Baru
@@ -401,7 +401,7 @@ function AdminTasksContent() {
 
             {/* 4 KPI Summary Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 px-4 lg:px-6">
-              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <ClipboardListIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
@@ -417,7 +417,7 @@ function AdminTasksContent() {
                 </div>
               </div>
 
-              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <ClockIcon className="absolute -right-2 -top-2 size-20 text-blue-100 dark:text-blue-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
@@ -433,7 +433,7 @@ function AdminTasksContent() {
                 </div>
               </div>
 
-              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <AlertCircleIcon className="absolute -right-2 -top-2 size-20 text-purple-100 dark:text-purple-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
@@ -449,7 +449,7 @@ function AdminTasksContent() {
                 </div>
               </div>
 
-              <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-emerald-100 dark:text-emerald-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
@@ -566,7 +566,7 @@ function AdminTasksContent() {
               /* MACRO LEVEL NAVIGATION (KALENDER VS DAFTAR) */
               <>
                 {/* View Switcher Tabs Bar */}
-                <div className="px-4 lg:px-6 border-b border-border">
+                <div className="px-4 lg:px-6 border-b border-border mt-5">
                   <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto scrollbar-none">
                     <button
                       type="button"
@@ -604,7 +604,7 @@ function AdminTasksContent() {
 
                 {/* Filter & Sort Toolbar Row (For Macro Views) */}
                 <div className="px-4 lg:px-6">
-                  <div className="flex items-center justify-between gap-3 p-2 bg-card dark:bg-zinc-900 border border-border rounded-xl shadow-2xs">
+                  <div className="flex items-center justify-between gap-3 p-2 bg-card dark:bg-zinc-900 border border-border rounded-[6px] shadow-2xs">
                     {/* Left Controls: Search + Styled Select Dropdowns in 1 Row */}
                     <div className="flex items-center gap-2 shrink-0">
                       {/* Search Box */}
@@ -614,7 +614,7 @@ function AdminTasksContent() {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="Cari data, tugas, personil..."
-                          className="h-8.5 pl-8 pr-3 text-xs rounded-lg bg-background border-border shadow-2xs placeholder:text-muted-foreground"
+                          className="h-8.5 pl-8 pr-3 text-xs rounded-[5px] bg-background border-border shadow-2xs placeholder:text-muted-foreground"
                         />
                       </div>
 
@@ -626,7 +626,7 @@ function AdminTasksContent() {
                         onValueChange={(v) => setSelectedStatus(v || "all")}
                       >
                         <SelectTrigger
-                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                          className={`h-8.5 text-xs rounded-[5px] border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
                             selectedStatus !== "all"
                               ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
                               : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
@@ -672,7 +672,7 @@ function AdminTasksContent() {
                         onValueChange={(v) => setSelectedPriority(v || "all")}
                       >
                         <SelectTrigger
-                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                          className={`h-8.5 text-xs rounded-[5px] border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
                             selectedPriority !== "all"
                               ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
                               : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
@@ -718,7 +718,7 @@ function AdminTasksContent() {
                         onValueChange={(v) => setSelectedAssignee(v || "all")}
                       >
                         <SelectTrigger
-                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                          className={`h-8.5 text-xs rounded-[5px] border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
                             selectedAssignee !== "all"
                               ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
                               : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
@@ -758,7 +758,7 @@ function AdminTasksContent() {
                         onValueChange={(v) => setSortBy(v || "deadline_asc")}
                       >
                         <SelectTrigger
-                          className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                          className={`h-8.5 text-xs rounded-[5px] border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
                             sortBy !== "deadline_asc"
                               ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
                               : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
@@ -784,7 +784,7 @@ function AdminTasksContent() {
                           variant="ghost"
                           size="sm"
                           onClick={handleResetFilters}
-                          className="h-8.5 px-2.5 text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg gap-1.5 shrink-0 font-semibold cursor-pointer"
+                          className="h-8.5 px-2.5 text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-[5px] gap-1.5 shrink-0 font-semibold cursor-pointer"
                         >
                           <RotateCcwIcon className="size-3.5" />
                           <span>Reset</span>
@@ -794,7 +794,7 @@ function AdminTasksContent() {
 
                     {/* Right: Filtered Result Count Badge */}
                     <div className="flex items-center gap-1.5 shrink-0 pl-2">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-muted/70 dark:bg-zinc-800 text-[11px] font-medium text-muted-foreground border border-border/60 shrink-0">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-[5px] bg-muted/70 dark:bg-zinc-800 text-[11px] font-medium text-muted-foreground border border-border/60 shrink-0">
                         Menampilkan <strong className="text-foreground mx-1 font-bold">{filteredTasks.length}</strong> dari {tasks.length} tugas
                       </span>
                     </div>

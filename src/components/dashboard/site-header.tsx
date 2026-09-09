@@ -224,7 +224,7 @@ export function SiteHeader() {
           <button
             type="button"
             onClick={() => setIsCommandOpen(true)}
-            className="hidden md:flex items-center justify-between gap-3 h-8.5 w-60 lg:w-72 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 px-3 text-xs text-muted-foreground hover:border-red-500/40 hover:text-foreground transition-all cursor-pointer shadow-2xs"
+            className="hidden md:flex items-center justify-between gap-3 h-8.5 w-60 lg:w-100 rounded-[8px] border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 px-3 text-xs text-muted-foreground hover:border-red-500/40 hover:text-foreground transition-all cursor-pointer shadow-2xs"
           >
             <div className="flex items-center gap-2">
               <SearchIcon className="size-3.5 text-muted-foreground" />
