@@ -73,7 +73,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const handleOpenAi = () => {
     if (aiPanel) {
-      aiPanel.openAiPanel()
+      aiPanel.toggleAiPanel()
     }
   }
 
@@ -109,8 +109,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem className="flex items-center gap-1.5">
               <SidebarMenuButton
                 tooltip="Smart Task Assignment (AI)"
+                onClick={handleOpenAi}
                 className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
-                render={<Link href="/admin/ai" />}
               >
                 <SparklesIcon className="size-4 shrink-0 text-white" />
                 <span className="text-xs font-semibold group-data-[collapsible=icon]:hidden">

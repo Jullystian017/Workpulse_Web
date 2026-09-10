@@ -23,7 +23,7 @@ export function AiPanelProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false)
   const sidebar = useSidebar()
   const isSidebarOpen = sidebar?.open ?? false
-  const setSidebarOpen = sidebar?.setOpen ?? (() => {})
+  const setSidebarOpen = sidebar?.setOpen ?? (() => { })
   const prevSidebarOpenRef = React.useRef(isSidebarOpen)
   const [groqApiKey, setGroqApiKeyState] = React.useState("")
 
@@ -66,10 +66,13 @@ export function AiPanelProvider({ children }: { children: React.ReactNode }) {
       .catch(console.error)
   }, [])
 
-  // Automatically close right AI panel whenever user expands the left sidebar
+  // Automatically close right AI panel whenever user expands the left sidebar,
+  // and open it when user collapses the left sidebar
   React.useEffect(() => {
     if (isSidebarOpen && !prevSidebarOpenRef.current && isOpen) {
       setIsOpen(false)
+    } else if (!isSidebarOpen && prevSidebarOpenRef.current && !isOpen) {
+      setIsOpen(true)
     }
     prevSidebarOpenRef.current = isSidebarOpen
   }, [isSidebarOpen, isOpen])
@@ -81,13 +84,11 @@ export function AiPanelProvider({ children }: { children: React.ReactNode }) {
 
   const closeAiPanel = React.useCallback(() => {
     setIsOpen(false)
-    setSidebarOpen(true)
-  }, [setSidebarOpen])
+  }, [])
 
   const toggleAiPanel = React.useCallback(() => {
     if (isOpen) {
       setIsOpen(false)
-      setSidebarOpen(true)
     } else {
       setIsOpen(true)
       setSidebarOpen(false)

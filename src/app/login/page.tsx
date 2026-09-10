@@ -345,7 +345,7 @@ export default function LoginPage() {
           </div>
 
           <div className="max-w-md">
-            <div className="mb-6">
+            <div className="mb-6 mt-18">
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
                 Masuk ke Akun Anda
               </h1>
@@ -395,7 +395,7 @@ export default function LoginPage() {
                     placeholder="Masukkan 8-digit NIK Anda"
                     required
                     disabled={isLockedOut || isLoading}
-                    className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border-zinc-300 dark:border-zinc-700 text-sm font-semibold tracking-wide text-zinc-900 dark:text-zinc-100"
+                    className="h-11 rounded-[8px] bg-zinc-50 dark:bg-zinc-800/80 border-zinc-300 dark:border-zinc-700 text-sm font-semibold tracking-wide text-zinc-900 dark:text-zinc-100"
                   />
                   <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 select-none">
                     NIK
@@ -427,7 +427,7 @@ export default function LoginPage() {
                     placeholder="Masukkan password akun"
                     required
                     disabled={isLockedOut || isLoading}
-                    className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border-zinc-300 dark:border-zinc-700 text-sm font-semibold pr-11 text-zinc-900 dark:text-zinc-100"
+                    className="h-11 rounded-[8px] bg-zinc-50 dark:bg-zinc-800/80 border-zinc-300 dark:border-zinc-700 text-sm font-semibold pr-11 text-zinc-900 dark:text-zinc-100"
                   />
                   <button
                     type="button"
@@ -441,7 +441,7 @@ export default function LoginPage() {
 
               {/* Dynamic Pixelated Canvas CAPTCHA (Only shown when suspicious >= 3 failures) */}
               {requiresCaptcha && (
-                <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="p-3 rounded-[5px] bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                   <label className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
                     <span>Kode Keamanan CAPTCHA *</span>
                     <span className="text-[11px] font-normal text-amber-600 dark:text-amber-400">Wajib diisi</span>
@@ -453,9 +453,9 @@ export default function LoginPage() {
                       placeholder="Ketik kode di samping"
                       required
                       disabled={isLockedOut || isLoading}
-                      className="h-11 rounded-xl bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-sm font-mono uppercase tracking-widest font-bold flex-1 text-zinc-900 dark:text-zinc-100"
+                      className="h-11 rounded-[8px] bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-sm font-mono uppercase tracking-widest font-bold flex-1 text-zinc-900 dark:text-zinc-100"
                     />
-                    <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-2 h-11 rounded-xl select-none">
+                    <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-2 h-11 rounded-[8px] select-none">
                       <canvas
                         ref={canvasRef}
                         width={120}
@@ -490,7 +490,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading || isLockedOut}
-                className="w-full h-11 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-all shadow-md hover:shadow-lg mt-2 gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full h-11 rounded-[8px] text-sm font-bold bg-red-600 hover:bg-red-700 text-white transition-all shadow-md hover:shadow-lg mt-2 gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
@@ -504,8 +504,7 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    Masuk ke Sistem
-                    <ArrowRightIcon className="size-4" />
+                    Masuk
                   </>
                 )}
               </Button>
