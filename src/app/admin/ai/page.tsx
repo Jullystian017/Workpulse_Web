@@ -34,6 +34,7 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { AiFormattedText } from "@/components/dashboard/ai-formatted-text"
 
 interface Message {
   id: string
@@ -342,99 +343,54 @@ export default function AIAssistantPage() {
     if (!queryText) setInputQuery("")
     setIsGenerating(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      let aiResponse: Message
+    // Call real Groq AI backend API
+    const historyForApi = (activeSession?.messages || []).slice(-6).map((m) => ({
+      sender: m.sender,
+      text: m.text || m.title || "",
+    }))
 
-      const lower = text.toLowerCase()
-      if (lower.includes("gambir") || lower.includes("fiber") || lower.includes("restorasi")) {
-        aiResponse = {
+    fetch("/api/ai/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: text,
+        history: historyForApi,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json()
+        const aiReply = data.reply || "Maaf, sistem tidak menerima respons dari AI."
+        const aiResponse: Message = {
           id: `ai-${Date.now()}`,
           sender: "ai",
-          title: "Strategi & Rencana Mitigasi Insiden STO Gambir",
-          contextCard: {
-            title: "STO Gambir - Fiber Cut Restoration",
-            time: "14 Agt, 15:00 – 17:00 WIB",
-            subtext: "Penugasan #TSK-8821 • Gd. Telkom Akses Lt. 4",
-            participants: [
-              { name: "Bambang Susanto", role: "Supervisor Telkom" },
-              { name: "Irfan Maulana", role: "Splicer Mitra" },
-            ],
-            tags: ["3 Teknisi Siaga", "OTDR Ready", "Priority High"],
-            statusColor: "border-l-emerald-500",
-          },
-          points: [
-            {
-              title: "1. Dampak Insiden",
-              desc: "Mempengaruhi 1,200 pelanggan korporasi di Ring-1 Gambir. Sisa toleransi MTTR adalah 2 jam 15 menit.",
-            },
-            {
-              title: "2. Kesiapan Material & Tim",
-              desc: "Closure 96 core dan kabel drop optic 250m sudah dialokasikan dari gudang Cilandak. Tim splicing terdekat berjarak 10 menit dari lokasi.",
-            },
-            {
-              title: "3. Jalur Backup Sementara",
-              desc: "AI menyarankan pengalihan rute traffic prioritas via jalur OLT Hayam Wuruk untuk memulihkan koneksi darurat dalam 30 menit.",
-            },
-          ],
-          followUpPrompt: "Apakah Anda ingin saya membuat draf Surat Perintah Kerja (SPK) otomatis dan membagikan titik koordinat galian ke tim lapangan?",
+          text: aiReply,
         }
-      } else if (lower.includes("overdue") || lower.includes("sla")) {
-        aiResponse = {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          title: "Analisis Task Overdue & Risiko Pelanggaran SLA",
-          contextCard: {
-            title: "3 Task Kritis Memerlukan Intervensi",
-            time: "Batas Akhir: Hari ini 17:00 WIB",
-            subtext: "Divisi Operasional & Pemeliharaan",
-            participants: [
-              { name: "Andi Pratama", role: "IT Lead" },
-              { name: "Oscar Budiman", role: "Mitra Field" },
-            ],
-            tags: ["2 Area Jakarta Barat", "1 Area Depok", "Eskalasi Level 2"],
-            statusColor: "border-l-red-500",
-          },
-          points: [
-            {
-              title: "1. TSK-006: Audit Jaringan Area Depok",
-              desc: "Keterlambatan disebabkan kendala izin akses area perumahan. Direkomendasikan koordinasi dengan supervisor wilayah.",
-            },
-            {
-              title: "2. TSK-015: Penggantian ONT Rusak",
-              desc: "Teknisi mengalami kendala stok spare part ONT. Disarankan re-alokasi unit cadangan dari pool terdekat.",
-            },
-          ],
-          followUpPrompt: "Ingin saya kirimkan alert pengingat otomatis ke supervisor masing-masing teknisi?",
-        }
-      } else {
-        aiResponse = {
-          id: `ai-${Date.now()}`,
-          sender: "ai",
-          title: `Hasil Analisis WorkPulse AI untuk "${text}"`,
-          points: [
-            {
-              title: "1. Status Operasional Real-time",
-              desc: "Seluruh sistem Telkom Akses berjalan stabil. 94.6% teknisi telah melakukan clock-in terverifikasi Geofence tepat waktu.",
-            },
-            {
-              title: "2. Tingkat Penyelesaian Tugas",
-              desc: "Hari ini tercatat 124 tugas terselesaikan dengan rata-rata kecepatan pengerjaan 14.8% lebih cepat dibanding minggu lalu.",
-            },
-          ],
-          followUpPrompt: "Ada modul data spesifik yang ingin Anda gali lebih dalam?",
-        }
-      }
-
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === targetSessionId
-            ? { ...s, messages: [...s.messages, aiResponse] }
-            : s
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === targetSessionId
+              ? { ...s, messages: [...s.messages, aiResponse] }
+              : s
+          )
         )
-      )
-      setIsGenerating(false)
-    }, 550)
+      })
+      .catch((err) => {
+        console.error("AI Assistant API error:", err)
+        const fallbackResponse: Message = {
+          id: `ai-${Date.now()}`,
+          sender: "ai",
+          text: `Terjadi kendala saat menghubungi AI Assistant. Pastikan server aktif dan \`GROQ_API_KEY\` telah diisi di file \`.env.local\`.`,
+        }
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === targetSessionId
+              ? { ...s, messages: [...s.messages, fallbackResponse] }
+              : s
+          )
+        )
+      })
+      .finally(() => {
+        setIsGenerating(false)
+      })
   }
 
   const handleCopy = (text?: string) => {
@@ -720,6 +676,13 @@ export default function AIAssistantPage() {
                                 <span className="text-muted-foreground">{pt.desc}</span>
                               </div>
                             ))}
+                          </div>
+                        )}
+
+                        {/* Real AI Response Text */}
+                        {msg.text && (
+                          <div className="text-xs text-foreground leading-relaxed rounded-[8px] bg-muted/30 p-3.5 border border-border/60">
+                            <AiFormattedText content={msg.text} />
                           </div>
                         )}
 

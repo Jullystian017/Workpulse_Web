@@ -21,16 +21,19 @@ const AiPanelContext = React.createContext<AiPanelContextType | null>(null)
 
 export function AiPanelProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false)
-  const sidebar = useSidebar()
-  const isSidebarOpen = sidebar?.open ?? false
-  const setSidebarOpen = sidebar?.setOpen ?? (() => { })
-  const prevSidebarOpenRef = React.useRef(isSidebarOpen)
+  let sidebar: any = null
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    sidebar = useSidebar()
+  } catch {
+    sidebar = null
+  }
   const [groqApiKey, setGroqApiKeyState] = React.useState("")
 
   const [messages, setMessages] = React.useState<{ sender: "user" | "ai"; text: string; isStreaming?: boolean }[]>([
     {
       sender: "ai",
-      text: "Halo! 👋 Saya Smart AI Assistant WorkPulse Telkom Akses (Powered by **Groq Llama 3.3**). Saya siap membantu Anda menganalisa agenda tugas kantor, memantau antrean verifikasi atasan, dan memberikan rekomendasi delegasi personil terbaik.",
+      text: "Halo! 👋 Saya AI Assistant WorkPulse Telkom Akses. Saya siap membantu Anda menganalisa agenda tugas kantor, memantau antrean verifikasi atasan, dan memberikan rekomendasi delegasi personil terbaik.",
     },
   ])
 
@@ -58,7 +61,7 @@ export function AiPanelProvider({ children }: { children: React.ReactNode }) {
           setMessages([
             {
               sender: "ai",
-              text: `Halo **${user.nama}**! 👋 Saya Smart AI Assistant WorkPulse Telkom Akses (Powered by **Groq Llama 3.3 ⚡**).\n\nSaat ini terdapat **${stats.totalTasks} penugasan** di sistem, dengan **${stats.reviewTasks} tugas** menunggu verifikasi atasan dan **${stats.unassignedTasks} tugas** di Unassigned Pool. Ada yang bisa saya bantu analisa hari ini?`,
+              text: `Halo **${user.nama}**! 👋 Saya AI Assistant WorkPulse Telkom Akses.\n\nSaat ini terdapat **${stats.totalTasks} penugasan** di sistem, dengan **${stats.reviewTasks} tugas** menunggu verifikasi atasan dan **${stats.unassignedTasks} tugas** di Unassigned Pool. Ada yang bisa saya bantu analisa hari ini?`,
             },
           ])
         }
@@ -66,34 +69,17 @@ export function AiPanelProvider({ children }: { children: React.ReactNode }) {
       .catch(console.error)
   }, [])
 
-  // Automatically close right AI panel whenever user expands the left sidebar,
-  // and open it when user collapses the left sidebar
-  React.useEffect(() => {
-    if (isSidebarOpen && !prevSidebarOpenRef.current && isOpen) {
-      setIsOpen(false)
-    } else if (!isSidebarOpen && prevSidebarOpenRef.current && !isOpen) {
-      setIsOpen(true)
-    }
-    prevSidebarOpenRef.current = isSidebarOpen
-  }, [isSidebarOpen, isOpen])
-
   const openAiPanel = React.useCallback(() => {
     setIsOpen(true)
-    setSidebarOpen(false)
-  }, [setSidebarOpen])
+  }, [])
 
   const closeAiPanel = React.useCallback(() => {
     setIsOpen(false)
   }, [])
 
   const toggleAiPanel = React.useCallback(() => {
-    if (isOpen) {
-      setIsOpen(false)
-    } else {
-      setIsOpen(true)
-      setSidebarOpen(false)
-    }
-  }, [isOpen, setSidebarOpen])
+    setIsOpen((prev) => !prev)
+  }, [])
 
   const sendMessage = React.useCallback(
     async (text: string) => {
@@ -102,7 +88,7 @@ export function AiPanelProvider({ children }: { children: React.ReactNode }) {
       const userMsg = { sender: "user" as const, text }
       const thinkingMsg = {
         sender: "ai" as const,
-        text: "Menghubungi Groq Llama 3.3 & menganalisa data Telkom Akses...",
+        text: "Menganalisa data tugas dan personil...",
         isStreaming: true,
       }
 

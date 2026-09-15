@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   SparklesIcon,
   SendIcon,
@@ -12,64 +13,55 @@ import {
   FileTextIcon,
   BotIcon,
   RotateCcwIcon,
-  ZapIcon,
-  KeyRoundIcon,
-  CheckIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { useAiPanel } from "@/components/dashboard/ai-panel-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { AiFormattedText } from "@/components/dashboard/ai-formatted-text"
 
 const smartActions = [
   {
-    id: "review",
-    title: "Cek Antrean Verifikasi Atasan",
-    prompt: "Tunjukkan tugas apa saja yang siap untuk diverifikasi dan disetujui atasan?",
-    icon: FileTextIcon,
-    iconColor: "text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400",
-  },
-  {
-    id: "overdue",
-    title: "Cek Pelanggaran SLA & Deadline",
-    prompt: "Tunjukkan daftar tugas kantor yang mendekati deadline atau berisiko melanggar SLA",
-    icon: AlertCircleIcon,
+    id: "pulse",
+    title: "Ringkasan Pulse Tugas",
+    prompt: "Berikan ringkasan cepat status tugas hari ini: berapa yang sedang berjalan, selesai, dan tertunda?",
+    icon: TrendingUpIcon,
     iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400",
   },
   {
-    id: "delegasi",
-    title: "Rekomendasi Delegasi Wewenang",
-    prompt: "Siapa personil dengan beban kerja paling optimal untuk didelegasikan tugas baru?",
+    id: "urgent",
+    title: "Tugas Prioritas & Deadline",
+    prompt: "Tampilkan daftar tugas berprioritas tinggi atau yang paling mendesak diselesaikan saat ini.",
+    icon: AlertCircleIcon,
+    iconColor: "text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400",
+  },
+  {
+    id: "allocation",
+    title: "Rekomendasi Alokasi Tim",
+    prompt: "Siapa personil yang kapasitas kerjanya paling longgar untuk menerima tugas baru?",
     icon: SparklesIcon,
     iconColor: "text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400",
   },
   {
-    id: "kinerja",
-    title: "Ringkasan Output & Kinerja Divisi",
-    prompt: "Berapa persentase penyelesaian tugas kantor dan skor performa tim saat ini?",
-    icon: TrendingUpIcon,
+    id: "pool",
+    title: "Cek Tiket Pool Tanpa PIC",
+    prompt: "Tugas apa saja yang saat ini masih berada di Pool dan belum memiliki PIC penanggung jawab?",
+    icon: FileTextIcon,
     iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400",
   },
 ]
 
 export function AiIntegratedPanel() {
+  const pathname = usePathname()
   const aiPanel = useAiPanel()
   const [inputValue, setInputValue] = React.useState("")
   const [showSmartActions, setShowSmartActions] = React.useState(true)
-  const [isKeyDialogOpen, setIsKeyDialogOpen] = React.useState(false)
-  const [tempKey, setTempKey] = React.useState("")
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
 
   const isOpen = aiPanel?.isOpen ?? false
   const messages = aiPanel?.messages ?? []
+  const closeAiPanel = aiPanel?.closeAiPanel
 
   React.useEffect(() => {
     if (isOpen) {
@@ -77,9 +69,21 @@ export function AiIntegratedPanel() {
     }
   }, [messages, isOpen])
 
-  if (!aiPanel || !isOpen) return null
+  // Close panel on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen && closeAiPanel) {
+        closeAiPanel()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isOpen, closeAiPanel])
 
-  const { closeAiPanel, sendMessage, resetChat, groqApiKey, setGroqApiKey } = aiPanel
+  // Don't render floating panel if on full-page AI Assistant or closed
+  if (!aiPanel || !isOpen || pathname === "/admin/ai" || pathname === "/karyawan/ai") return null
+
+  const { sendMessage, resetChat } = aiPanel
 
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -99,23 +103,18 @@ export function AiIntegratedPanel() {
     resetChat()
   }
 
-  const handleOpenKeyDialog = () => {
-    setTempKey(groqApiKey)
-    setIsKeyDialogOpen(true)
-  }
-
-  const handleSaveKey = (e: React.FormEvent) => {
-    e.preventDefault()
-    setGroqApiKey(tempKey.trim())
-    setIsKeyDialogOpen(false)
-    toast.success("Groq API Key berhasil disimpan!")
-  }
-
   return (
     <>
+      {/* Semi-transparent backdrop to close on click outside */}
+      <div
+        onClick={closeAiPanel}
+        aria-hidden="true"
+        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] animate-in fade-in duration-200"
+      />
+
       <aside
         aria-label="AI Assistant Integrated Panel"
-        className="w-80 lg:w-[350px] shrink-0 border-l border-border bg-card flex flex-col h-full min-h-full self-stretch animate-in slide-in-from-right-4 duration-300 z-20 shadow-xs font-sans"
+        className="fixed top-0 right-0 z-50 h-screen w-full sm:w-[390px] lg:w-[410px] border-l border-border bg-card/98 backdrop-blur-md flex flex-col shadow-2xl animate-in slide-in-from-right-4 duration-300 font-sans"
       >
         {/* Panel Top Header */}
         <div className="flex items-center justify-between p-3 px-4 border-b border-border bg-muted/20 shrink-0">
@@ -123,20 +122,18 @@ export function AiIntegratedPanel() {
             <span className="text-xs font-bold text-foreground tracking-tight">
               WorkPulse AI
             </span>
-            <span className="px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 text-[9px] font-extrabold flex items-center gap-0.5 border border-orange-200 dark:border-orange-900">
-              <ZapIcon className="size-2.5 fill-orange-500 text-orange-500" />
-              Groq Llama 3.3
-            </span>
           </div>
 
           <div className="flex items-center gap-1">
-            <button
-              onClick={handleOpenKeyDialog}
-              title="Konfigurasi Groq API Key"
+            {/* Maximize to full page */}
+            <Link
+              href="/admin/ai"
+              onClick={closeAiPanel}
+              title="Buka Halaman Penuh"
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
-              <KeyRoundIcon className="size-3.5" />
-            </button>
+              <Maximize2Icon className="size-3.5" />
+            </Link>
             <button
               onClick={handleReset}
               title="Reset Chat"
@@ -146,7 +143,7 @@ export function AiIntegratedPanel() {
             </button>
             <button
               onClick={closeAiPanel}
-              title="Tutup Panel AI"
+              title="Tutup Panel AI (Esc)"
               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               <XIcon className="size-4" />
@@ -169,14 +166,14 @@ export function AiIntegratedPanel() {
                 </div>
                 <h4 className="text-xs font-bold text-foreground">WorkPulse AI Copilot</h4>
                 <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[240px] leading-relaxed">
-                  Didukung model berkecepatan tinggi <span className="font-bold text-foreground">Groq Llama 3.3 70B</span> untuk analisis operasional instan.
+                  Asisten cerdas pendamping operasional dan analisis data penugasan kantor.
                 </p>
               </div>
 
               {/* Smart Actions List */}
               <div className="space-y-2">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block px-1">
-                  Pintasan Analisis Cepat
+                  Pintasan Cepat WorkPulse
                 </span>
                 <div className="space-y-1.5">
                   {smartActions.map((action) => {
@@ -220,14 +217,14 @@ export function AiIntegratedPanel() {
                         </div>
                       )}
                       <span className="text-[10px] font-bold text-muted-foreground">
-                        {isUser ? "Anda" : "WorkPulse AI (Groq)"}
+                        {isUser ? "Anda" : "WorkPulse AI"}
                       </span>
                     </div>
 
                     <div
-                      className={`p-3 rounded-2xl text-xs leading-relaxed max-w-[92%] whitespace-pre-line shadow-xs ${
+                      className={`p-3 rounded-2xl text-xs leading-relaxed max-w-[92%] shadow-xs ${
                         isUser
-                          ? "bg-red-600 text-white font-medium rounded-br-none"
+                          ? "bg-red-600 text-white font-medium rounded-br-none whitespace-pre-line"
                           : "bg-muted/50 text-foreground border border-border rounded-bl-none"
                       }`}
                     >
@@ -236,8 +233,10 @@ export function AiIntegratedPanel() {
                           <span className="size-2 rounded-full bg-red-600 animate-ping" />
                           <span>{msg.text}</span>
                         </div>
-                      ) : (
+                      ) : isUser ? (
                         msg.text
+                      ) : (
+                        <AiFormattedText content={msg.text} />
                       )}
                     </div>
                   </div>
@@ -266,67 +265,8 @@ export function AiIntegratedPanel() {
               <SendIcon className="size-3.5" />
             </Button>
           </form>
-          <div className="flex items-center justify-between mt-2 px-1 text-[10px] text-muted-foreground">
-            <span>Powered by Groq • Llama 3.3 70B</span>
-            <button
-              onClick={() => setShowSmartActions(!showSmartActions)}
-              className="font-bold text-red-600 hover:underline cursor-pointer"
-            >
-              {showSmartActions ? "Tutup Pintasan" : "Buka Pintasan"}
-            </button>
-          </div>
         </div>
       </aside>
-
-      {/* Groq API Key Config Dialog */}
-      <Dialog open={isKeyDialogOpen} onOpenChange={setIsKeyDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl p-6 font-sans">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-extrabold text-foreground flex items-center gap-2">
-              <ZapIcon className="size-5 text-orange-500 fill-orange-500" />
-              Konfigurasi Groq API Key
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Masukkan API Key Groq Anda (`gsk_...`) untuk mengaktifkan pemrosesan AI super cepat menggunakan Llama 3.3.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSaveKey} className="space-y-3 mt-3">
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Groq API Key
-              </label>
-              <Input
-                type="password"
-                value={tempKey}
-                onChange={(e) => setTempKey(e.target.value)}
-                placeholder="gsk_..."
-                className="mt-1 h-10 rounded-xl text-xs font-mono font-bold"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Kunci ini disimpan aman secara lokal di browser Anda atau bisa diatur di file `.env.local` server.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsKeyDialogOpen(false)}
-                className="h-9 text-xs rounded-xl"
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                className="h-9 px-4 text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-xl gap-1.5"
-              >
-                <CheckIcon className="size-3.5" /> Simpan API Key
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }

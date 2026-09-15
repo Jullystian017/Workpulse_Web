@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation"
 import { ShieldAlertIcon, LockIcon } from "lucide-react"
 import { getActiveUserFromStorage } from "@/lib/api"
 import { User } from "@/types/database"
+import { AiPanelProvider } from "@/components/dashboard/ai-panel-context"
+import { AiIntegratedPanel } from "@/components/dashboard/ai-integrated-panel"
 
 export default function AdminProtectedLayout({
   children,
@@ -42,5 +44,10 @@ export default function AdminProtectedLayout({
     )
   }
 
-  return <>{children}</>
+  return (
+    <AiPanelProvider>
+      {children}
+      <AiIntegratedPanel />
+    </AiPanelProvider>
+  )
 }

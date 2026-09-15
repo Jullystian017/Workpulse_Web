@@ -25,8 +25,6 @@ import { toast } from "sonner"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AiPanelProvider } from "@/components/dashboard/ai-panel-context"
-import { AiIntegratedPanel } from "@/components/dashboard/ai-integrated-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -179,9 +177,8 @@ export default function IntegrasiPage() {
         } as React.CSSProperties
       }
     >
-      <AiPanelProvider>
-        <AppSidebar variant="inset" />
-        <SidebarInset className="h-screen md:h-[calc(100vh-1rem)] overflow-hidden flex flex-col">
+      <AppSidebar variant="inset" />
+      <SidebarInset className="h-screen md:h-[calc(100vh-1rem)] overflow-hidden flex flex-col">
           <SiteHeader />
           <div className="flex flex-1 min-h-0 h-full flex-row overflow-hidden">
             {/* Center Content Scrollable */}
@@ -511,12 +508,8 @@ export default function IntegrasiPage() {
                 </TabsContent>
               </Tabs>
             </div>
-
-            {/* Right Integrated AI Panel */}
-            <AiIntegratedPanel />
           </div>
         </SidebarInset>
-      </AiPanelProvider>
     </SidebarProvider>
   )
 }

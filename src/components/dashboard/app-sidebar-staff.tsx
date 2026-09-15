@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/dashboard/nav-main"
 import { NavUser } from "@/components/dashboard/nav-user"
@@ -57,6 +58,7 @@ const officerNavItems = [
 
 export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const aiPanel = useAiPanel()
+  const pathname = usePathname()
   const [userRole, setUserRole] = React.useState<UserRole>("staff")
   const [roleLabel, setRoleLabel] = React.useState("Portal Karyawan")
 
@@ -70,8 +72,11 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
 
   const isStaff = userRole === "staff"
   const navItems = isStaff ? baseNavItems : [...baseNavItems, ...officerNavItems]
+  const isAiPanelOpen = aiPanel?.isOpen ?? false
+  const isAiPage = pathname === "/karyawan/ai"
+  const isAiActive = isAiPanelOpen || isAiPage
 
-  const handleOpenAi = () => {
+  const handleToggleAi = () => {
     if (aiPanel) {
       aiPanel.toggleAiPanel()
     }
@@ -108,14 +113,23 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
           <SidebarMenu>
             <SidebarMenuItem className="flex items-center gap-1.5">
               <SidebarMenuButton
-                tooltip="AI Assistant Karyawan"
-                onClick={handleOpenAi}
-                className="h-8.5 px-2.5 flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl duration-200 shadow-xs active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto"
+                tooltip={isAiActive ? "Tutup AI Assistant" : "Buka AI Assistant (Panel Samping)"}
+                onClick={handleToggleAi}
+                className={`h-8 px-2.5 flex-1 rounded-[8px] duration-200 active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:rounded-[8px] ${
+                  isAiActive
+                    ? "!bg-gradient-to-r !from-red-600 !to-rose-600 !text-white font-bold shadow-sm shadow-red-600/30 ring-2 ring-red-400 ring-offset-1 ring-offset-background"
+                    : "bg-red-600 hover:bg-red-700 text-white font-semibold shadow-xs"
+                }`}
               >
-                <SparklesIcon className="size-4 shrink-0 text-white" />
+                <SparklesIcon className={`size-3.5 shrink-0 text-white ${isAiActive ? "fill-white/30 drop-shadow-xs animate-pulse" : ""}`} />
                 <span className="text-xs font-semibold group-data-[collapsible=icon]:hidden">
-                  AI Assistant Karyawan
+                  AI Assistant
                 </span>
+                {isAiActive && (
+                  <span className="ml-auto flex items-center gap-1 group-data-[collapsible=icon]:hidden">
+                    <span className="size-1.5 rounded-full bg-white shadow-xs animate-pulse ring-2 ring-white/40" />
+                  </span>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

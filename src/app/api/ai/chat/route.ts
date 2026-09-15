@@ -43,22 +43,26 @@ export async function POST(req: NextRequest) {
       console.warn("Supabase context fetch warning in AI route:", dbErr)
     }
 
-    const systemPrompt = `Anda adalah "WorkPulse AI", asisten kecerdasan buatan resmi untuk sistem Manajemen Tugas Kantor, Administrasi Dokumen & Rantai Komando Hierarkis PT Telkom Akses (Anak Perusahaan PT Telkom Indonesia).
-Tugas utama Anda adalah mendampingi jajaran pimpinan (SGM, Manager, Officer) dan staf kantor dalam manajemen agenda kerja, delegasi wewenang hierarkis (SGM ➡️ Manager ➡️ Officer 3 ➡️ Officer 2 ➡️ Officer 1 ➡️ Staff), evaluasi anggaran (SPJ), penyusunan SOP/Nota Dinas, serta pemantauan SLA penyelesaian tugas kantor.
+    const systemPrompt = `Anda adalah "WorkPulse AI", asisten eksekutif cerdas untuk Manajemen Tugas & Operasional PT Telkom Akses (Anak Perusahaan PT Telkom Indonesia).
 
 KONTEKS DATABASE LIVE TELKOM AKSES SAAT INI:
---- STRUKTUR PERSONIL & JABATAN TERDAFTAR ---
+--- STRUKTUR PERSONIL & JABATAN ---
 ${usersContext || "1 SGM, 2 Manager, 4 Officer, 5 Staff Kantor, 1 Admin"}
 
 --- DAFTAR PENUGASAN KANTOR AKTIF ---
-${tasksContext || "Terdapat penugasan audit dokumen ISO, penyusunan laporan anggaran Q3, dan evaluasi SOP operasional."}
+${tasksContext || "Tidak ada penugasan aktif."}
 
-PANDUAN MENJAWAB:
-1. Bersikap sangat profesional, akurat, ringkas, dan berorientasi solusi dengan tata bahasa korporat Telkom Akses yang formal dan lugas.
-2. Gunakan terminologi administrasi korporat yang tepat (seperti Nota Dinas, SPJ, SLA On-Time, Kode Penugasan, Rantai Komando, Verifikasi Atasan, dsb.).
-3. Jika ditanya tentang rekomendasi delegasi, berikan rekomendasi personil berdasarkan rantai komando wewenang dan beban kerja yang paling optimal.
-4. Gunakan format Markdown yang rapi (bullet points, bolding) agar mudah dibaca di panel dashboard.
-5. Jawab dalam Bahasa Indonesia yang baik dan benar.`
+PRINSIP JAWABAN (BERISI INSIGHT & ANALISIS, TETAP LUGAS TANPA BERTELE-TELE):
+1. STRUKTUR FORMAT JAWABAN:
+   • Jawaban / Rekomendasi Utama: Langsung nyatakan kesimpulan atau solusi utama di awal tanpa basa-basi pembuka yang klise.
+   • Analisis & Insight Data: Berikan penjelasan berbasis data riil yang bernilai tambah (seperti perbandingan beban kerja antar-personil, kapasitas tim yang tersisa, hierarki wewenang rantai komando, atau mitigasi risiko SLA).
+   • Rekomendasi Operasional: Berikan 1–2 langkah tindakan taktis yang jelas bagi pimpinan atau staf kantor.
+
+2. KETENTUAN FORMAT:
+   • JANGAN gunakan simbol tanda pagar (#, ##, ###). Gunakan teks tebal wajar seperti **Rekomendasi Utama**, **Analisis Data**, atau **Saran Operasional** sebagai pemisah bagian.
+   • Hindari tanda bintang/asteris (*) yang berlebihan pada kata-kata umum. Gunakan penebalan (**) secukupnya untuk nama orang, kode tiket, atau angka metrik penting.
+   • Gunakan poin (• atau -) atau tabel ringkas jika menyajikan perbandingan data.
+   • Bahasa harus profesional, cerdas, lugas, dan nyaman dibaca.`
 
     if (!apiKey) {
       // Fallback if GROQ_API_KEY is not yet supplied in env
@@ -79,16 +83,42 @@ PANDUAN MENJAWAB:
       { role: "user", content: message },
     ]
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: formattedMessages,
-      temperature: 0.6,
-      max_tokens: 1024,
+    const candidateModels = [
+      process.env.GROQ_MODEL,
+      "groq/compound-mini",
+      "openai/gpt-oss-20b",
+      "groq/compound",
+      "openai/gpt-oss-120b",
+      "llama-3.3-70b-versatile",
+    ].filter(Boolean) as string[]
+
+    let reply = ""
+    let lastError: any = null
+
+    for (const model of candidateModels) {
+      try {
+        const completion = await groq.chat.completions.create({
+          model,
+          messages: formattedMessages,
+          temperature: 0.4,
+          max_tokens: 800,
+        })
+        reply = completion.choices[0]?.message?.content || ""
+        if (reply) break
+      } catch (err: any) {
+        lastError = err
+        console.warn(`Groq model ${model} failed, trying next fallback:`, err?.message)
+      }
+    }
+
+    if (!reply && lastError) {
+      throw lastError
+    }
+
+    return NextResponse.json({
+      reply: reply || "Maaf, tidak ada respon dari model AI.",
+      isMock: false,
     })
-
-    const reply = completion.choices[0]?.message?.content || "Maaf, tidak ada respon dari model AI."
-
-    return NextResponse.json({ reply, isMock: false })
   } catch (error: any) {
     console.error("Groq AI API Error:", error)
     return NextResponse.json(

@@ -41,6 +41,15 @@ export function SiteHeader() {
           </div>
         )
       }
+      if (pathname.includes("/ai")) {
+        return (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+            <span>Portal Karyawan</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">AI Assistant</span>
+          </div>
+        )
+      }
       if (pathname.includes("/cuti")) {
         return (
           <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
@@ -90,7 +99,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
           <span>Dashboard</span>
           <span>/</span>
-          <span className="font-semibold text-foreground">WorkPulse AI Assistant</span>
+          <span className="font-semibold text-foreground">AI Assistant</span>
         </div>
       )
     }

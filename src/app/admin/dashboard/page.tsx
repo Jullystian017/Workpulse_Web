@@ -9,8 +9,6 @@ import { DashboardWelcome } from "@/components/dashboard/dashboard-welcome"
 import { SectionCards } from "@/components/dashboard/section-cards"
 import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AiPanelProvider } from "@/components/dashboard/ai-panel-context"
-import { AiIntegratedPanel } from "@/components/dashboard/ai-integrated-panel"
 import { CreateTaskModal } from "@/components/dashboard/tasks/create-task-modal"
 import { Task } from "@/types/database"
 import { getTasks, getExecutiveKpiStats } from "@/lib/api"
@@ -59,53 +57,48 @@ export default function AdminDashboardPage() {
         } as React.CSSProperties
       }
     >
-      <AiPanelProvider>
-        <AppSidebar variant="inset" />
-        <SidebarInset className="h-screen md:h-[calc(100vh-1rem)] overflow-hidden flex flex-col">
-          <SiteHeader />
-          <div className="flex flex-1 min-h-0 h-full flex-row overflow-hidden">
-            {/* Main Center Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto pb-10">
-              <div className="@container/main flex flex-1 flex-col gap-2">
-                <div className="flex flex-col gap-6 py-4 md:py-6">
-                  {/* Row 0: Dynamic Welcome Banner */}
-                  <DashboardWelcome onOpenCreateTask={() => setIsCreateTaskOpen(true)} />
+      <AppSidebar variant="inset" />
+      <SidebarInset className="h-screen md:h-[calc(100vh-1rem)] overflow-hidden flex flex-col">
+        <SiteHeader />
+        <div className="flex flex-1 min-h-0 h-full flex-row overflow-hidden">
+          {/* Main Center Content */}
+          <div className="flex-1 min-h-0 overflow-y-auto pb-10">
+            <div className="@container/main flex flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-6 py-4 md:py-6">
+                {/* Row 0: Dynamic Welcome Banner */}
+                <DashboardWelcome onOpenCreateTask={() => setIsCreateTaskOpen(true)} />
 
-                  {/* Row 1: 4 Executive KPI Cards (Real live stats) */}
-                  <SectionCards stats={stats} />
+                {/* Row 1: 4 Executive KPI Cards (Real live stats) */}
+                <SectionCards stats={stats} />
 
-                  {/* Row 2: Live Tren Task Area Chart (8/12) + Donut Status Distribution (4/12) */}
-                  <div className="grid grid-cols-1 gap-6 px-4 lg:grid-cols-12 lg:px-6">
-                    <div className="lg:col-span-8">
-                      <ChartAreaInteractive initialTasks={tasks} />
-                    </div>
-                    <div className="lg:col-span-4">
-                      <ChartDonutDepartment initialTasks={tasks} />
-                    </div>
+                {/* Row 2: Live Tren Task Area Chart (8/12) + Donut Status Distribution (4/12) */}
+                <div className="grid grid-cols-1 gap-6 px-4 lg:grid-cols-12 lg:px-6">
+                  <div className="lg:col-span-8">
+                    <ChartAreaInteractive initialTasks={tasks} />
                   </div>
-
-                  {/* Row 3: Full Functional Task Management Table */}
-                  <DataTable
-                    tasks={tasks}
-                    onRefresh={loadDashboardData}
-                    className="px-4 lg:px-6"
-                  />
+                  <div className="lg:col-span-4">
+                    <ChartDonutDepartment initialTasks={tasks} />
+                  </div>
                 </div>
+
+                {/* Row 3: Full Functional Task Management Table */}
+                <DataTable
+                  tasks={tasks}
+                  onRefresh={loadDashboardData}
+                  className="px-4 lg:px-6"
+                />
               </div>
             </div>
-
-            {/* Integrated Right AI Column Panel - Full Height */}
-            <AiIntegratedPanel />
           </div>
-        </SidebarInset>
+        </div>
+      </SidebarInset>
 
-        {/* Global Create Task Modal Triggered from Welcome Banner */}
-        <CreateTaskModal
-          open={isCreateTaskOpen}
-          onOpenChange={setIsCreateTaskOpen}
-          onSuccess={loadDashboardData}
-        />
-      </AiPanelProvider>
+      {/* Global Create Task Modal Triggered from Welcome Banner */}
+      <CreateTaskModal
+        open={isCreateTaskOpen}
+        onOpenChange={setIsCreateTaskOpen}
+        onSuccess={loadDashboardData}
+      />
     </SidebarProvider>
   )
 }
