@@ -525,11 +525,6 @@ export default function LoginPage() {
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-red-800/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold backdrop-blur-md">
-            <ShieldCheckIcon className="size-4 text-red-400" />
-            Sistem Manajemen Tugas Formal Telkom Akses
-          </div>
-
           <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight mt-6 leading-tight">
             Sentralisasi Penugasan & Rantai Komando Kantor dari <span className="text-red-400">Staff hingga SGM</span>
           </h2>
@@ -540,8 +535,8 @@ export default function LoginPage() {
 
         {/* 3 Core Highlights */}
         <div className="grid grid-cols-1 gap-3.5 relative z-10 my-10 max-w-xl">
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3.5">
-            <div className="size-9 rounded-xl bg-red-600/25 border border-red-500/30 text-red-400 flex items-center justify-center font-black text-xs shrink-0">
+          <div className="p-4 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3.5">
+            <div className="size-9 rounded-md bg-red-600/25 border border-red-500/30 text-red-400 flex items-center justify-center font-black text-xs shrink-0">
               01
             </div>
             <div>
@@ -550,8 +545,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3.5">
-            <div className="size-9 rounded-xl bg-blue-600/25 border border-blue-500/30 text-blue-400 flex items-center justify-center font-black text-xs shrink-0">
+          <div className="p-4 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3.5">
+            <div className="size-9 rounded-md bg-blue-600/25 border border-blue-500/30 text-blue-400 flex items-center justify-center font-black text-xs shrink-0">
               02
             </div>
             <div>
@@ -560,8 +555,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3.5">
-            <div className="size-9 rounded-xl bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-black text-xs shrink-0">
+          <div className="p-4 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3.5">
+            <div className="size-9 rounded-md bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-black text-xs shrink-0">
               03
             </div>
             <div>

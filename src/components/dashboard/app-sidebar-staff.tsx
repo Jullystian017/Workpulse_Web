@@ -46,12 +46,12 @@ const baseNavItems = [
 const officerNavItems = [
   {
     title: "Tim & Bawahan",
-    url: "/karyawan/tim",
+    url: "/admin/karyawan",
     icon: Users2Icon,
   },
   {
     title: "Laporan Kinerja",
-    url: "/karyawan/laporan",
+    url: "/admin/laporan/kinerja",
     icon: FileBarChartIcon,
   },
 ]
