@@ -22,6 +22,8 @@ export default function AdminProtectedLayout({
     const user = getActiveUserFromStorage()
     if (!user) {
       router.replace("/login")
+    } else if (user.role !== "admin") {
+      router.replace("/karyawan/dashboard")
     } else {
       setCurrentUser(user)
       setIsChecking(false)

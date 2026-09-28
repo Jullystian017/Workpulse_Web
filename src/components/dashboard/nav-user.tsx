@@ -85,12 +85,12 @@ export function NavUser({
             <div className="grid flex-1 text-left text-xs leading-tight">
               <div className="flex items-center gap-1.5">
                 <span className="truncate font-bold text-foreground">{name.split(",")[0]}</span>
-                <span className={`px-1 py-0.2 rounded text-[9px] font-bold ${roleMeta.color}`}>
-                  {roleMeta.badge}
+                <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${roleMeta.color}`}>
+                  {role === "admin" ? "Superadmin" : roleMeta.badge}
                 </span>
               </div>
               <span className="truncate text-[10px] text-muted-foreground mt-0.5">
-                {currentUser?.position_title || email}
+                {email}
               </span>
             </div>
             <ChevronsUpDownIcon className="ml-auto size-3.5 text-muted-foreground" />
@@ -113,8 +113,8 @@ export function NavUser({
                     <span className="truncate text-[11px] text-muted-foreground mt-0.5">
                       NIK: {currentUser?.nik || "10293801"}
                     </span>
-                    <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold truncate mt-0.5">
-                      {roleMeta.label}
+                    <span className="text-[10px] text-muted-foreground font-semibold truncate mt-0.5">
+                      {role === "admin" ? "Superadmin" : roleMeta.label}
                     </span>
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export function NavUser({
                 <CircleUserRoundIcon className="size-4 text-muted-foreground" />
                 <span>Profil Akun</span>
               </DropdownMenuItem>
-              {currentUser?.role !== "staff" && (
+              {currentUser?.role === "admin" && (
                 <DropdownMenuItem
                   onClick={() => router.push("/admin/karyawan")}
                   className="text-xs gap-2 py-2 cursor-pointer font-medium rounded-lg"

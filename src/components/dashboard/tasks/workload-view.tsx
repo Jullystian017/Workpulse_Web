@@ -173,7 +173,7 @@ export function WorkloadView({
                     <div>
                       <h3 className="text-sm font-bold text-foreground leading-tight">{item.user.nama}</h3>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {item.user.position_title || "Kantor Telkom Akses"}
+                        Role: {roleMeta.label}
                       </p>
                       <div className="flex items-center gap-1.5 mt-1">
                         <Badge variant="outline" className={`px-2 py-0.2 text-[10px] font-bold ${roleMeta.color}`}>

@@ -7,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { BellIcon, SearchIcon, SparklesIcon } from "lucide-react"
 import { useAiPanel } from "@/components/dashboard/ai-panel-context"
 import { CommandPalette } from "@/components/dashboard/command-palette"
+import { NotificationBellDropdown } from "@/components/dashboard/notification-bell-dropdown"
 
 export function SiteHeader() {
   const pathname = usePathname()
@@ -244,14 +245,8 @@ export function SiteHeader() {
             </kbd>
           </button>
 
-          {/* Notif Bell */}
-          <a
-            href="/admin/notifikasi"
-            className="relative rounded-full p-1.5 text-zinc-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-          >
-            <BellIcon className="h-4 w-4" />
-            <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-red-600 ring-2 ring-white dark:ring-zinc-950"></span>
-          </a>
+          {/* Interactive Role-Aware Notification Bell */}
+          <NotificationBellDropdown />
         </div>
       </div>
 

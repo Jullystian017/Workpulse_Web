@@ -23,14 +23,12 @@ import {
   CheckSquareIcon,
   SparklesIcon,
   ActivityIcon,
-  Users2Icon,
-  FileBarChartIcon,
 } from "lucide-react"
 import { getActiveUserFromStorage } from "@/lib/api"
 import { ROLE_LABELS, UserRole } from "@/types/database"
 
-// Base nav items for all karyawan roles
-const baseNavItems = [
+// Nav items for karyawan portal (full focus on tasks)
+const navItems = [
   {
     title: "Dashboard Saya",
     url: "/karyawan/dashboard",
@@ -40,20 +38,6 @@ const baseNavItems = [
     title: "Tugas Saya",
     url: "/karyawan/tasks",
     icon: CheckSquareIcon,
-  },
-]
-
-// Additional items for officers and above (non-staff)
-const officerNavItems = [
-  {
-    title: "Tim & Bawahan",
-    url: "/admin/karyawan",
-    icon: Users2Icon,
-  },
-  {
-    title: "Laporan Kinerja",
-    url: "/admin/laporan/kinerja",
-    icon: FileBarChartIcon,
   },
 ]
 
@@ -70,9 +54,6 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
       setRoleLabel(`Portal ${ROLE_LABELS[user.role]?.badge || "Karyawan"}`)
     }
   }, [])
-
-  const isStaff = userRole === "staff"
-  const navItems = isStaff ? baseNavItems : [...baseNavItems, ...officerNavItems]
   const isAiPanelOpen = aiPanel?.isOpen ?? false
   const isAiPage = pathname === "/karyawan/ai"
   const isAiActive = isAiPanelOpen || isAiPage
@@ -122,11 +103,10 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
               <SidebarMenuButton
                 tooltip={isAiActive ? "Tutup AI Assistant" : "Buka AI Assistant (Panel Samping)"}
                 onClick={handleToggleAi}
-                className={`h-8 px-2.5 flex-1 rounded-[8px] duration-200 active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:rounded-[8px] ${
-                  isAiActive
+                className={`h-8 px-2.5 flex-1 rounded-[8px] duration-200 active:scale-[0.98] transition-all cursor-pointer group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:rounded-[8px] ${isAiActive
                     ? "!bg-gradient-to-r !from-red-600 !to-rose-600 !text-white font-bold shadow-sm shadow-red-600/30 ring-2 ring-red-400 ring-offset-1 ring-offset-background"
                     : "bg-red-600 hover:bg-red-700 text-white font-semibold shadow-xs"
-                }`}
+                  }`}
               >
                 <SparklesIcon className={`size-3.5 shrink-0 text-white ${isAiActive ? "fill-white/30 drop-shadow-xs animate-pulse" : ""}`} />
                 <span className="text-xs font-semibold group-data-[collapsible=icon]:hidden">

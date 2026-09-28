@@ -26,7 +26,7 @@ import {
   Settings2Icon,
 } from "lucide-react"
 import { toast } from "sonner"
-import { Task, TaskPriority, TaskStatus, Channel, User } from "@/types/database"
+import { Task, TaskPriority, TaskStatus, Channel, User, ROLE_LABELS, ROLE_HIERARCHY_LEVEL } from "@/types/database"
 import {
   createTask,
   getChannels,
@@ -78,6 +78,7 @@ export function CreateTaskModal({
   const [users, setUsers] = React.useState<User[]>([])
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [isManageChannelsOpen, setIsManageChannelsOpen] = React.useState(false)
+  const activeUser = React.useMemo(() => (open ? getActiveUserFromStorage() : null), [open])
 
   const loadData = React.useCallback(async () => {
     const [chList, uList] = await Promise.all([getChannels(), getAllUsers()])
@@ -89,7 +90,11 @@ export function CreateTaskModal({
   React.useEffect(() => {
     if (!open) return
     loadData()
-  }, [open, loadData])
+    const currentUser = getActiveUserFromStorage()
+    if (currentUser && currentUser.role !== "admin" && !assignedTo) {
+      setAssignedTo(currentUser.id)
+    }
+  }, [open, loadData, assignedTo])
 
   const handleAddSubtask = () => {
     if (!newSubtaskText.trim()) return
@@ -165,6 +170,27 @@ export function CreateTaskModal({
 
   const selectedChannelObj = channels.find((c) => c.id === channelId)
   const selectedUserObj = users.find((u) => u.id === assignedTo)
+
+  // Filter assignable users based on Chain of Command:
+  // - Admin (Level 99): can assign to anyone
+  // - Non-admin: can only assign to themselves (tugas mandiri) or subordinates (level < currentUser.level)
+  //   Bawahan TIDAK BISA memberikan tugas ke atasan atau level yang lebih tinggi!
+  const assignableUsers = React.useMemo(() => {
+    if (!activeUser) return users
+    if (activeUser.role === "admin") return users
+
+    const myLevel = ROLE_HIERARCHY_LEVEL[activeUser.role] ?? 1
+
+    return users.filter((u) => {
+      // Boleh menugaskan ke diri sendiri (tugas mandiri)
+      if (u.id === activeUser.id) return true
+      // Tidak boleh menugaskan ke admin
+      if (u.role === "admin") return false
+      // Hanya boleh menugaskan ke bawahan (level target harus lebih rendah dari level saya)
+      const targetLevel = ROLE_HIERARCHY_LEVEL[u.role] ?? 1
+      return targetLevel < myLevel
+    })
+  }, [users, activeUser])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -291,7 +317,7 @@ export function CreateTaskModal({
                       />
                       <span className="font-semibold text-foreground truncate">{selectedUserObj.nama}</span>
                       <span className="text-[10px] text-muted-foreground truncate">
-                        ({selectedUserObj.position_title || selectedUserObj.role})
+                        ({ROLE_LABELS[selectedUserObj.role]?.badge || selectedUserObj.role})
                       </span>
                     </div>
                   ) : (
@@ -312,7 +338,7 @@ export function CreateTaskModal({
                       <span className="font-semibold text-muted-foreground">Belum Ditentukan (Unassigned)</span>
                     </div>
                   </SelectItem>
-                  {users.map((u) => (
+                  {assignableUsers.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
                       <div className="flex items-center gap-2">
                         <img
@@ -324,9 +350,11 @@ export function CreateTaskModal({
                           className="size-5 rounded-full object-cover shrink-0"
                         />
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="font-semibold text-foreground truncate">{u.nama}</span>
+                          <span className="font-semibold text-foreground truncate">
+                            {u.nama} {u.id === activeUser?.id ? "(Saya Sendiri)" : ""}
+                          </span>
                           <span className="text-[10px] text-muted-foreground truncate">
-                            ({u.position_title || u.role})
+                            ({ROLE_LABELS[u.role]?.badge || u.role})
                           </span>
                         </div>
                       </div>

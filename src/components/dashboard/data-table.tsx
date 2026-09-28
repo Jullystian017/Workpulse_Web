@@ -44,6 +44,10 @@ import {
   XIcon,
   Trash2Icon,
   ArrowRightLeftIcon,
+  BarChart3Icon,
+  FolderIcon,
+  UsersIcon,
+  ActivityIcon,
 } from "lucide-react"
 import { Task, TaskPriority, TaskStatus } from "@/types/database"
 import { deleteTask, updateTaskStatus, getActiveUserFromStorage } from "@/lib/api"
@@ -80,11 +84,30 @@ const statusMeta: Record<TaskStatus, { label: string; icon: React.ReactNode; cla
   },
 }
 
-const prioritasConfig: Record<TaskPriority, { label: string; sla: string; className: string }> = {
-  urgent: { label: "Mendesak", sla: "Target 2 Jam", className: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400" },
-  high: { label: "Tinggi", sla: "Target 4 Jam", className: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400" },
-  medium: { label: "Sedang", sla: "Target 8 Jam", className: "border-yellow-200 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400" },
-  low: { label: "Rendah", sla: "Target 24 Jam", className: "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-400" },
+const prioritasConfig: Record<TaskPriority, { label: string; className: string }> = {
+  urgent: { label: "Mendesak", className: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400" },
+  high: { label: "Tinggi", className: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400" },
+  medium: { label: "Sedang", className: "border-yellow-200 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400" },
+  low: { label: "Rendah", className: "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-400" },
+}
+
+function renderChannelIcon(iconStr?: string | null) {
+  if (!iconStr) return <FolderIcon className="size-3 text-muted-foreground shrink-0" />
+  // Jika berupa emoji unicode asli
+  if (/\p{Extended_Pictographic}/u.test(iconStr)) {
+    return <span className="text-xs shrink-0">{iconStr}</span>
+  }
+  const lower = iconStr.toLowerCase()
+  if (lower.includes("barchart") || lower.includes("chart") || lower.includes("kinerja")) {
+    return <BarChart3Icon className="size-3 text-red-600 dark:text-red-400 shrink-0" />
+  }
+  if (lower.includes("user") || lower.includes("team") || lower.includes("karyawan")) {
+    return <UsersIcon className="size-3 text-blue-600 dark:text-blue-400 shrink-0" />
+  }
+  if (lower.includes("activity") || lower.includes("log") || lower.includes("pulse")) {
+    return <ActivityIcon className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+  }
+  return <FolderIcon className="size-3 text-muted-foreground shrink-0" />
 }
 
 interface TaskTableRowProps {
@@ -108,7 +131,29 @@ function TaskTableRow({
 }: TaskTableRowProps) {
   const sMeta = statusMeta[task.status] || statusMeta.in_progress
   const pMeta = prioritasConfig[task.priority] || prioritasConfig.medium
-  const isOverdue = task.status !== "done" && task.deadline_at && new Date(task.deadline_at) < new Date()
+  const GRACE_PERIOD_MS = 15 * 60 * 1000
+  const isCompleted = task.status === "done" || Boolean(task.completed_at)
+  const isOverdue =
+    task.status !== "done" &&
+    task.deadline_at &&
+    new Date(task.deadline_at).getTime() + GRACE_PERIOD_MS < Date.now()
+  const delayMs =
+    task.completed_at && task.deadline_at
+      ? new Date(task.completed_at).getTime() - new Date(task.deadline_at).getTime()
+      : 0
+  const isCompletedLate = Boolean(task.completed_at && task.deadline_at && delayMs > GRACE_PERIOD_MS)
+  const isCompletedOnTime = isCompleted && !isCompletedLate
+
+  const activeUser = React.useMemo(() => getActiveUserFromStorage(), [])
+  const canApprove = React.useMemo(() => {
+    if (!activeUser || !task) return false
+    if (task.assigned_to && activeUser.id === task.assigned_to) return false
+    if (activeUser.role === "admin" || activeUser.role === "sgm") return true
+    if (task.delegated_by && task.delegated_by === activeUser.id) return true
+    if (task.created_by && task.created_by === activeUser.id) return true
+    if (task.assignee?.supervisor_id && task.assignee.supervisor_id === activeUser.id) return true
+    return false
+  }, [activeUser, task])
 
   return (
     <TableRow
@@ -138,10 +183,10 @@ function TaskTableRow({
       </TableCell>
 
       {/* 2. Kategori / Divisi */}
-      <TableCell className="py-3 px-4">
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-border/80">
-          <span>{task.channel?.icon || "📁"}</span>
-          <span className="truncate max-w-[110px]">{task.channel?.name || "Administrasi"}</span>
+      <TableCell className="py-3 pl-1.5 pr-4 text-left">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-border/80 w-fit">
+          {renderChannelIcon(task.channel?.icon)}
+          <span className="truncate max-w-[130px]">{task.channel?.name || "Administrasi"}</span>
         </span>
       </TableCell>
 
@@ -192,42 +237,62 @@ function TaskTableRow({
         )}
       </TableCell>
 
-      {/* 4. Prioritas & Target */}
+      {/* 4. Prioritas */}
       <TableCell className="py-3 px-4">
-        <div className="flex flex-col gap-0.5">
-          <Badge variant="outline" className={`px-2 py-0.5 text-[11px] font-semibold w-fit ${pMeta.className}`}>
-            {pMeta.label}
-          </Badge>
-          <span className="text-[10px] text-muted-foreground font-medium">
-            {pMeta.sla}
-          </span>
-        </div>
+        <Badge variant="outline" className={`px-2 py-0.5 text-[11px] font-semibold w-fit ${pMeta.className}`}>
+          {pMeta.label}
+        </Badge>
       </TableCell>
 
-      {/* 5. Deadline & Waktu */}
+      {/* 5. Deadline & Waktu Pengumpulan */}
       <TableCell className="py-3 px-4">
-        {task.deadline_at ? (
-          <div className="flex flex-col gap-0.5 text-xs min-w-[125px]">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className={`font-semibold tabular-nums ${isOverdue ? "text-red-600 font-bold" : "text-foreground"}`}>
-                {new Date(task.deadline_at).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </span>
-              {isOverdue && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-red-700 bg-red-100 dark:bg-red-950/60 dark:text-red-300 px-1.5 py-0.2 rounded border border-red-200 shrink-0">
-                  <AlertCircleIcon className="size-2.5" />
-                  Lewat Target
+        {task.deadline_at || task.completed_at ? (
+          <div className="flex flex-col gap-1 text-xs min-w-[130px]">
+            {task.deadline_at && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-muted-foreground font-medium">Batas:</span>
+                <span className="font-semibold tabular-nums text-foreground">
+                  {new Date(task.deadline_at).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                  })}{" "}
+                  {new Date(task.deadline_at).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </span>
-              )}
-            </div>
-            <span className="text-[10px] text-muted-foreground">
-              {new Date(task.deadline_at).toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })} WIB
-            </span>
+              </div>
+            )}
+            {isCompleted ? (
+              <div className="flex items-center gap-1 flex-wrap">
+                {isCompletedOnTime ? (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200">
+                    <CheckCircle2Icon className="size-2.5" />
+                    Tepat Waktu
+                  </span>
+                ) : isCompletedLate ? (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-red-700 bg-red-100 dark:bg-red-950/60 dark:text-red-300 px-1.5 py-0.5 rounded border border-red-200">
+                    <AlertCircleIcon className="size-2.5" />
+                    Terlambat
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    Selesai
+                  </span>
+                )}
+                {task.completed_at && (
+                  <span className="text-[9px] text-muted-foreground tabular-nums">
+                    ({new Date(task.completed_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}{" "}
+                    {new Date(task.completed_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })})
+                  </span>
+                )}
+              </div>
+            ) : isOverdue ? (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-red-700 bg-red-100 dark:bg-red-950/60 dark:text-red-300 px-1.5 py-0.5 rounded border border-red-200 w-fit">
+                <AlertCircleIcon className="size-2.5" />
+                Lewat Deadline
+              </span>
+            ) : null}
           </div>
         ) : (
           <span className="text-muted-foreground text-xs font-mono">-</span>
@@ -298,7 +363,7 @@ function TaskTableRow({
               </>
             ) : (
               <>
-                {task.status === "review" && (
+                {task.status === "review" && canApprove && (
                   <DropdownMenuItem
                     onClick={() => onQuickStatus(task.id, "done")}
                     className="text-xs cursor-pointer text-purple-700 dark:text-purple-400 font-semibold"
@@ -509,10 +574,10 @@ export function DataTable({
                   </div>
                 </TableHead>
                 <TableHead className="py-3 px-4 min-w-[200px]">Tugas & No. Tiket</TableHead>
-                <TableHead className="py-3 px-4 min-w-[130px]">Kategori / Divisi</TableHead>
+                <TableHead className="py-3 pl-1.5 pr-4 min-w-[130px] text-left">Kategori / Divisi</TableHead>
                 <TableHead className="py-3 px-4 min-w-[160px]">Pelaksana & Delegasi</TableHead>
-                <TableHead className="py-3 px-4 min-w-[110px]">Prioritas & Target</TableHead>
-                <TableHead className="py-3 px-4 min-w-[130px]">Deadline</TableHead>
+                <TableHead className="py-3 px-4 min-w-[110px]">Prioritas</TableHead>
+                <TableHead className="py-3 px-4 min-w-[140px]">Deadline & Pengumpulan</TableHead>
                 <TableHead className="py-3 px-4 min-w-[130px]">Status</TableHead>
                 <TableHead className="py-3 px-4 text-right min-w-[60px]">Aksi</TableHead>
               </TableRow>
@@ -619,7 +684,10 @@ export function DataTable({
         <TaskDetailSheet
           taskId={selectedTaskId}
           open={isDetailOpen}
-          onOpenChange={setIsDetailOpen}
+          onOpenChange={(open) => {
+            setIsDetailOpen(open)
+            if (!open) setSelectedTaskId(null)
+          }}
           onTaskUpdated={() => {
             if (onRefresh) onRefresh()
           }}
@@ -893,10 +961,10 @@ export function DataTable({
                   </div>
                 </TableHead>
                 <TableHead className="py-3 px-4 min-w-[200px]">Tugas & No. Tiket</TableHead>
-                <TableHead className="py-3 px-4 min-w-[130px]">Kategori / Divisi</TableHead>
+                <TableHead className="py-3 pl-1.5 pr-4 min-w-[130px] text-left">Kategori / Divisi</TableHead>
                 <TableHead className="py-3 px-4 min-w-[160px]">Pelaksana & Delegasi</TableHead>
-                <TableHead className="py-3 px-4 min-w-[110px]">Prioritas & Target</TableHead>
-                <TableHead className="py-3 px-4 min-w-[130px]">Deadline</TableHead>
+                <TableHead className="py-3 px-4 min-w-[110px]">Prioritas</TableHead>
+                <TableHead className="py-3 px-4 min-w-[140px]">Deadline & Pengumpulan</TableHead>
                 <TableHead className="py-3 px-4 min-w-[130px]">Status</TableHead>
                 <TableHead className="py-3 px-4 text-right min-w-[60px]">Aksi</TableHead>
               </TableRow>
@@ -1004,7 +1072,10 @@ export function DataTable({
       <TaskDetailSheet
         taskId={selectedTaskId}
         open={isDetailOpen}
-        onOpenChange={setIsDetailOpen}
+        onOpenChange={(open) => {
+          setIsDetailOpen(open)
+          if (!open) setSelectedTaskId(null)
+        }}
         onTaskUpdated={() => {
           if (onRefresh) onRefresh()
         }}

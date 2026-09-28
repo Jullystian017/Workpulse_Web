@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation"
 
 import { NavDocuments } from "@/components/dashboard/nav-documents"
 import { NavMain } from "@/components/dashboard/nav-main"
-import { NavSecondary } from "@/components/dashboard/nav-secondary"
 import { NavUser } from "@/components/dashboard/nav-user"
 import { useAiPanel } from "@/components/dashboard/ai-panel-context"
 import {
@@ -25,7 +24,6 @@ import {
   LayoutDashboardIcon,
   CheckSquareIcon,
   UsersIcon,
-  Settings2Icon,
   FileBarChartIcon,
   ActivityIcon,
   SparklesIcon,
@@ -59,13 +57,6 @@ const sidebarData = {
       name: "Log Aktivitas & Audit",
       url: "/admin/log",
       icon: ActivityIcon,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Pengaturan & Master Data",
-      url: "/admin/settings",
-      icon: Settings2Icon,
     },
   ],
 }
@@ -143,7 +134,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter className="p-2.5 pt-1.5 flex flex-col gap-1.5">
-        <NavSecondary items={sidebarData.navSecondary} />
         <NavUser />
       </SidebarFooter>
     </Sidebar>

@@ -7,11 +7,45 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AiPanelProvider } from "@/components/dashboard/ai-panel-context"
 import { AiIntegratedPanel } from "@/components/dashboard/ai-integrated-panel"
 
+import { useRouter } from "next/navigation"
+import { getActiveUserFromStorage } from "@/lib/api"
+import { LockIcon } from "lucide-react"
+
 export default function KaryawanLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
+  const [isChecking, setIsChecking] = React.useState(true)
+
+  React.useEffect(() => {
+    const user = getActiveUserFromStorage()
+    if (!user) {
+      router.replace("/login")
+    } else if (user.role === "admin") {
+      router.replace("/admin/dashboard")
+    } else {
+      setIsChecking(false)
+    }
+  }, [router])
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-zinc-50 dark:bg-zinc-950 font-sans">
+        <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-border shadow-xs">
+          <div className="size-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center animate-pulse">
+            <LockIcon className="size-5" />
+          </div>
+          <div className="text-center">
+            <h4 className="text-xs font-bold text-foreground">Memverifikasi Portal Karyawan...</h4>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Memeriksa hak otorisasi sesi kerja</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <SidebarProvider
       style={

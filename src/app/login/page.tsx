@@ -303,10 +303,10 @@ export default function LoginPage() {
         description: `Login sebagai ${ROLE_LABELS[user.role]?.label || user.position_title}`,
       });
 
-      if (user.role === "staff") {
-        router.push("/karyawan/dashboard");
-      } else {
+      if (user.role === "admin") {
         router.push("/admin/dashboard");
+      } else {
+        router.push("/karyawan/dashboard");
       }
     } catch (err) {
       console.error(err);
@@ -575,12 +575,12 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side: Interactive Showcase Card (Framed inside the window card) */}
-        <div className="hidden lg:flex lg:w-1/2 rounded-[24px] border border-zinc-800/80 bg-[#070c16] relative overflow-hidden flex-col justify-between items-center p-6 xl:p-8 shadow-inner select-none">
+        <div className="hidden lg:flex lg:w-1/2 rounded-[24px] border border-red-500/20 bg-gradient-to-br from-[#c91d25] via-[#a3151c] to-[#450a0a] relative overflow-hidden flex-col justify-between items-center p-6 xl:p-8 shadow-inner select-none">
           {/* Architectural Subtle Grid Overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:36px_36px] pointer-events-none" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:36px_36px] pointer-events-none" />
 
-          {/* Ambient Warm Red Radial Glow */}
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[360px] bg-red-600/15 rounded-full blur-[90px] pointer-events-none" />
+          {/* Ambient Warm Radial Glow */}
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[360px] bg-white/10 rounded-full blur-[90px] pointer-events-none" />
 
           {/* Top: Compact Floating Mockup Cards Cluster */}
           <div className="relative w-full max-w-[380px] xl:max-w-[410px] h-[330px] my-auto">
@@ -759,8 +759,8 @@ export default function LoginPage() {
               Pusat Manajemen Tugas Cerdas
             </h2>
 
-            <p className="text-xs text-zinc-400 leading-relaxed max-w-xs">
-              Pantau performa SLA, alur kerja tim, dan realisasi SPJ Telkom Akses secara real-time.
+            <p className="text-xs text-red-100/90 leading-relaxed max-w-xs font-medium">
+              Pantau performa SLA, alur kerja tim, dan realisasi SPJ Telkom Akses secara terpadu dan transparan.
             </p>
           </div>
 

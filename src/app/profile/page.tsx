@@ -5,6 +5,7 @@ import { ShieldCheckIcon, SaveIcon, UserIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
+import { AppSidebarStaff } from "@/components/dashboard/app-sidebar-staff"
 import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
@@ -83,7 +84,11 @@ export default function ProfilePage() {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      {user.role === "admin" ? (
+        <AppSidebar variant="inset" />
+      ) : (
+        <AppSidebarStaff variant="inset" />
+      )}
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6 pb-12 max-w-4xl">

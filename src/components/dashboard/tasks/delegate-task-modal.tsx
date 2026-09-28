@@ -182,7 +182,7 @@ export function DelegateTaskModal({
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] md:text-xs text-muted-foreground">{rec.user.position_title}</p>
+                        <p className="text-[11px] md:text-xs text-muted-foreground font-medium">Role: {ROLE_LABELS[rec.user.role]?.label}</p>
                         <div className="flex items-center gap-2 text-[10px] md:text-[11px] text-muted-foreground">
                           <span>Beban Aktif: <strong className="text-foreground">{rec.activeTasksCount} tugas</strong></span>
                           <span>•</span>

@@ -15,6 +15,11 @@ import {
   ArrowLeftIcon,
   RefreshCwIcon,
   ShieldCheckIcon,
+  HistoryIcon,
+  AlertCircleIcon,
+  InfoIcon,
+  HelpCircleIcon,
+  SparklesIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -40,16 +45,25 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import {
   getEmployeePerformanceReport,
   EmployeePerformanceReport,
+  PerformanceHistoryItem,
 } from "@/lib/api"
-import { ROLE_LABELS } from "@/types/database"
+import { ROLE_LABELS, TASK_PRIORITY_LABELS } from "@/types/database"
 
 export default function LaporanKinerjaPage() {
   const [data, setData] = React.useState<EmployeePerformanceReport[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [selectedRole, setSelectedRole] = React.useState("Semua")
+  const [selectedReport, setSelectedReport] = React.useState<EmployeePerformanceReport | null>(null)
 
   const loadReportData = React.useCallback(async () => {
     setIsLoading(true)
@@ -287,6 +301,7 @@ export default function LaporanKinerjaPage() {
                   <TableHead className="text-xs font-bold text-foreground text-center">Review</TableHead>
                   <TableHead className="text-xs font-bold text-foreground text-center">Tepat Waktu</TableHead>
                   <TableHead className="text-xs font-bold text-foreground text-center">Bintang & Predikat</TableHead>
+                  <TableHead className="text-xs font-bold text-foreground text-center">Riwayat & Alasan</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -361,12 +376,280 @@ export default function LaporanKinerjaPage() {
                           </span>
                         </div>
                       </TableCell>
+
+                      <TableCell className="py-3 text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedReport(row)}
+                          className="h-7 px-2.5 text-xs font-semibold rounded-lg border-border hover:bg-muted text-foreground inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        >
+                          <HistoryIcon className="size-3.5 text-red-600 dark:text-red-400" />
+                          <span>Detail Poin</span>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   )
                 })}
               </TableBody>
             </Table>
           </div>
+
+          {/* Modal Dialog Detail & Riwayat Penilaian Kinerja */}
+          <Dialog open={Boolean(selectedReport)} onOpenChange={(open) => !open && setSelectedReport(null)}>
+            <DialogContent className="w-[95vw] sm:max-w-5xl md:max-w-5xl lg:max-w-6xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 sm:rounded-3xl shadow-2xl">
+              {selectedReport && (
+                <div className="space-y-6">
+                  {/* Header Dialog */}
+                  <div className="flex items-start justify-between border-b border-border pb-4 gap-4 pr-8 sm:pr-10">
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={
+                          selectedReport.user.avatar_url ||
+                          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+                        }
+                        alt={selectedReport.user.nama}
+                        className="size-14 rounded-2xl object-cover border border-border shadow-xs shrink-0"
+                      />
+                      <div>
+                        <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 flex-wrap">
+                          <span>{selectedReport.user.nama}</span>
+                          <span className="text-xs font-mono text-muted-foreground font-normal">
+                            (NIK: {selectedReport.user.nik})
+                          </span>
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                          {selectedReport.user.position_title || "Karyawan"} •{" "}
+                          <span className="font-bold text-foreground uppercase text-[10px] tracking-wider">
+                            {selectedReport.user.role}
+                          </span>
+                        </DialogDescription>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
+                        <StarIcon className="size-4.5 fill-amber-500 text-amber-500" />
+                        <span className="text-base font-extrabold">{selectedReport.stars}</span>
+                        <span className="text-xs text-muted-foreground">/ 5.0</span>
+                      </div>
+                      <span
+                        className={`text-xs font-bold ${
+                          selectedReport.score >= 90
+                            ? "text-emerald-600"
+                            : selectedReport.score >= 75
+                            ? "text-blue-600"
+                            : selectedReport.score >= 60
+                            ? "text-amber-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        Predikat: {selectedReport.predicate} (Skor {selectedReport.score})
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Breakdown Komponen Penilaian */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                    <div className="p-3 rounded-xl border border-border bg-muted/30 flex flex-col justify-between">
+                      <span className="text-[11px] font-medium text-muted-foreground">Skor Dasar Awal</span>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-bold text-foreground">100</span>
+                        <span className="text-[10px] text-muted-foreground">Poin Standar</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex flex-col justify-between">
+                      <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                        Total Bonus Didapat
+                      </span>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          +{selectedReport.bonusPoints}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">Poin On-time & Subtasks</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/5 flex flex-col justify-between">
+                      <span className="text-[11px] font-medium text-red-700 dark:text-red-400">
+                        Total Penalti Terkena
+                      </span>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                          -{selectedReport.penaltyPoints}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">Poin Keterlambatan</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl border border-blue-500/20 bg-blue-500/5 flex flex-col justify-between">
+                      <span className="text-[11px] font-medium text-blue-700 dark:text-blue-400">
+                        Tingkat Tepat Waktu (SLA)
+                      </span>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                          {selectedReport.onTimeRate}%
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">Dari tugas terbit</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Banner Penjelasan Formula Transparan */}
+                  <div className="p-3.5 rounded-xl bg-card border border-border/80 text-xs space-y-2 text-muted-foreground">
+                    <div className="flex items-center gap-1.5 font-bold text-foreground">
+                      <InfoIcon className="size-4 text-primary shrink-0" />
+                      <span>Transparansi Rumus Penilaian Kinerja Karyawan:</span>
+                    </div>
+                    <p className="font-mono text-[11px] bg-muted/60 px-2.5 py-1.5 rounded-lg border border-border text-foreground">
+                      Skor Akhir ({selectedReport.score}) = 100 Poin Dasar - {selectedReport.penaltyPoints} Poin Penalti +{" "}
+                      {selectedReport.bonusPoints} Poin Bonus
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-0.5">
+                      <div>
+                        <span className="font-semibold text-foreground">• Toleransi 15 Menit & Bonus:</span> Keterlambatan
+                        ≤ 15 menit tetap dianggap tepat waktu (faktor teknis upload/sync). Bonus +2 poin tugas on-time (+1
+                        jika subtask 100% lengkap).
+                      </div>
+                      <div>
+                        <span className="font-semibold text-foreground">• Penalti Proporsional:</span> Keterlambatan
+                        ringan (15m–2j) dipotong ringan (-1 s/d -4), keterlambatan sedang &amp; berat (di atas 24 jam) dikenakan penalti
+                        sesuai skala prioritas tugas.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tabel History Detail Tugas */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <HistoryIcon className="size-3.5 text-primary" />
+                        <span>Log Riwayat Tugas & Detail Alasan Skor ({selectedReport.history.length} Tugas)</span>
+                      </h4>
+                    </div>
+
+                    <div className="rounded-2xl border border-border overflow-x-auto bg-card">
+                      <Table>
+                        <TableHeader className="bg-muted/50 text-[11px]">
+                          <TableRow>
+                            <TableHead className="py-2.5 px-3 min-w-[180px]">Tugas & Tiket</TableHead>
+                            <TableHead className="py-2.5 px-3 min-w-[90px]">Prioritas</TableHead>
+                            <TableHead className="py-2.5 px-3 min-w-[160px]">Batas vs Kumpul</TableHead>
+                            <TableHead className="py-2.5 px-3 text-center min-w-[120px]">Status Ketepatan</TableHead>
+                            <TableHead className="py-2.5 px-3 text-center min-w-[110px]">Dampak Poin</TableHead>
+                            <TableHead className="py-2.5 px-3 min-w-[260px]">Alasan Penilaian</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="text-xs">
+                          {selectedReport.history.length > 0 ? (
+                            selectedReport.history.map((h) => {
+                              const pMeta = TASK_PRIORITY_LABELS[h.priority] || { label: h.priority }
+                              return (
+                                <TableRow key={h.taskId} className="hover:bg-muted/20">
+                                  <TableCell className="py-2.5 px-3">
+                                    <span className="font-bold text-foreground block line-clamp-1">{h.title}</span>
+                                    <span className="font-mono text-[10px] text-muted-foreground">{h.ticketCode}</span>
+                                  </TableCell>
+
+                                  <TableCell className="py-2.5 px-3">
+                                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border border-border bg-muted/60">
+                                      {pMeta.label}
+                                    </span>
+                                  </TableCell>
+
+                                  <TableCell className="py-2.5 px-3 font-mono text-[11px]">
+                                    <div className="text-muted-foreground">
+                                      Batas:{" "}
+                                      {h.deadlineAt
+                                        ? new Date(h.deadlineAt).toLocaleDateString("id-ID", {
+                                            day: "numeric",
+                                            month: "short",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })
+                                        : "-"}
+                                    </div>
+                                    {h.completedAt && (
+                                      <div className="font-semibold text-foreground">
+                                        Kumpul:{" "}
+                                        {new Date(h.completedAt).toLocaleDateString("id-ID", {
+                                          day: "numeric",
+                                          month: "short",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </div>
+                                    )}
+                                  </TableCell>
+
+                                  <TableCell className="py-2.5 px-3 text-center">
+                                    {h.outcome === "on_time" ? (
+                                      <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-bold">
+                                        Tepat Waktu
+                                      </Badge>
+                                    ) : h.outcome === "late" ? (
+                                      <Badge className="bg-red-500/10 text-red-600 border border-red-500/20 text-[10px] font-bold">
+                                        Terlambat
+                                      </Badge>
+                                    ) : h.outcome === "overdue" ? (
+                                      <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold">
+                                        Lewat Batas
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-[10px]">
+                                        Berjalan
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+
+                                  <TableCell className="py-2.5 px-3 text-center font-bold font-mono">
+                                    {h.pointsChange > 0 ? (
+                                      <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded text-xs">
+                                        +{h.pointsChange} Poin
+                                      </span>
+                                    ) : h.pointsChange < 0 ? (
+                                      <span className="text-red-600 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded text-xs">
+                                        {h.pointsChange} Poin
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">0 Poin</span>
+                                    )}
+                                  </TableCell>
+
+                                  <TableCell className="py-2.5 px-3 text-muted-foreground text-[11px] leading-relaxed">
+                                    {h.reason}
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={6} className="py-6 text-center text-muted-foreground text-xs">
+                                Belum ada riwayat penugasan yang tercatat untuk karyawan ini.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* Footer Dialog */}
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedReport(null)}
+                      className="h-8 px-4 text-xs cursor-pointer"
+                    >
+                      Tutup
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </SidebarInset>
     </SidebarProvider>

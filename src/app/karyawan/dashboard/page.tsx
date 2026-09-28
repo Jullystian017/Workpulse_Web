@@ -66,8 +66,8 @@ export default function KaryawanDashboardPage() {
         {/* Row 1: 4 Unified Summary Cards with Live Performance Metrics */}
         <KaryawanSectionCards tasks={tasks} />
 
-        {/* Row 2: AI WorkPulse Real-Time Insight Banner */}
-        <KaryawanAiInsight />
+        {/* Row 2: AI WorkPulse Real-Time Insight Banner (Groq AI & Admin KPI Synced) */}
+        <KaryawanAiInsight tasks={tasks} />
 
         {/* Row 3: Real-time Employee Task Table (Role-aware view) */}
         <DataTable

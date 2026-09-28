@@ -162,20 +162,20 @@ export const ROLE_HIERARCHY_LEVEL: Record<UserRole, number> = {
 };
 
 export const ROLE_LABELS: Record<UserRole, { label: string; badge: string; color: string }> = {
-  staff: { label: 'Staff Administrasi & Data Kantor', badge: 'Staff', color: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' },
-  officer_1: { label: 'Officer 1 (Koordinator Administrasi)', badge: 'Officer 1', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-400' },
-  officer_2: { label: 'Officer 2 (Spesialis Analisis & Dokumen)', badge: 'Officer 2', color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-400' },
-  officer_3: { label: 'Officer 3 (Lead Proyek & Perencanaan)', badge: 'Officer 3', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-400' },
-  manager: { label: 'Manager Operasional & Proyek', badge: 'Manager', color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400' },
-  sgm: { label: 'Senior General Manager (SGM)', badge: 'SGM', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-400' },
-  admin: { label: 'HR & IT Administrator Kantor', badge: 'Admin', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-400' },
+  staff: { label: 'Staff', badge: 'Staff', color: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' },
+  officer_1: { label: 'Officer 1', badge: 'Officer 1', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-400' },
+  officer_2: { label: 'Officer 2', badge: 'Officer 2', color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-400' },
+  officer_3: { label: 'Officer 3', badge: 'Officer 3', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-400' },
+  manager: { label: 'Manager', badge: 'Manager', color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400' },
+  sgm: { label: 'SGM', badge: 'SGM', color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-400' },
+  admin: { label: 'Superadmin', badge: 'Superadmin', color: 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300' },
 };
 
 export const TASK_PRIORITY_LABELS: Record<TaskPriority, { label: string; color: string }> = {
-  urgent: { label: 'Darurat (Target 2 Jam)', color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-400' },
-  high: { label: 'Tinggi (Target 4 Jam)', color: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/60 dark:text-orange-400' },
-  medium: { label: 'Sedang (Target 8 Jam)', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-400' },
-  low: { label: 'Rendah (Target 24 Jam)', color: 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300' },
+  urgent: { label: 'Darurat', color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-400' },
+  high: { label: 'Tinggi', color: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/60 dark:text-orange-400' },
+  medium: { label: 'Sedang', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-400' },
+  low: { label: 'Rendah', color: 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300' },
 };
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, { label: string; color: string }> = {

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { CheckSquareIcon, FileBarChartIcon } from "lucide-react"
+import { CheckSquareIcon, FileBarChartIcon, PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getActiveUserFromStorage } from "@/lib/api"
 import { ROLE_LABELS } from "@/types/database"
@@ -19,7 +19,7 @@ export function KaryawanWelcome() {
       // Get first name only
       const firstName = user.nama.split(" ")[0]
       setName(firstName)
-      setPositionTitle(user.position_title || ROLE_LABELS[user.role]?.label || "Karyawan")
+      setPositionTitle(ROLE_LABELS[user.role]?.label || "Karyawan")
       setRoleBadge(ROLE_LABELS[user.role]?.badge || user.role)
       setRoleColor(ROLE_LABELS[user.role]?.color || "")
     }
@@ -44,14 +44,14 @@ export function KaryawanWelcome() {
 
       {/* Right: Functional Action Shortcuts */}
       <div className="flex items-center gap-2.5 shrink-0">
-        <Link href="/karyawan/laporan">
+        <Link href="/karyawan/tasks?action=create">
           <Button
             variant="outline"
             size="sm"
             className="h-9 px-3.5 gap-1.5 rounded-[8px] text-xs font-semibold hover:bg-muted border-border cursor-pointer shadow-2xs transition-colors"
           >
-            <FileBarChartIcon className="size-3.5 text-zinc-600 dark:text-zinc-300" />
-            <span>Kinerja & Bintang</span>
+            <PlusIcon className="size-3.5 text-red-600 dark:text-red-400" />
+            <span>Tambah Tugas</span>
           </Button>
         </Link>
 

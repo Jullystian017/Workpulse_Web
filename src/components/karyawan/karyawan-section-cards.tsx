@@ -10,7 +10,7 @@ import {
   StarIcon,
 } from "lucide-react"
 import { Task } from "@/types/database"
-import { calculatePerformance } from "@/lib/api"
+import { calculatePerformance, getActiveUserFromStorage } from "@/lib/api"
 
 export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
   const cards = React.useMemo(() => {
@@ -53,11 +53,15 @@ export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
       ]
     }
 
-    const perf = calculatePerformance(tasks)
-    const completed = tasks.filter((t) => t.status === "done").length
-    const inProgress = tasks.filter((t) => t.status === "in_progress").length
-    const review = tasks.filter((t) => t.status === "review").length
-    const active = inProgress + review + tasks.filter((t) => t.status === "todo").length
+    const activeUser = getActiveUserFromStorage()
+    const myTasks = activeUser ? tasks.filter((t) => t.assigned_to === activeUser.id) : tasks
+    const targetTasks = myTasks.length > 0 ? myTasks : tasks
+
+    const perf = calculatePerformance(targetTasks)
+    const completed = targetTasks.filter((t) => t.status === "done").length
+    const inProgress = targetTasks.filter((t) => t.status === "in_progress").length
+    const review = targetTasks.filter((t) => t.status === "review").length
+    const active = inProgress + review + targetTasks.filter((t) => t.status === "todo").length
 
     return [
       {

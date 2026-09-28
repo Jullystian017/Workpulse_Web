@@ -42,6 +42,7 @@ import {
   getAllUsers,
   getActiveUserFromStorage,
   updateTaskStatus,
+  claimTask,
 } from "@/lib/api"
 import { Task, Channel, User, TaskStatus } from "@/types/database"
 
@@ -56,7 +57,7 @@ function KaryawanTasksContent() {
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
 
   // Filter & Sort States
-  const urlTask = searchParams.get("task")
+  const urlTask = searchParams.get("task") || searchParams.get("selected")
   const urlAction = searchParams.get("action")
   const urlView = searchParams.get("view")
 
@@ -148,19 +149,33 @@ function KaryawanTasksContent() {
     }
   }, [urlView])
 
+  // Track handled URL query triggers so they only fire once on initial navigation and never loop
+  const handledUrlTaskRef = React.useRef<string | null>(null)
+  const handledUrlActionRef = React.useRef<string | null>(null)
+
   React.useEffect(() => {
     if (urlAction === "create") {
-      setIsCreateOpen(true)
+      if (handledUrlActionRef.current !== "create") {
+        handledUrlActionRef.current = "create"
+        setIsCreateOpen(true)
+      }
+    } else {
+      handledUrlActionRef.current = null
     }
   }, [urlAction])
 
   React.useEffect(() => {
     if (urlTask && tasks.length > 0) {
-      const t = tasks.find((item) => item.id === urlTask || item.ticket_code === urlTask)
-      if (t) {
-        setSelectedTask(t)
-        setIsDetailOpen(true)
+      if (handledUrlTaskRef.current !== urlTask) {
+        const t = tasks.find((item) => item.id === urlTask || item.ticket_code === urlTask)
+        if (t) {
+          handledUrlTaskRef.current = urlTask
+          setSelectedTask(t)
+          setIsDetailOpen(true)
+        }
       }
+    } else if (!urlTask) {
+      handledUrlTaskRef.current = null
     }
   }, [urlTask, tasks])
 
@@ -198,6 +213,49 @@ function KaryawanTasksContent() {
     setTaskToDelegate(task)
     setIsDelegateOpen(true)
   }
+
+  const handleCloseDetail = React.useCallback(
+    (open: boolean) => {
+      setIsDetailOpen(open)
+      if (!open) {
+        setSelectedTask(null)
+        handledUrlTaskRef.current = null
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search)
+          if (params.has("task") || params.has("selected")) {
+            params.delete("task")
+            params.delete("selected")
+            const newSearch = params.toString() ? `?${params.toString()}` : ""
+            const newUrl = `${window.location.pathname}${newSearch}`
+            window.history.replaceState(null, "", newUrl)
+            router.replace(newUrl, { scroll: false })
+          }
+        }
+        loadAllData()
+      }
+    },
+    [router, loadAllData]
+  )
+
+  const handleCloseCreate = React.useCallback(
+    (open: boolean) => {
+      setIsCreateOpen(open)
+      if (!open) {
+        handledUrlActionRef.current = null
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search)
+          if (params.has("action")) {
+            params.delete("action")
+            const newSearch = params.toString() ? `?${params.toString()}` : ""
+            const newUrl = `${window.location.pathname}${newSearch}`
+            window.history.replaceState(null, "", newUrl)
+            router.replace(newUrl, { scroll: false })
+          }
+        }
+      }
+    },
+    [router]
+  )
 
   // Filter Logic
   const filteredTasks = React.useMemo(() => {
@@ -297,6 +355,17 @@ function KaryawanTasksContent() {
             >
               <RefreshCwIcon className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setCreateDefaultStatus("todo")
+                setIsCreateOpen(true)
+              }}
+              className="h-9 px-3.5 rounded-[8px] text-xs font-bold gap-1.5 bg-red-600 hover:bg-red-700 text-white shadow-xs cursor-pointer transition-all"
+            >
+              <PlusIcon className="size-3.5" />
+              <span>Tambah Tugas</span>
             </Button>
           </div>
         </div>
@@ -590,7 +659,12 @@ function KaryawanTasksContent() {
                 onOpenDelegate={handleOpenDelegate}
                 onOpenCreate={handleOpenCreate}
                 onUpdateStatus={async (taskId, status) => {
-                  await updateTaskStatus(taskId, status)
+                  const movingTask = tasks.find((t) => t.id === taskId)
+                  if (status === "in_progress" && movingTask && !movingTask.assigned_to && currentUser) {
+                    await claimTask(taskId, currentUser.id)
+                  } else {
+                    await updateTaskStatus(taskId, status, currentUser?.id)
+                  }
                   loadAllData()
                 }}
               />
@@ -630,20 +704,14 @@ function KaryawanTasksContent() {
       <TaskDetailSheet
         taskId={selectedTask?.id || null}
         open={isDetailOpen}
-        onOpenChange={(open) => {
-          setIsDetailOpen(open)
-          if (!open) {
-            setSelectedTask(null)
-            loadAllData()
-          }
-        }}
+        onOpenChange={handleCloseDetail}
         onTaskUpdated={() => loadAllData()}
         onOpenDelegate={handleOpenDelegate}
       />
 
       <CreateTaskModal
         open={isCreateOpen}
-        onOpenChange={setIsCreateOpen}
+        onOpenChange={handleCloseCreate}
         defaultStatus={createDefaultStatus}
         onSuccess={() => loadAllData()}
       />

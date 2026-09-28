@@ -100,23 +100,29 @@ export function CommandPalette({
   const filteredActions = React.useMemo(() => {
     const q = query.toLowerCase().trim()
 
+    const isAdmin = activeUser?.role === "admin"
+
     const quickActions = [
-      {
-        id: "act-create-task",
-        category: "Aksi Cepat",
-        title: "Buat Penugasan Kantor Baru",
-        subtitle: "Terbitkan tugas ke pool atau langsung delegasikan",
-        icon: PlusIcon,
-        iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400",
-        action: () => {
-          setOpen(false)
-          if (onOpenCreateTask) {
-            onOpenCreateTask()
-          } else {
-            router.push("/admin/tasks?action=create")
-          }
-        },
-      },
+      ...(isAdmin
+        ? [
+            {
+              id: "act-create-task",
+              category: "Aksi Cepat",
+              title: "Buat Penugasan Kantor Baru",
+              subtitle: "Terbitkan tugas ke pool atau langsung delegasikan",
+              icon: PlusIcon,
+              iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400",
+              action: () => {
+                setOpen(false)
+                if (onOpenCreateTask) {
+                  onOpenCreateTask()
+                } else {
+                  router.push("/admin/tasks?action=create")
+                }
+              },
+            },
+          ]
+        : []),
       {
         id: "act-ai-assistant",
         category: "Aksi Cepat",
@@ -129,18 +135,22 @@ export function CommandPalette({
           aiPanel?.openAiPanel()
         },
       },
-      {
-        id: "act-export-report",
-        category: "Aksi Cepat",
-        title: "Export Rekap Laporan Kinerja & SLA",
-        subtitle: "Buka halaman download CSV / Cetak PDF Resmi",
-        icon: FileSpreadsheetIcon,
-        iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400",
-        action: () => {
-          setOpen(false)
-          router.push("/admin/laporan/kinerja")
-        },
-      },
+      ...(isAdmin
+        ? [
+            {
+              id: "act-export-report",
+              category: "Aksi Cepat",
+              title: "Export Rekap Laporan Kinerja & SLA",
+              subtitle: "Buka halaman download CSV / Cetak PDF Resmi",
+              icon: FileSpreadsheetIcon,
+              iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400",
+              action: () => {
+                setOpen(false)
+                router.push("/admin/laporan/kinerja")
+              },
+            },
+          ]
+        : []),
       {
         id: "act-toggle-theme",
         category: "Aksi Cepat",
@@ -165,84 +175,112 @@ export function CommandPalette({
       iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400",
       action: () => {
         setOpen(false)
-        router.push(`/admin/tasks?task=${t.id}`)
+        const baseTaskRoute = isAdmin ? "/admin/tasks" : "/karyawan/tasks"
+        router.push(`${baseTaskRoute}?task=${t.id}`)
       },
     }))
 
-    const navItems = [
-      {
-        id: "nav-dash",
-        category: "Navigasi Halaman",
-        title: "Executive Dashboard",
-        subtitle: "Ringkasan KPI, Area Chart interaktif, dan tabel tugas utama",
-        icon: LayoutDashboardIcon,
-        iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60",
-        action: () => {
-          setOpen(false)
-          router.push("/admin/dashboard")
-        },
-      },
-      {
-        id: "nav-tasks",
-        category: "Navigasi Halaman",
-        title: "Penugasan Kerja Kantor",
-        subtitle: "Kelola Kanban, Tabel, Timeline, dan Kapasitas Tim",
-        icon: CheckSquareIcon,
-        iconColor: "text-blue-600 bg-blue-50 dark:bg-blue-950/60",
-        action: () => {
-          setOpen(false)
-          router.push("/admin/tasks")
-        },
-      },
-      {
-        id: "nav-karyawan",
-        category: "Navigasi Halaman",
-        title: "Karyawan & Rantai Komando",
-        subtitle: "Struktur hierarki personil SGM, Manager, Officer, dan Staff",
-        icon: UsersIcon,
-        iconColor: "text-purple-600 bg-purple-50 dark:bg-purple-950/60",
-        action: () => {
-          setOpen(false)
-          router.push("/admin/karyawan")
-        },
-      },
-      {
-        id: "nav-laporan",
-        category: "Navigasi Halaman",
-        title: "Laporan Kinerja & Rekap SLA",
-        subtitle: "Akuntabilitas pengerjaan tugas dan persentase SLA On-Time",
-        icon: FileBarChartIcon,
-        iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60",
-        action: () => {
-          setOpen(false)
-          router.push("/admin/laporan/kinerja")
-        },
-      },
-      {
-        id: "nav-log",
-        category: "Navigasi Halaman",
-        title: "Log Aktivitas & Audit Trail",
-        subtitle: "Rekam jejak digital pengerjaan tugas kantor",
-        icon: ActivityIcon,
-        iconColor: "text-amber-600 bg-amber-50 dark:bg-amber-950/60",
-        action: () => {
-          setOpen(false)
-          router.push("/admin/log")
-        },
-      },
-      {
-        id: "nav-akses",
-        category: "Navigasi Halaman",
-        title: "Hak Akses & Role Matrix",
-        subtitle: "Matriks perizinan modul dan wewenang delegasi",
-        icon: ShieldIcon,
-        iconColor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60",
-        action: () => {
-          setOpen(false)
-          router.push("/admin/akses")
-        },
-      },
-    ]
+    const navItems = isAdmin
+      ? [
+          {
+            id: "nav-dash",
+            category: "Navigasi Halaman",
+            title: "Executive Dashboard",
+            subtitle: "Ringkasan KPI, Area Chart interaktif, dan tabel tugas utama",
+            icon: LayoutDashboardIcon,
+            iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/admin/dashboard")
+            },
+          },
+          {
+            id: "nav-tasks",
+            category: "Navigasi Halaman",
+            title: "Penugasan Kerja Kantor",
+            subtitle: "Kelola Kanban, Tabel, Timeline, dan Kapasitas Tim",
+            icon: CheckSquareIcon,
+            iconColor: "text-blue-600 bg-blue-50 dark:bg-blue-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/admin/tasks")
+            },
+          },
+          {
+            id: "nav-karyawan",
+            category: "Navigasi Halaman",
+            title: "Karyawan & Rantai Komando",
+            subtitle: "Struktur hierarki personil SGM, Manager, Officer, dan Staff",
+            icon: UsersIcon,
+            iconColor: "text-purple-600 bg-purple-50 dark:bg-purple-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/admin/karyawan")
+            },
+          },
+          {
+            id: "nav-laporan",
+            category: "Navigasi Halaman",
+            title: "Laporan Kinerja & Rekap SLA",
+            subtitle: "Akuntabilitas pengerjaan tugas dan persentase SLA On-Time",
+            icon: FileBarChartIcon,
+            iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/admin/laporan/kinerja")
+            },
+          },
+          {
+            id: "nav-log",
+            category: "Navigasi Halaman",
+            title: "Log Aktivitas & Audit Trail",
+            subtitle: "Rekam jejak digital pengerjaan tugas kantor",
+            icon: ActivityIcon,
+            iconColor: "text-amber-600 bg-amber-50 dark:bg-amber-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/admin/log")
+            },
+          },
+          {
+            id: "nav-akses",
+            category: "Navigasi Halaman",
+            title: "Hak Akses & Role Matrix",
+            subtitle: "Matriks perizinan modul dan wewenang delegasi",
+            icon: ShieldIcon,
+            iconColor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/admin/akses")
+            },
+          },
+        ]
+      : [
+          {
+            id: "nav-staff-dash",
+            category: "Navigasi Halaman",
+            title: "Dashboard Saya",
+            subtitle: "Statistik tugas harian, kalender agenda kerja, dan rangkuman",
+            icon: LayoutDashboardIcon,
+            iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/karyawan/dashboard")
+            },
+          },
+          {
+            id: "nav-staff-tasks",
+            category: "Navigasi Halaman",
+            title: "Tugas Saya",
+            subtitle: "Daftar penugasan aktif, status pengerjaan, dan checklist",
+            icon: CheckSquareIcon,
+            iconColor: "text-blue-600 bg-blue-50 dark:bg-blue-950/60",
+            action: () => {
+              setOpen(false)
+              router.push("/karyawan/tasks")
+            },
+          },
+        ]
 
     const all = [...quickActions, ...taskItems, ...navItems]
 

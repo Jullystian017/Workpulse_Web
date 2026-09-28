@@ -26,6 +26,7 @@ import {
   ImageIcon,
   FileIcon,
   AlertTriangleIcon,
+  PlayIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -60,6 +61,8 @@ import {
   TaskAttachment,
   TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
+  ROLE_LABELS,
+  ROLE_HIERARCHY_LEVEL,
 } from "@/types/database"
 import {
   getTaskById,
@@ -179,7 +182,20 @@ export function TaskDetailSheet({
     try {
       const [chs, usrs] = await Promise.all([getChannels(), getAllUsers()])
       setAvailableChannels(chs)
-      setAvailableUsers(usrs)
+
+      let filteredUsers = usrs
+      const activeUser = getActiveUserFromStorage()
+      if (activeUser && activeUser.role !== "admin") {
+        const myLevel = ROLE_HIERARCHY_LEVEL[activeUser.role] ?? 1
+        filteredUsers = usrs.filter((u) => {
+          if (u.id === activeUser.id) return true
+          if (u.role === "admin") return false
+          const targetLevel = ROLE_HIERARCHY_LEVEL[u.role] ?? 1
+          return targetLevel < myLevel
+        })
+      }
+
+      setAvailableUsers(filteredUsers)
       setIsEditing(true)
     } catch (err) {
       console.error(err)
@@ -224,6 +240,10 @@ export function TaskDetailSheet({
   // Quick Status Changer
   const handleQuickStatusChange = async (newStatus: TaskStatus) => {
     if (!task) return
+    if (newStatus === "done" && task.status === "review" && !canApprove) {
+      toast.error("Hanya atasan atau delegator tugas yang berhak menyetujui tugas ini.")
+      return
+    }
     const ok = await updateTaskStatus(task.id, newStatus, currentUser?.id)
     if (ok) {
       setTask((prev) => (prev ? { ...prev, status: newStatus } : null))
@@ -259,6 +279,40 @@ export function TaskDetailSheet({
   const subtasks = task?.subtasks || []
   const completedSubtasks = subtasks.filter((s) => s.is_completed).length
   const isStaff = currentUser?.role === "staff"
+
+  // Hanya atasan (supervisor langsung), delegator, pembuat tugas, atau Admin/SGM yang berhak Approve / Setujui
+  const canApprove = React.useMemo(() => {
+    if (!currentUser || !task) return false
+    // Pelaksana dilarang approve tugasnya sendiri
+    if (task.assigned_to && currentUser.id === task.assigned_to) return false
+
+    // 1. Admin & SGM selalu memiliki wewenang override
+    if (currentUser.role === "admin" || currentUser.role === "sgm") return true
+
+    // 2. Delegator tugas
+    if (task.delegated_by && task.delegated_by === currentUser.id) return true
+    if (task.delegator && task.delegator.id === currentUser.id) return true
+
+    // 3. Pembuat tugas (inisiator)
+    if (task.created_by && task.created_by === currentUser.id) return true
+    if (task.creator && task.creator.id === currentUser.id) return true
+
+    // 4. Atasan langsung si pelaksana tugas
+    if (task.assignee?.supervisor_id && task.assignee.supervisor_id === currentUser.id) return true
+
+    return false
+  }, [currentUser, task])
+
+  // Nama atasan / delegator yang berhak me-review
+  const reviewerName = React.useMemo(() => {
+    if (!task) return "Atasan"
+    return (
+      task.delegator?.nama ||
+      task.creator?.nama ||
+      task.assignee?.supervisor?.nama ||
+      "Atasan / Delegator"
+    )
+  }, [task])
   const progressPercent =
     subtasks.length > 0
       ? Math.round((completedSubtasks / subtasks.length) * 100)
@@ -354,6 +408,10 @@ export function TaskDetailSheet({
   // Supervisor Approve Task
   const handleApprove = async () => {
     if (!task || !currentUser) return
+    if (!canApprove) {
+      toast.error("Hanya atasan atau delegator tugas yang berhak menyetujui tugas ini.")
+      return
+    }
     setIsActionLoading(true)
     try {
       const ok = await approveTask(task.id, currentUser.id)
@@ -373,6 +431,10 @@ export function TaskDetailSheet({
   const handleReturnRevision = async () => {
     if (!task || !currentUser || !revisionNotes.trim()) {
       toast.error("Harap isi catatan revisi.")
+      return
+    }
+    if (!canApprove) {
+      toast.error("Hanya atasan atau delegator tugas yang berhak mengembalikan tugas ini.")
       return
     }
     setIsActionLoading(true)
@@ -405,6 +467,38 @@ export function TaskDetailSheet({
       }
     } catch (err) {
       toast.error("Gagal mengklaim tugas")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Ambil Tugas / Mulai Kerjakan (To Do -> Dalam Pengerjaan)
+  const handleTakeTask = async () => {
+    if (!task || !currentUser) return
+    setIsActionLoading(true)
+    try {
+      if (!task.assigned_to) {
+        const ok = await claimTask(task.id, currentUser.id)
+        if (ok) {
+          toast.success("Tugas berhasil diambil & mulai dikerjakan!")
+          loadTaskData()
+          onTaskUpdated?.()
+        } else {
+          toast.error("Gagal mengambil tugas.")
+        }
+      } else {
+        const ok = await updateTaskStatus(task.id, "in_progress", currentUser.id)
+        if (ok) {
+          toast.success("Tugas mulai dikerjakan (Dalam Pengerjaan)!")
+          loadTaskData()
+          onTaskUpdated?.()
+        } else {
+          toast.error("Gagal memperbarui status tugas.")
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Terjadi kendala saat mengambil tugas.")
     } finally {
       setIsActionLoading(false)
     }
@@ -728,7 +822,7 @@ export function TaskDetailSheet({
                                 className="size-4.5 rounded-full object-cover shrink-0"
                               />
                               <span className="font-medium text-foreground">{u.nama}</span>
-                              <span className="text-[10px] text-muted-foreground">({u.position_title || u.role})</span>
+                              <span className="text-[10px] text-muted-foreground">({ROLE_LABELS[u.role]?.badge || u.role})</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -912,9 +1006,46 @@ export function TaskDetailSheet({
                             hour: "2-digit",
                             minute: "2-digit",
                           })
-                        : "24 Jam"}
+                        : "Tidak ditentukan"}
                     </span>
                   </div>
+
+                  {/* Waktu Pengumpulan / Penyelesaian */}
+                  {task.completed_at && (() => {
+                    const GRACE_PERIOD_MS = 15 * 60 * 1000
+                    const delayMs = task.deadline_at
+                      ? new Date(task.completed_at).getTime() - new Date(task.deadline_at).getTime()
+                      : 0
+                    const isLate = Boolean(task.deadline_at && delayMs > GRACE_PERIOD_MS)
+                    const isGrace = Boolean(task.deadline_at && delayMs > 0 && delayMs <= GRACE_PERIOD_MS)
+                    return (
+                      <div className="flex items-center justify-between py-1.5 border-t border-border/50 pt-2">
+                        <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                          <CheckCircle2Icon className="size-3.5 text-muted-foreground/70" />
+                          Waktu Dikumpulkan
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              isLate
+                                ? "bg-red-500/10 text-red-600 border border-red-500/20"
+                                : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                            }`}
+                          >
+                            {isLate ? "Terlambat" : isGrace ? "Tepat Waktu (Toleransi)" : "Tepat Waktu"}
+                          </span>
+                          <span className="font-mono text-foreground font-semibold">
+                            {new Date(task.completed_at).toLocaleString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* 3. Action Workflow Banner (If Actionable) */}
@@ -922,7 +1053,9 @@ export function TaskDetailSheet({
                   <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50/70 dark:bg-amber-950/40 flex items-center justify-between gap-2">
                     <div className="text-xs">
                       <span className="font-bold text-amber-900 dark:text-amber-200 block">
-                        Menunggu Persetujuan Atasan
+                        {canApprove
+                          ? "Menunggu Persetujuan Anda (Atasan / Delegator)"
+                          : "Menunggu Persetujuan Atasan"}
                       </span>
                       {task.review_notes ? (
                         <span className="text-[11px] text-amber-800 dark:text-amber-300 italic line-clamp-1">
@@ -930,19 +1063,21 @@ export function TaskDetailSheet({
                         </span>
                       ) : (
                         <span className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
-                          {isStaff
-                            ? "Laporan & berkas Anda sedang diverifikasi oleh atasan."
-                            : "Silakan periksa berkas SPJ sebelum menyetujui."}
+                          {canApprove
+                            ? "Silakan periksa berkas SPJ & bukti pengerjaan sebelum menyetujui."
+                            : task.assigned_to === currentUser?.id
+                            ? `Laporan pekerjaan Anda sedang diverifikasi oleh ${reviewerName}.`
+                            : `Tugas sedang menunggu verifikasi & persetujuan dari ${reviewerName}.`}
                         </span>
                       )}
                     </div>
-                    {!isStaff && (
+                    {canApprove && (
                       <div className="flex items-center gap-1.5 shrink-0">
                         <Button
                           size="sm"
                           onClick={handleApprove}
                           disabled={isActionLoading}
-                          className="h-7 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer"
+                          className="h-7 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs"
                         >
                           Setujui
                         </Button>
@@ -960,35 +1095,72 @@ export function TaskDetailSheet({
                   </div>
                 )}
 
-                {task.status === "unassigned" && (
+                {/* Banner 1: To Do / Unassigned -> Ambil Tugas / Mulai Kerjakan */}
+                {(task.status === "todo" || task.status === "unassigned") && (
                   <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-blue-900 dark:text-blue-200">
-                      Tugas ini belum memiliki pelaksana.
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={handleClaim}
-                      disabled={isActionLoading}
-                      className="h-7 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer"
-                    >
-                      Klaim Tugas
-                    </Button>
+                    <div className="text-xs">
+                      <span className="font-bold text-blue-900 dark:text-blue-200 block">
+                        {!task.assigned_to
+                          ? "Antrean To Do (Belum Ada Pelaksana)"
+                          : task.assigned_to === currentUser?.id
+                          ? "Tugas Ditugaskan Kepada Anda"
+                          : `Antrean To Do (PIC: ${task.assignee?.nama || "Karyawan"})`}
+                      </span>
+                      <span className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
+                        {!task.assigned_to
+                          ? "Ambil tugas ini untuk langsung memulai pengerjaan."
+                          : "Klik untuk mulai mengerjakan tugas ini."}
+                      </span>
+                    </div>
+                    {(!isStaff || !task.assigned_to || task.assigned_to === currentUser?.id) && (
+                      <Button
+                        size="sm"
+                        onClick={handleTakeTask}
+                        disabled={isActionLoading}
+                        className="h-7 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg gap-1.5 cursor-pointer shrink-0"
+                      >
+                        <PlayIcon className="size-3.5 fill-current" />
+                        {!task.assigned_to ? "Ambil Tugas" : "Mulai Kerjakan"}
+                      </Button>
+                    )}
                   </div>
                 )}
 
-                {(task.status === "in_progress" || task.status === "todo") && (
-                  <div className="p-3 rounded-xl border border-border bg-card flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Pekerjaan telah selesai?
-                    </span>
+                {/* Banner 2: In Progress -> Submit Review */}
+                {task.status === "in_progress" && (
+                  <div className="p-3 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/40 dark:bg-red-950/20 flex items-center justify-between gap-2">
+                    <div className="text-xs">
+                      <span className="font-bold text-foreground block">
+                        Sedang Dalam Pengerjaan
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Pekerjaan telah selesai? Ajukan untuk direview atasan.
+                      </span>
+                    </div>
                     <Button
                       size="sm"
                       onClick={() => setIsSubmitReviewOpen(true)}
-                      className="h-7 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg gap-1 cursor-pointer"
+                      disabled={isActionLoading}
+                      className="h-7 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg gap-1.5 cursor-pointer shrink-0"
                     >
                       <CheckCircle2Icon className="size-3.5" />
                       Submit Review
                     </Button>
+                  </div>
+                )}
+
+                {/* Banner 3: Done -> Selesai & Disetujui */}
+                {task.status === "done" && (
+                  <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-emerald-950/30 flex items-center gap-2.5">
+                    <CheckCircle2Icon className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div className="text-xs">
+                      <span className="font-bold text-emerald-900 dark:text-emerald-200 block">
+                        Tugas Selesai & Disetujui
+                      </span>
+                      <span className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80">
+                        Seluruh hasil kerja dan SPJ telah disetujui.
+                      </span>
+                    </div>
                   </div>
                 )}
 
