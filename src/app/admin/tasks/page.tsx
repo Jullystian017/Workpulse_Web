@@ -279,15 +279,13 @@ function AdminTasksContent() {
     searchQuery !== "" ||
     selectedStatus !== "all" ||
     selectedPriority !== "all" ||
-    selectedAssignee !== "all" ||
-    sortBy !== "deadline_asc"
+    selectedAssignee !== "all"
 
   const handleResetFilters = () => {
     setSearchQuery("")
     setSelectedStatus("all")
     setSelectedPriority("all")
     setSelectedAssignee("all")
-    setSortBy("deadline_asc")
   }
 
   // Display helpers for Select Trigger values
@@ -749,32 +747,6 @@ function AdminTasksContent() {
                               </div>
                             </SelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
-
-                      {/* Sort By Dropdown */}
-                      <Select
-                        value={sortBy}
-                        onValueChange={(v) => setSortBy(v || "deadline_asc")}
-                      >
-                        <SelectTrigger
-                          className={`h-8.5 text-xs rounded-[5px] border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
-                            sortBy !== "deadline_asc"
-                              ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
-                              : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
-                          }`}
-                        >
-                          <ArrowUpDownIcon className="size-3.5 text-muted-foreground shrink-0" />
-                          <span className="truncate">{getSortDisplay()}</span>
-                        </SelectTrigger>
-                        <SelectContent align="start" className="w-48">
-                          <SelectItem value="deadline_asc">Deadline Terdekat</SelectItem>
-                          <SelectItem value="deadline_desc">Deadline Terlama</SelectItem>
-                          <SelectItem value="priority_desc">Prioritas Tertinggi</SelectItem>
-                          <SelectItem value="priority_asc">Prioritas Terendah</SelectItem>
-                          <SelectItem value="title_asc">Judul (A–Z)</SelectItem>
-                          <SelectItem value="title_desc">Judul (Z–A)</SelectItem>
-                          <SelectItem value="ticket_asc">No. Tiket</SelectItem>
                         </SelectContent>
                       </Select>
 

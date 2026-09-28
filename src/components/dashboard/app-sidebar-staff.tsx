@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 
 import { NavMain } from "@/components/dashboard/nav-main"
@@ -88,16 +89,22 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="WorkPulse Telkom Akses"
+              tooltip="WorkPulse"
               className="h-10 px-2 rounded-xl hover:bg-muted/50 transition-colors"
               render={<Link href="/karyawan/dashboard" />}
             >
-              <div className="size-7 rounded-lg bg-red-600 flex items-center justify-center text-white shadow-xs">
-                <ActivityIcon className="size-4 stroke-[2.5]" />
+              <div className="size-7 rounded-lg bg-white dark:bg-zinc-800 p-0.5 flex items-center justify-center shadow-xs border border-zinc-200 dark:border-zinc-700 overflow-hidden shrink-0">
+                <Image
+                  src="/workpulse.png"
+                  alt="WorkPulse"
+                  width={22}
+                  height={22}
+                  className="object-contain"
+                />
               </div>
               <div className="flex flex-col text-left leading-none">
                 <span className="text-sm font-extrabold tracking-tight text-foreground">
-                  WorkPulse <span className="text-red-600">TA</span>
+                  WorkPulse
                 </span>
                 <span className="text-[10px] font-medium text-muted-foreground mt-0.5">
                   {roleLabel}

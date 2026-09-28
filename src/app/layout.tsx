@@ -9,8 +9,11 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "TEPA Dashboard",
-  description: "TelkomAkses Employee Performance Analytics",
+  title: "WorkPulse - Telkom Akses",
+  description: "Enterprise Task Management & Field Coordination Platform",
+  icons: {
+    icon: "/workpulse.png",
+  },
 };
 
 import { TooltipProvider } from "@/components/ui/tooltip";

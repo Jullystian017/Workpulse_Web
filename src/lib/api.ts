@@ -12,6 +12,7 @@ import {
   UserRole,
   ROLE_HIERARCHY_LEVEL,
 } from '@/types/database';
+import { recordActivity } from './activity-logger';
 
 export const supabase = createClient();
 
@@ -91,6 +92,17 @@ export function setActiveUser(user: User) {
 
 export function logout() {
   if (typeof window !== 'undefined') {
+    const active = getActiveUserFromStorage();
+    if (active) {
+      recordActivity({
+        user: `${active.nama} (${active.nik})`,
+        user_id: active.id,
+        action: 'LOGOUT',
+        module: 'Authentication',
+        level: 'INFO',
+        detail: `Pengguna ${active.nama} mengakhiri sesi dan keluar dari sistem WorkPulse.`,
+      });
+    }
     localStorage.removeItem(CURRENT_USER_KEY);
   }
 }
@@ -147,6 +159,18 @@ export async function createUser(user: Partial<User>): Promise<User | null> {
     console.error('Error creating user:', error);
     throw error;
   }
+
+  if (data) {
+    const active = getActiveUserFromStorage();
+    recordActivity({
+      user: active ? `${active.nama} (${active.nik})` : 'Administrator',
+      action: 'CREATE_EMPLOYEE',
+      module: 'Karyawan Management',
+      level: 'AUDIT',
+      detail: `Menambahkan profil karyawan baru: ${(data as User).nama} (NIK ${(data as User).nik}, Posisi: ${(data as User).position_title || (data as User).role}).`,
+    });
+  }
+
   return data as User;
 }
 
@@ -165,6 +189,18 @@ export async function updateUser(id: string, updates: Partial<User>): Promise<Us
     console.error('Error updating user:', error);
     throw error;
   }
+
+  if (data) {
+    const active = getActiveUserFromStorage();
+    recordActivity({
+      user: active ? `${active.nama} (${active.nik})` : 'Administrator',
+      action: 'UPDATE_EMPLOYEE',
+      module: 'Karyawan Management',
+      level: 'AUDIT',
+      detail: `Memperbarui data karyawan: ${(data as User).nama} (NIK ${(data as User).nik}).`,
+    });
+  }
+
   return data as User;
 }
 
@@ -174,6 +210,16 @@ export async function deleteUser(id: string): Promise<boolean> {
     console.error('Error deleting user:', error);
     return false;
   }
+
+  const active = getActiveUserFromStorage();
+  recordActivity({
+    user: active ? `${active.nama} (${active.nik})` : 'Administrator',
+    action: 'DELETE_EMPLOYEE',
+    module: 'Karyawan Management',
+    level: 'WARNING',
+    detail: `Menghapus akun karyawan dengan ID ${id}.`,
+  });
+
   return true;
 }
 
@@ -573,6 +619,16 @@ export async function createTask(task: {
     },
   ]);
 
+  const activeUser = getActiveUserFromStorage();
+  recordActivity({
+    user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : `User ${task.created_by}`,
+    user_id: task.created_by,
+    action: 'CREATE_TASK',
+    module: 'Task Management',
+    level: 'AUDIT',
+    detail: `[${ticketCode}] Tugas '${newTask.title}' dibuat (${task.priority.toUpperCase()}).${task.assigned_to ? ' Ditugaskan langsung.' : ' Masuk ke Unassigned Pool.'}`,
+  });
+
   return getTaskById(newTask.id);
 }
 
@@ -595,6 +651,16 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus, userI
       },
     ]);
   }
+
+  const activeUser = getActiveUserFromStorage();
+  recordActivity({
+    user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : (userId ? `User ${userId}` : 'Sistem'),
+    user_id: userId,
+    action: 'UPDATE_TASK_STATUS',
+    module: 'Task Management',
+    level: 'AUDIT',
+    detail: `Status penugasan diubah menjadi ${status.toUpperCase().replace('_', ' ')}.`,
+  });
 
   return true;
 }
@@ -682,6 +748,16 @@ export async function delegateTask(
     },
   ]);
 
+  const activeUser = getActiveUserFromStorage();
+  recordActivity({
+    user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Atasan',
+    user_id: delegatorId,
+    action: 'DELEGATE_TASK',
+    module: 'Task Management',
+    level: 'AUDIT',
+    detail: `Pendelegasian tugas kepada pelaksana baru.${reason ? ` Catatan: "${reason}"` : ''}`,
+  });
+
   // Send Notification
   await supabase.from('notifications').insert([
     {
@@ -768,6 +844,16 @@ export async function approveTask(taskId: string, supervisorId: string): Promise
     },
   ]);
 
+  const activeUser = getActiveUserFromStorage();
+  recordActivity({
+    user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Supervisor',
+    user_id: supervisorId,
+    action: 'APPROVE_TASK',
+    module: 'Task Management',
+    level: 'AUDIT',
+    detail: 'Tugas telah diverifikasi dan disetujui resmi (APPROVED / DONE).',
+  });
+
   return true;
 }
 
@@ -850,6 +936,22 @@ export async function addAttachment(attachment: {
     console.error('Error adding attachment:', error);
     return null;
   }
+
+  if (data) {
+    const activeUser = getActiveUserFromStorage();
+    const isSpj = attachment.attachment_type === 'receipt_nota';
+    recordActivity({
+      user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Staff',
+      user_id: attachment.uploaded_by,
+      action: isSpj ? 'UPLOAD_SPJ' : 'UPLOAD_EVIDENCE',
+      module: isSpj ? 'SPJ & Keuangan' : 'Task Management',
+      level: 'AUDIT',
+      detail: isSpj
+        ? `Mengunggah berkas nota SPJ: ${attachment.file_name}${attachment.amount ? ` (Nominal: Rp ${attachment.amount.toLocaleString('id-ID')})` : ''}`
+        : `Mengunggah berkas bukti pelaksanaan: ${attachment.file_name}`,
+    });
+  }
+
   return data as TaskAttachment;
 }
 
