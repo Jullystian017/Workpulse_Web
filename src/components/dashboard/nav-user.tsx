@@ -123,7 +123,7 @@ export function NavUser({
             <DropdownMenuSeparator className="my-1" />
             <DropdownMenuGroup>
               <DropdownMenuItem
-                onClick={() => router.push(currentUser?.role === "staff" ? "/karyawan/dashboard" : "/admin/settings")}
+                onClick={() => router.push("/profile")}
                 className="text-xs gap-2 py-2 cursor-pointer font-medium rounded-lg"
               >
                 <CircleUserRoundIcon className="size-4 text-muted-foreground" />
