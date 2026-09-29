@@ -62,8 +62,6 @@ import {
   deleteUser,
   resetUserPassword,
   generateAutoNik,
-  generateAutoEmail,
-  generateAutoPassword,
   getActiveUserFromStorage,
 } from "@/lib/api"
 import { User, Department, UserRole, ROLE_LABELS, ROLE_HIERARCHY_LEVEL } from "@/types/database"
@@ -208,9 +206,8 @@ export default function AdminKaryawanPage() {
   // Auto-fill when opening Create Modal
   const handleOpenAddModal = () => {
     const autoNik = generateAutoNik(users)
-    const autoPass = generateAutoPassword()
     setNewNik(autoNik)
-    setNewPassword(autoPass)
+    setNewPassword("karyawan123")
     setNewNama("")
     setNewEmail("")
     setNewRole("staff")
@@ -219,13 +216,11 @@ export default function AdminKaryawanPage() {
     setIsAddOpen(true)
   }
 
-  // Auto-generate email when Name changes
   const handleNamaChange = (val: string) => {
     setNewNama(val)
-    if (val.trim()) {
-      setNewEmail(generateAutoEmail(val))
-    }
   }
+
+
 
   // Copy Generated Password
   const handleCopyPassword = (pass: string) => {
@@ -249,7 +244,7 @@ export default function AdminKaryawanPage() {
         nik: newNik.trim(),
         nama: newNama.trim(),
         email: newEmail.trim(),
-        password: newPassword || "password123",
+        password: newPassword || "karyawan123",
         role: newRole,
         department_id: newDeptId || null,
         supervisor_id: newSupervisorId || null,
@@ -292,7 +287,7 @@ export default function AdminKaryawanPage() {
     setEditPositionTitle(user.position_title || "")
     setEditAvatarUrl(user.avatar_url || "")
     setEditIsActive(user.is_active ?? true)
-    setEditPassword(user.password || "password123")
+    setEditPassword(user.password || "karyawan123")
     setShowEditPassword(true)
     setIsEditOpen(true)
   }
@@ -322,7 +317,7 @@ export default function AdminKaryawanPage() {
         position_title: ROLE_LABELS[editRole]?.label,
         avatar_url: editAvatarUrl.trim() || null,
         is_active: editIsActive,
-        password: editPassword.trim() || editingUser.password || "password123",
+        password: editPassword.trim() || editingUser.password || "karyawan123",
       }
 
       const updated = await updateUser(editingUser.id, payload)
@@ -927,52 +922,34 @@ export default function AdminKaryawanPage() {
                 </div>
               </div>
 
-              {/* Email & Password Auto-Generator */}
+              {/* Email & Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Email Resmi (Auto-Generated) *
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <MailIcon className="size-3.5" />
+                    Email Login *
                   </label>
                   <Input
                     type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="nama.lengkap@telkomakses.co.id"
+                    placeholder="nama@email.com"
                     required
-                    className="mt-1 h-10 rounded-xl text-xs font-semibold text-foreground"
+                    className="mt-1 h-10 rounded-xl text-xs font-semibold"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Password Sementara *
+                      Password Akun *
                     </label>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setNewPassword(generateAutoPassword())}
-                        className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-0.5"
-                        title="Acak Password"
-                      >
-                        <DicesIcon className="size-3" /> Acak
-                      </button>
-                      <span>â€¢</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyPassword(newPassword)}
-                        className="text-[11px] font-bold text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 flex items-center gap-0.5"
-                        title="Salin Password"
-                      >
-                        {copiedPassword ? <CheckIcon className="size-3 text-emerald-500" /> : <CopyIcon className="size-3" />}
-                        {copiedPassword ? "Tersalin" : "Salin"}
-                      </button>
-                    </div>
+                    <span className="text-[10px] text-muted-foreground">Default: <strong className="font-mono text-foreground">karyawan123</strong></span>
                   </div>
                   <Input
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Password awal"
+                    placeholder="karyawan123"
                     required
                     className="mt-1 h-10 rounded-xl text-xs font-mono font-bold text-foreground"
                   />
@@ -1075,11 +1052,12 @@ export default function AdminKaryawanPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Email Resmi *</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Email Login *</label>
                     <Input
                       type="email"
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="nama@email.com"
                       required
                       className="mt-1 h-9 rounded-lg text-xs font-semibold"
                     />
@@ -1247,11 +1225,14 @@ export default function AdminKaryawanPage() {
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => setEditPassword(generateAutoPassword())}
+                        onClick={() => {
+                          setEditPassword("karyawan123")
+                          toast.info("Password diubah ke default: karyawan123")
+                        }}
                         className="h-7 px-2 text-[11px] font-bold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Acak password baru"
+                        title="Reset ke default karyawan123"
                       >
-                        <DicesIcon className="size-3" /> Acak
+                        <RefreshCwIcon className="size-3" /> Reset Default
                       </button>
                       <button
                         type="button"

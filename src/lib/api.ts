@@ -61,7 +61,7 @@ export async function loginWithCredentials(
   // Fallback match
   const fallback = FALLBACK_USERS.find((u) => u.nik === trimmed);
   if (fallback) {
-    if (password && password !== 'password123') {
+    if (password && password !== 'karyawan123' && password !== 'password123') {
       return { success: false, errorType: 'PASSWORD_MISMATCH', message: 'Password yang Anda masukkan salah.' };
     }
     if (typeof window !== 'undefined') {
@@ -71,6 +71,50 @@ export async function loginWithCredentials(
   }
 
   return { success: false, errorType: 'USER_NOT_FOUND', message: 'Nomor Induk Karyawan (NIK) tidak terdaftar.' };
+}
+
+export async function loginWithEmail(
+  email: string,
+  password: string
+): Promise<{ success: boolean; user?: User; errorType?: 'USER_NOT_FOUND' | 'PASSWORD_MISMATCH' | 'SERVER_ERROR'; message?: string }> {
+  const trimmedEmail = email.trim().toLowerCase();
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*, department:departments(*)')
+      .ilike('email', trimmedEmail)
+      .maybeSingle();
+
+    if (data && !error) {
+      if (data.password && data.password !== password) {
+        return { success: false, errorType: 'PASSWORD_MISMATCH', message: 'Password yang Anda masukkan salah.' };
+      }
+      if (data.is_active === false) {
+        return { success: false, errorType: 'USER_NOT_FOUND', message: 'Akun Anda telah dinonaktifkan. Hubungi Superadmin.' };
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(data));
+      }
+      return { success: true, user: data as User };
+    }
+  } catch (e) {
+    console.warn('Supabase email login error, checking fallback users:', e);
+  }
+
+  // Fallback match by email
+  const fallback = FALLBACK_USERS.find((u) => u.email.toLowerCase() === trimmedEmail);
+  if (fallback) {
+    if (password && password !== 'karyawan123' && password !== 'password123') {
+      return { success: false, errorType: 'PASSWORD_MISMATCH', message: 'Password yang Anda masukkan salah.' };
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(fallback));
+    }
+    return { success: true, user: fallback };
+  }
+
+  return { success: false, errorType: 'USER_NOT_FOUND', message: 'Email tidak terdaftar dalam sistem.' };
 }
 
 export async function loginWithNik(nik: string): Promise<User | null> {
@@ -151,7 +195,7 @@ export async function createUser(user: Partial<User>): Promise<User | null> {
         nik: user.nik,
         nama: user.nama,
         email: user.email,
-        password: user.password || 'password123',
+        password: user.password || 'karyawan123',
         role: user.role,
         department_id: user.department_id,
         supervisor_id: user.supervisor_id || null,
@@ -306,30 +350,20 @@ export function generateAutoNik(existingUsers: User[]): string {
 }
 
 export function generateAutoEmail(nama: string): string {
-  if (!nama) return '';
-  // Clean titles like Ir., S.T., M.T., etc.
   const cleaned = nama
-    .replace(/(ir\.|s\.t\.|m\.t\.|s\.kom|m\.kom|ph\.d|dr\.)/gi, '')
+    .toLowerCase()
     .trim()
-    .toLowerCase();
-
-  const words = cleaned
     .replace(/[^a-z0-9\s]/g, '')
     .split(/\s+/)
     .filter(Boolean);
 
-  if (words.length === 0) return 'user@telkomakses.co.id';
-  if (words.length === 1) return `${words[0]}@telkomakses.co.id`;
-  return `${words[0]}.${words[1]}@telkomakses.co.id`;
+  if (cleaned.length === 0) return 'user@telkomakses.co.id';
+  if (cleaned.length === 1) return `${cleaned[0]}@telkomakses.co.id`;
+  return `${cleaned[0]}.${cleaned[cleaned.length - 1]}@telkomakses.co.id`;
 }
 
 export function generateAutoPassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let rand = '';
-  for (let i = 0; i < 6; i++) {
-    rand += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `TA-${rand}!`;
+  return 'karyawan123';
 }
 
 // Get all subordinates down the hierarchy tree

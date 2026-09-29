@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon, CircleUserRoundIcon, BellIcon, LogOutIcon, ShieldCheckIcon } from "lucide-react"
+import { ChevronsUpDownIcon, CircleUserRoundIcon, BellIcon, LogOutIcon, ShieldCheckIcon, UsersIcon } from "lucide-react"
 import { getActiveUserFromStorage, logout } from "@/lib/api"
 import { User, ROLE_LABELS } from "@/types/database"
 import { toast } from "sonner"
@@ -134,7 +134,7 @@ export function NavUser({
                   onClick={() => router.push("/admin/karyawan")}
                   className="text-xs gap-2 py-2 cursor-pointer font-medium rounded-lg"
                 >
-                  <ShieldCheckIcon className="size-4 text-muted-foreground" />
+                  <UsersIcon className="size-4 text-muted-foreground" />
                   <span>Struktur Organisasi (Organogram)</span>
                 </DropdownMenuItem>
               )}

@@ -8,8 +8,6 @@ import {
   EyeOffIcon,
   RefreshCwIcon,
   ActivityIcon,
-  ShieldCheckIcon,
-  ArrowRightIcon,
   LockIcon,
   KeyRoundIcon,
   MailIcon,
@@ -17,10 +15,8 @@ import {
   HeadphonesIcon,
   AlertTriangleIcon,
   ShieldAlertIcon,
-  SparklesIcon,
+  ShieldCheckIcon,
   ZapIcon,
-  FileTextIcon,
-  ArrowUpRightIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -32,17 +28,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { loginWithCredentials, setActiveUser, verifyAndResetPassword } from "@/lib/api";
+import { loginWithEmail, setActiveUser, verifyAndResetPassword } from "@/lib/api";
 import { recordActivity } from "@/lib/activity-logger";
-import { ROLE_LABELS, UserRole } from "@/types/database";
+import { ROLE_LABELS } from "@/types/database";
 
-const REMEMBERED_NIK_KEY = "workpulse_remembered_nik";
+const REMEMBERED_EMAIL_KEY = "workpulse_remembered_email";
 const FAILED_ATTEMPTS_KEY = "workpulse_login_failed_attempts";
 const LOCKOUT_EXPIRY_KEY = "workpulse_lockout_expiry";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [nik, setNik] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -58,8 +54,8 @@ export default function LoginPage() {
   // Forgot Password Dialog State
   const [isForgotOpen, setIsForgotOpen] = React.useState(false);
   const [forgotTab, setForgotTab] = React.useState<"reset" | "helpdesk">("reset");
-  const [forgotNik, setForgotNik] = React.useState("");
   const [forgotEmail, setForgotEmail] = React.useState("");
+  const [forgotNik, setForgotNik] = React.useState("");
   const [newResetPassword, setNewResetPassword] = React.useState("");
   const [confirmResetPassword, setConfirmResetPassword] = React.useState("");
   const [showResetPassword, setShowResetPassword] = React.useState(false);
@@ -156,9 +152,9 @@ export default function LoginPage() {
   // Initialize on mount
   React.useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedNik = localStorage.getItem(REMEMBERED_NIK_KEY);
-      if (savedNik) {
-        setNik(savedNik);
+      const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+      if (savedEmail) {
+        setEmail(savedEmail);
         setRememberMe(true);
       }
 
@@ -204,8 +200,8 @@ export default function LoginPage() {
       toast.error(`Akses ditangguhkan sementara demi keamanan. Tunggu ${lockoutRemaining} detik lagi.`);
       return;
     }
-    if (!nik.trim()) {
-      toast.error("Silakan masukkan NIK Anda.");
+    if (!email.trim()) {
+      toast.error("Silakan masukkan alamat email Anda.");
       return;
     }
     if (!password) {
@@ -228,7 +224,7 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      const res = await loginWithCredentials(nik.trim(), password);
+      const res = await loginWithEmail(email.trim(), password);
 
       if (!res.success || !res.user) {
         const nextAttempts = failedAttempts + 1;
@@ -244,7 +240,7 @@ export default function LoginPage() {
           setLockoutRemaining(30);
           toast.error("Terdeteksi 5 kali kegagalan login. Sistem mengunci percobaan login selama 30 detik demi keamanan.");
           recordActivity({
-            user: `Percobaan NIK: ${nik.trim()}`,
+            user: `Percobaan Email: ${email.trim()}`,
             action: "SECURITY_LOCKOUT",
             module: "Security & System",
             level: "ERROR",
@@ -254,18 +250,18 @@ export default function LoginPage() {
           toast.warning("Terdeteksi 3 kali kegagalan login. Verifikasi keamanan anti-bot (CAPTCHA) diaktifkan.");
           handleRefreshCaptcha();
           recordActivity({
-            user: `Percobaan NIK: ${nik.trim()}`,
+            user: `Percobaan Email: ${email.trim()}`,
             action: "CAPTCHA_TRIGGERED",
             module: "Security & System",
             level: "WARNING",
             detail: "Verifikasi anti-bot CAPTCHA diaktifkan setelah 3 kali kegagalan autentikasi berturut-turut.",
           });
         } else {
-          toast.error(res.message || "NIK atau Password tidak sesuai.", {
+          toast.error(res.message || "Email atau Password tidak sesuai.", {
             description: `Percobaan gagal ${nextAttempts}/3 sebelum proteksi bot diaktifkan.`,
           });
           recordActivity({
-            user: nik ? `Percobaan NIK: ${nik.trim()}` : "Anonim",
+            user: email ? `Percobaan Email: ${email.trim()}` : "Anonim",
             action: "LOGIN_FAILED",
             module: "Authentication",
             level: "WARNING",
@@ -283,9 +279,9 @@ export default function LoginPage() {
         sessionStorage.removeItem(FAILED_ATTEMPTS_KEY);
         sessionStorage.removeItem(LOCKOUT_EXPIRY_KEY);
         if (rememberMe) {
-          localStorage.setItem(REMEMBERED_NIK_KEY, nik.trim());
+          localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim());
         } else {
-          localStorage.removeItem(REMEMBERED_NIK_KEY);
+          localStorage.removeItem(REMEMBERED_EMAIL_KEY);
         }
       }
 
@@ -319,8 +315,12 @@ export default function LoginPage() {
   // Handle Self-Service Password Reset
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotNik.trim() || !forgotEmail.trim()) {
-      toast.error("NIK dan Email resmi wajib diisi.");
+    if (!forgotEmail.trim()) {
+      toast.error("Email resmi wajib diisi.");
+      return;
+    }
+    if (!forgotNik.trim()) {
+      toast.error("NIK wajib diisi untuk verifikasi identitas.");
       return;
     }
     if (!newResetPassword || newResetPassword.length < 6) {
@@ -342,7 +342,7 @@ export default function LoginPage() {
 
       if (res.success) {
         recordActivity({
-          user: `${res.user?.nama || forgotNik.trim()} (${forgotNik.trim()})`,
+          user: `${res.user?.nama || forgotEmail.trim()} (NIK: ${forgotNik.trim()})`,
           user_id: res.user?.id,
           action: "PASSWORD_RESET",
           module: "Authentication",
@@ -351,16 +351,16 @@ export default function LoginPage() {
         });
 
         toast.success(res.message);
-        setNik(forgotNik.trim());
+        setEmail(forgotEmail.trim());
         setPassword(newResetPassword);
         setIsForgotOpen(false);
-        setForgotNik("");
         setForgotEmail("");
+        setForgotNik("");
         setNewResetPassword("");
         setConfirmResetPassword("");
       } else {
         recordActivity({
-          user: `Percobaan Reset NIK: ${forgotNik.trim()}`,
+          user: `Percobaan Reset Email: ${forgotEmail.trim()}`,
           action: "PASSWORD_RESET_FAILED",
           module: "Authentication",
           level: "WARNING",
@@ -370,7 +370,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Gagal mereset password. Pastikan NIK dan Email sesuai.");
+      toast.error("Gagal mereset password. Pastikan Email dan NIK sesuai.");
     } finally {
       setIsResetSubmitting(false);
     }
@@ -407,7 +407,7 @@ export default function LoginPage() {
                 Masuk ke Akun Anda
               </h1>
               <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
-                Masukkan Nomor Induk Karyawan (NIK) resmi yang telah didaftarkan oleh Administrator HR.
+                Gunakan email korporat Telkom Akses yang telah didaftarkan oleh Administrator HR untuk masuk.
               </p>
             </div>
 
@@ -443,20 +443,20 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                Nomor Induk Karyawan (NIK)
+                Email
               </label>
               <div className="relative mt-1.5">
                 <Input
-                  value={nik}
-                  onChange={(e) => setNik(e.target.value)}
-                  placeholder="Masukkan 8-digit NIK Anda"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@telkomakses.co.id atau email terdaftar"
                   required
                   disabled={isLockedOut || isLoading}
-                  className="h-11 rounded-[8px] bg-zinc-50 dark:bg-zinc-800/80 border-zinc-300 dark:border-zinc-700 text-sm font-semibold tracking-wide text-zinc-900 dark:text-zinc-100"
+                  autoComplete="email"
+                  className="h-11 rounded-[8px] bg-zinc-50 dark:bg-zinc-800/80 border-zinc-300 dark:border-zinc-700 text-sm font-semibold text-zinc-900 dark:text-zinc-100 pl-10"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 select-none">
-                  NIK
-                </span>
+                <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
               </div>
             </div>
 
@@ -468,7 +468,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setForgotNik(nik);
+                    setForgotEmail(email);
                     setIsForgotOpen(true);
                   }}
                   className="text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 transition-colors cursor-pointer"
@@ -540,7 +540,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="size-4 rounded border-zinc-300 text-red-600 focus:ring-red-500 accent-red-600 cursor-pointer"
                 />
-                <span>Ingat NIK & Sesi di Perangkat Ini</span>
+                <span>Ingat Email di Perangkat Ini</span>
               </label>
             </div>
 
@@ -813,20 +813,7 @@ export default function LoginPage() {
             <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5 mt-3">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Nomor Induk Karyawan (NIK) *
-                </label>
-                <Input
-                  value={forgotNik}
-                  onChange={(e) => setForgotNik(e.target.value)}
-                  placeholder="Contoh: 10293841"
-                  required
-                  className="mt-1 h-10 rounded-xl text-xs font-mono font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Email Resmi Telkom Akses *
+                  Email Korporat (untuk verifikasi) *
                 </label>
                 <Input
                   type="email"
@@ -835,6 +822,19 @@ export default function LoginPage() {
                   placeholder="nama.lengkap@telkomakses.co.id"
                   required
                   className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  NIK (verifikasi tambahan) *
+                </label>
+                <Input
+                  value={forgotNik}
+                  onChange={(e) => setForgotNik(e.target.value)}
+                  placeholder="Contoh: 10293841"
+                  required
+                  className="mt-1 h-10 rounded-xl text-xs font-mono font-bold"
                 />
               </div>
 
