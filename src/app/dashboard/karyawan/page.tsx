@@ -522,7 +522,7 @@ export default function Page() {
                             id="email"
                             name="email"
                             type="email"
-                            placeholder="nama@telkomakses.co.id"
+                            placeholder="nama@workpulse.id"
                             required
                             className="h-9 text-xs rounded-[8px]"
                           />

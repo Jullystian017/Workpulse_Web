@@ -17,6 +17,8 @@ import {
   ShieldAlertIcon,
   ShieldCheckIcon,
   ZapIcon,
+  ArrowLeftIcon,
+  UserCheckIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,9 +30,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { loginWithEmail, setActiveUser, verifyAndResetPassword } from "@/lib/api";
+import { loginWithEmail, setActiveUser, checkUserByEmailForReset, resetUserPasswordById } from "@/lib/api";
 import { recordActivity } from "@/lib/activity-logger";
-import { ROLE_LABELS } from "@/types/database";
+import { User, ROLE_LABELS } from "@/types/database";
 
 const REMEMBERED_EMAIL_KEY = "workpulse_remembered_email";
 const FAILED_ATTEMPTS_KEY = "workpulse_login_failed_attempts";
@@ -51,14 +53,16 @@ export default function LoginPage() {
   const [captchaCode, setCaptchaCode] = React.useState("7K9A2");
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
 
-  // Forgot Password Dialog State
+  // Forgot Password Dialog State (2-Step In-Website Reset)
   const [isForgotOpen, setIsForgotOpen] = React.useState(false);
-  const [forgotTab, setForgotTab] = React.useState<"reset" | "helpdesk">("reset");
+  const [resetStep, setResetStep] = React.useState<1 | 2>(1);
+  const [verifiedUser, setVerifiedUser] = React.useState<User | null>(null);
   const [forgotEmail, setForgotEmail] = React.useState("");
-  const [forgotNik, setForgotNik] = React.useState("");
   const [newResetPassword, setNewResetPassword] = React.useState("");
   const [confirmResetPassword, setConfirmResetPassword] = React.useState("");
   const [showResetPassword, setShowResetPassword] = React.useState(false);
+  const [showConfirmResetPassword, setShowConfirmResetPassword] = React.useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = React.useState(false);
   const [isResetSubmitting, setIsResetSubmitting] = React.useState(false);
 
   // Show CAPTCHA only adaptively after 3 failed login attempts
@@ -312,17 +316,38 @@ export default function LoginPage() {
     }
   };
 
-  // Handle Self-Service Password Reset
+  // Step 1: Check Email
+  const handleCheckEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = forgotEmail.trim().toLowerCase();
+    if (!cleanEmail) {
+      toast.error("Masukkan email akun Anda.");
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    try {
+      const res = await checkUserByEmailForReset(cleanEmail);
+      if (res.success && res.user) {
+        setVerifiedUser(res.user);
+        setResetStep(2);
+        toast.success(`Akun ditemukan: ${res.user.nama}`);
+      } else {
+        toast.error("Email tidak ditemukan dalam sistem. Pastikan email terdaftar.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal memeriksa email akun.");
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  // Step 2: Save New Password
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail.trim()) {
-      toast.error("Email resmi wajib diisi.");
-      return;
-    }
-    if (!forgotNik.trim()) {
-      toast.error("NIK wajib diisi untuk verifikasi identitas.");
-      return;
-    }
+    if (!verifiedUser) return;
+
     if (!newResetPassword || newResetPassword.length < 6) {
       toast.error("Password baru minimal 6 karakter.");
       return;
@@ -334,43 +359,32 @@ export default function LoginPage() {
 
     setIsResetSubmitting(true);
     try {
-      const res = await verifyAndResetPassword(
-        forgotNik.trim(),
-        forgotEmail.trim(),
-        newResetPassword
-      );
-
+      const res = await resetUserPasswordById(verifiedUser.id, newResetPassword);
       if (res.success) {
         recordActivity({
-          user: `${res.user?.nama || forgotEmail.trim()} (NIK: ${forgotNik.trim()})`,
-          user_id: res.user?.id,
+          user: `${verifiedUser.nama} (${verifiedUser.email})`,
+          user_id: verifiedUser.id,
           action: "PASSWORD_RESET",
           module: "Authentication",
           level: "AUDIT",
-          detail: `Pengguna berhasil melakukan reset password mandiri via email ${forgotEmail.trim()}.`,
+          detail: `Pengguna berhasil melakukan reset password langsung di website untuk email ${verifiedUser.email}.`,
         });
 
         toast.success(res.message);
-        setEmail(forgotEmail.trim());
+        setEmail(verifiedUser.email);
         setPassword(newResetPassword);
         setIsForgotOpen(false);
+        setResetStep(1);
+        setVerifiedUser(null);
         setForgotEmail("");
-        setForgotNik("");
         setNewResetPassword("");
         setConfirmResetPassword("");
       } else {
-        recordActivity({
-          user: `Percobaan Reset Email: ${forgotEmail.trim()}`,
-          action: "PASSWORD_RESET_FAILED",
-          module: "Authentication",
-          level: "WARNING",
-          detail: `Gagal verifikasi reset password: ${res.message}`,
-        });
         toast.error(res.message);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Gagal mereset password. Pastikan Email dan NIK sesuai.");
+      toast.error("Gagal mereset password. Silakan coba beberapa saat lagi.");
     } finally {
       setIsResetSubmitting(false);
     }
@@ -450,7 +464,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@telkomakses.co.id atau email terdaftar"
+                  placeholder="Masukkan email terdaftar"
                   required
                   disabled={isLockedOut || isLoading}
                   autoComplete="email"
@@ -468,7 +482,11 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setForgotEmail(email);
+                    setForgotEmail(email.trim());
+                    setResetStep(1);
+                    setVerifiedUser(null);
+                    setNewResetPassword("");
+                    setConfirmResetPassword("");
                     setIsForgotOpen(true);
                   }}
                   className="text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 transition-colors cursor-pointer"
@@ -571,6 +589,13 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 gap-2 mt-4">
             <span>© 2026 WorkPulse Telkom Akses. All rights reserved.</span>
+            <a
+              href="mailto:contact@workpulse.id"
+              className="text-zinc-500 hover:text-red-600 dark:hover:text-red-400 transition-colors inline-flex items-center gap-1.5 font-medium"
+            >
+              <MailIcon className="size-3.5" />
+              <span>Bantuan: contact@workpulse.id</span>
+            </a>
           </div>
         </div>
 
@@ -781,100 +806,36 @@ export default function LoginPage() {
               Lupa Password Akun
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Reset password mandiri melalui verifikasi email resmi Telkom Akses atau hubungi IT Support.
+              {resetStep === 1
+                ? "Masukkan email terdaftar Anda untuk menemukan dan memverifikasi akun."
+                : "Akun terverifikasi. Masukkan password baru untuk akun Anda."}
             </DialogDescription>
           </DialogHeader>
 
-          {/* Tab Switcher */}
-          <div className="flex p-1 bg-muted/60 rounded-xl border border-border mt-3">
-            <button
-              type="button"
-              onClick={() => setForgotTab("reset")}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${forgotTab === "reset"
-                ? "bg-white dark:bg-zinc-800 text-foreground shadow-xs"
-                : "text-muted-foreground"
-                }`}
-            >
-              Reset Mandiri
-            </button>
-            <button
-              type="button"
-              onClick={() => setForgotTab("helpdesk")}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${forgotTab === "helpdesk"
-                ? "bg-white dark:bg-zinc-800 text-foreground shadow-xs"
-                : "text-muted-foreground"
-                }`}
-            >
-              Kontak IT Helpdesk
-            </button>
-          </div>
-
-          {forgotTab === "reset" ? (
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5 mt-3">
+          {resetStep === 1 ? (
+            /* ======================================================== */
+            /* LANGKAH 1: CARI & VERIFIKASI EMAIL                      */
+            /* ======================================================== */
+            <form onSubmit={handleCheckEmailSubmit} className="space-y-4 mt-3">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Email Korporat (untuk verifikasi) *
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
+                  Email Terdaftar *
                 </label>
-                <Input
-                  type="email"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="nama.lengkap@telkomakses.co.id"
-                  required
-                  className="mt-1 h-10 rounded-xl text-xs font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  NIK (verifikasi tambahan) *
-                </label>
-                <Input
-                  value={forgotNik}
-                  onChange={(e) => setForgotNik(e.target.value)}
-                  placeholder="Contoh: 10293841"
-                  required
-                  className="mt-1 h-10 rounded-xl text-xs font-mono font-bold"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Password Baru *
-                  </label>
-                  <div className="relative mt-1">
-                    <Input
-                      type={showResetPassword ? "text" : "password"}
-                      value={newResetPassword}
-                      onChange={(e) => setNewResetPassword(e.target.value)}
-                      placeholder="Min. 6 karakter"
-                      required
-                      className="h-10 rounded-xl text-xs pr-8"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowResetPassword(!showResetPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground p-1"
-                    >
-                      {showResetPassword ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Konfirmasi Password *
-                  </label>
+                <div className="relative">
                   <Input
-                    type="password"
-                    value={confirmResetPassword}
-                    onChange={(e) => setConfirmResetPassword(e.target.value)}
-                    placeholder="Ulangi password"
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="Masukkan email terdaftar"
                     required
-                    className="mt-1 h-10 rounded-xl text-xs"
+                    autoFocus
+                    className="h-11 rounded-xl text-xs font-semibold pl-10"
                   />
+                  <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 </div>
+                <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+                  Cukup masukkan email yang Anda gunakan saat login atau yang didaftarkan oleh HR.
+                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-border mt-4">
@@ -882,60 +843,133 @@ export default function LoginPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsForgotOpen(false)}
-                  className="h-9 text-xs rounded-xl"
+                  className="h-9 px-4 text-xs font-semibold rounded-xl"
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isResetSubmitting}
-                  className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                  disabled={isCheckingEmail}
+                  className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs gap-1.5"
                 >
-                  {isResetSubmitting ? "Memverifikasi..." : "Reset Password Akun"}
+                  {isCheckingEmail ? (
+                    <>
+                      <RefreshCwIcon className="size-3.5 animate-spin" />
+                      <span>Memeriksa Akun...</span>
+                    </>
+                  ) : (
+                    <span>Periksa Akun</span>
+                  )}
                 </Button>
               </div>
             </form>
           ) : (
-            <div className="space-y-3 mt-3">
-              <div className="p-3.5 rounded-xl border border-border bg-card space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                  <HeadphonesIcon className="size-4 text-red-600" />
-                  <span>IT Helpdesk & System Support Telkom Akses</span>
+            /* ======================================================== */
+            /* LANGKAH 2: BUAT PASSWORD BARU LANGSUNG DI WEBSITE       */
+            /* ======================================================== */
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-4 mt-3">
+              {/* Kartu Profil Pengguna yang Terverifikasi */}
+              <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/80 dark:bg-emerald-950/30 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <UserCheckIcon className="size-4" />
+                  </div>
+                  <div className="text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-foreground">{verifiedUser?.nama}</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded font-semibold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                        Akun Ditemukan
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      NIK: {verifiedUser?.nik} • {verifiedUser?.email}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Jika email korporat Anda tidak dapat diakses, silakan hubungi Administrator HR / IT Support untuk permohonan reset password instan:
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setResetStep(1)}
+                  className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  Ganti
+                </button>
               </div>
 
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-muted/40 border border-border">
-                  <PhoneIcon className="size-4 text-emerald-600 shrink-0" />
-                  <div>
-                    <span className="font-bold text-foreground block">Hotline IT Regional III</span>
-                    <span className="text-muted-foreground font-mono">(022) 4521-9999 • Ext. 402</span>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
+                    Password Baru *
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showResetPassword ? "text" : "password"}
+                      value={newResetPassword}
+                      onChange={(e) => setNewResetPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      required
+                      autoFocus
+                      className="h-10 rounded-xl text-xs pr-10 font-semibold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPassword(!showResetPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground p-1 hover:text-foreground"
+                    >
+                      {showResetPassword ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-muted/40 border border-border">
-                  <MailIcon className="size-4 text-blue-600 shrink-0" />
-                  <div>
-                    <span className="font-bold text-foreground block">Email Helpdesk Resmi</span>
-                    <span className="text-muted-foreground font-mono">helpdesk@telkomakses.co.id</span>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
+                    Konfirmasi Password Baru *
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmResetPassword ? "text" : "password"}
+                      value={confirmResetPassword}
+                      onChange={(e) => setConfirmResetPassword(e.target.value)}
+                      placeholder="Ulangi password baru"
+                      required
+                      className="h-10 rounded-xl text-xs pr-10 font-semibold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmResetPassword(!showConfirmResetPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground p-1 hover:text-foreground"
+                    >
+                      {showConfirmResetPassword ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end pt-3 border-t border-border mt-4">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border mt-4">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsForgotOpen(false)}
-                  className="h-9 text-xs rounded-xl"
+                  onClick={() => setResetStep(1)}
+                  className="h-9 px-4 text-xs font-semibold rounded-xl gap-1"
                 >
-                  Tutup
+                  <ArrowLeftIcon className="size-3.5" />
+                  <span>Kembali</span>
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isResetSubmitting}
+                  className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs gap-1.5"
+                >
+                  {isResetSubmitting ? (
+                    <>
+                      <RefreshCwIcon className="size-3.5 animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Password Baru</span>
+                  )}
                 </Button>
               </div>
-            </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>

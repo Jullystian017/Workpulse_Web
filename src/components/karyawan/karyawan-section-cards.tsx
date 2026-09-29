@@ -14,38 +14,44 @@ import { calculatePerformance, getActiveUserFromStorage } from "@/lib/api"
 
 export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
   const cards = React.useMemo(() => {
-    if (!tasks || tasks.length === 0) {
+    const activeUser = getActiveUserFromStorage()
+    const myTasks = activeUser && tasks
+      ? tasks.filter((t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id)
+      : (tasks || [])
+
+    // Jika pengguna baru atau belum memiliki penugasan
+    if (!myTasks || myTasks.length === 0) {
       return [
         {
           icon: StarIcon,
           label: "Bintang Kinerja Saya",
-          value: "4.8",
+          value: "5.0",
           valueSuffix: "/ 5.0",
-          badge: "Sangat Baik",
+          badge: "Akun Baru",
           isStar: true,
           trend: "up" as const,
-          desc: "96% Tugas Tepat Waktu (Skor 96)",
+          desc: "Belum ada riwayat tugas yang dievaluasi",
         },
         {
           icon: CheckCircle2Icon,
           label: "Tugas Selesai",
-          value: "24",
-          badge: "100%",
+          value: "0",
+          badge: "0%",
           trend: "up" as const,
-          desc: "Tugas telah disetujui atasan",
+          desc: "Belum ada tugas yang diselesaikan",
         },
         {
           icon: ClipboardListIcon,
           label: "Tugas Aktif Berjalan",
-          value: "4",
-          badge: "3 Proses",
+          value: "0",
+          badge: "0 Proses",
           trend: "up" as const,
-          desc: "Dalam proses & review",
+          desc: "Tidak ada tugas dalam pengerjaan",
         },
         {
           icon: ClockIcon,
           label: "Ketepatan Target Waktu",
-          value: "96%",
+          value: "100%",
           badge: "Tepat Waktu",
           trend: "up" as const,
           desc: "Bebas penalti keterlambatan",
@@ -53,15 +59,11 @@ export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
       ]
     }
 
-    const activeUser = getActiveUserFromStorage()
-    const myTasks = activeUser ? tasks.filter((t) => t.assigned_to === activeUser.id) : tasks
-    const targetTasks = myTasks.length > 0 ? myTasks : tasks
-
-    const perf = calculatePerformance(targetTasks)
-    const completed = targetTasks.filter((t) => t.status === "done").length
-    const inProgress = targetTasks.filter((t) => t.status === "in_progress").length
-    const review = targetTasks.filter((t) => t.status === "review").length
-    const active = inProgress + review + targetTasks.filter((t) => t.status === "todo").length
+    const perf = calculatePerformance(myTasks)
+    const completed = myTasks.filter((t) => t.status === "done").length
+    const inProgress = myTasks.filter((t) => t.status === "in_progress").length
+    const review = myTasks.filter((t) => t.status === "review").length
+    const active = inProgress + review + myTasks.filter((t) => t.status === "todo").length
 
     return [
       {
@@ -78,9 +80,9 @@ export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
         icon: CheckCircle2Icon,
         label: "Tugas Selesai",
         value: `${completed}`,
-        badge: `${tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0}%`,
+        badge: `${Math.round((completed / myTasks.length) * 100)}%`,
         trend: "up" as const,
-        desc: `Dari ${tasks.length} total penugasan kantor`,
+        desc: `${completed} dari ${myTasks.length} total penugasan Anda`,
       },
       {
         icon: ClipboardListIcon,

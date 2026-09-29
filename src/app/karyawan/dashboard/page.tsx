@@ -21,13 +21,13 @@ export default function KaryawanDashboardPage() {
       const [fetchedTasks, fetchedUsers] = await Promise.all([getTasks(), getAllUsers()])
 
       // Filter tasks based on role:
-      // - staff: only their tasks / unassigned
+      // - staff: only their tasks (assigned to them or created by them) or open unassigned pool
       // - officer+ (non-admin): their own tasks + direct subordinates' tasks
-      let userTasks = fetchedTasks
+      let userTasks: Task[] = []
       if (activeUser) {
         if (activeUser.role === 'staff') {
           userTasks = fetchedTasks.filter(
-            (t) => t.assigned_to === activeUser.id || !t.assigned_to || t.created_by === activeUser.id
+            (t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id || (t.status === 'unassigned' && !t.assigned_to)
           )
         } else if (activeUser.role !== 'admin') {
           const subordinateIds = fetchedUsers
@@ -37,13 +37,17 @@ export default function KaryawanDashboardPage() {
             (t) =>
               t.assigned_to === activeUser.id ||
               t.created_by === activeUser.id ||
-              !t.assigned_to ||
+              (t.status === 'unassigned' && !t.assigned_to) ||
               (t.assigned_to && subordinateIds.includes(t.assigned_to))
           )
+        } else {
+          userTasks = fetchedTasks
         }
+      } else {
+        userTasks = fetchedTasks
       }
 
-      setTasks(userTasks.length > 0 ? userTasks : fetchedTasks)
+      setTasks(userTasks)
     } catch (e) {
       console.error("Error loading karyawan dashboard data:", e)
     } finally {

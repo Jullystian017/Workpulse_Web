@@ -47,7 +47,7 @@ export async function loginWithCredentials(
         return { success: false, errorType: 'PASSWORD_MISMATCH', message: 'Password yang Anda masukkan salah.' };
       }
       if (data.is_active === false) {
-        return { success: false, errorType: 'USER_NOT_FOUND', message: 'Akun Anda telah dinonaktifkan. Hubungi Superadmin.' };
+        return { success: false, errorType: 'USER_NOT_FOUND', message: 'Akun Anda telah dinonaktifkan. Hubungi Admin di contact@workpulse.id.' };
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(data));
@@ -91,7 +91,7 @@ export async function loginWithEmail(
         return { success: false, errorType: 'PASSWORD_MISMATCH', message: 'Password yang Anda masukkan salah.' };
       }
       if (data.is_active === false) {
-        return { success: false, errorType: 'USER_NOT_FOUND', message: 'Akun Anda telah dinonaktifkan. Hubungi Superadmin.' };
+        return { success: false, errorType: 'USER_NOT_FOUND', message: 'Akun Anda telah dinonaktifkan. Hubungi Admin di contact@workpulse.id.' };
       }
       if (typeof window !== 'undefined') {
         localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(data));
@@ -333,6 +333,58 @@ export async function verifyAndResetPassword(
   } catch (err: any) {
     console.error('Error in verifyAndResetPassword:', err);
     return { success: false, message: 'Terjadi kesalahan sistem saat mereset password.' };
+  }
+}
+
+export async function checkUserByEmailForReset(
+  email: string
+): Promise<{ success: boolean; message: string; user?: User }> {
+  try {
+    const trimmed = email.trim().toLowerCase();
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*, department:departments(*)')
+      .ilike('email', trimmed)
+      .maybeSingle();
+
+    if (user && !error) {
+      return { success: true, message: 'Akun ditemukan.', user: user as User };
+    }
+
+    const fallback = FALLBACK_USERS.find((u) => u.email.toLowerCase() === trimmed);
+    if (fallback) {
+      return { success: true, message: 'Akun ditemukan.', user: fallback };
+    }
+
+    return { success: false, message: 'Email tidak ditemukan dalam sistem.' };
+  } catch (err: any) {
+    console.error('Error in checkUserByEmailForReset:', err);
+    return { success: false, message: 'Gagal memverifikasi email akun.' };
+  }
+}
+
+export async function resetUserPasswordById(
+  userId: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({
+        password: newPassword,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error updating password in supabase:', error);
+      return { success: false, message: 'Gagal memperbarui password di server.' };
+    }
+
+    return { success: true, message: 'Password berhasil diperbarui! Silakan masuk dengan password baru.' };
+  } catch (err: any) {
+    console.error('Error in resetUserPasswordById:', err);
+    return { success: false, message: 'Terjadi kesalahan sistem saat memperbarui password.' };
   }
 }
 

@@ -24,8 +24,7 @@ export function KaryawanAiInsight({ tasks = [] }: KaryawanAiInsightProps) {
   // Calculate synchronized performance metrics identical to admin dashboard
   const myTasks = React.useMemo(() => {
     if (!activeUser) return tasks
-    const filtered = tasks.filter((t) => t.assigned_to === activeUser.id)
-    return filtered.length > 0 ? filtered : tasks
+    return tasks.filter((t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id)
   }, [tasks, activeUser])
 
   const perf = React.useMemo(() => {
@@ -41,19 +40,20 @@ export function KaryawanAiInsight({ tasks = [] }: KaryawanAiInsightProps) {
     return [...active].sort((a, b) => (prioWeight[b.priority] || 0) - (prioWeight[a.priority] || 0))[0]
   }, [myTasks])
 
+  const hasTasks = myTasks.length > 0
+
   // Default deterministic data from admin calculation
   const [insight, setInsight] = React.useState({
-    scoreText: `Skor Kinerja ${perf.score}/100`,
-    scoreDesc: `Masuk kategori ${perf.predicate} (${perf.onTimeRate}% SLA On-Time) bulan ini.`,
-    focusTaskTitle: topActiveTask ? "Fokus Task Hari Ini" : "Status Tugas Terkendali",
+    scoreText: hasTasks ? `Skor Kinerja ${perf.score}/100` : "Akun Baru Terdaftar",
+    scoreDesc: hasTasks
+      ? `Masuk kategori ${perf.predicate} (${perf.onTimeRate}% SLA On-Time) bulan ini.`
+      : "Belum ada riwayat penugasan. Skor KPI akan aktif otomatis begitu ada tugas yang dialokasikan.",
+    focusTaskTitle: topActiveTask ? "Fokus Task Hari Ini" : "Belum Ada Tugas Aktif",
     focusTaskDesc: topActiveTask
       ? `Prioritaskan [${topActiveTask.ticket_code}] "${topActiveTask.title.slice(0, 30)}${topActiveTask.title.length > 30 ? "..." : ""}" agar selesai tepat waktu.`
-      : "Seluruh penugasan aktif telah terselesaikan dengan baik tanpa tunggakan.",
-    penaltyTitle: perf.penaltyPoints === 0 ? "Bebas Penalti Keterlambatan" : "Catatan Penalti SLA",
-    penaltyDesc:
-      perf.penaltyPoints === 0
-        ? "Seluruh tugas prioritas tinggi bulan ini diselesaikan tepat waktu."
-        : `Tercatat pengurangan -${perf.penaltyPoints} poin dari ${perf.overdueCount} tugas melewati batas toleransi SLA.`,
+      : "Saat ini belum ada tugas aktif yang dialokasikan ke akun Anda.",
+    penaltyTitle: "Bebas Penalti Keterlambatan",
+    penaltyDesc: "Tidak ada catatan penalti keterlambatan SLA.",
     isAiGenerated: false,
   })
 
@@ -75,7 +75,7 @@ export function KaryawanAiInsight({ tasks = [] }: KaryawanAiInsightProps) {
           predicate: perf.predicate,
           onTimeRate: perf.onTimeRate,
           penaltyPoints: perf.penaltyPoints,
-          activeTasks: tasks
+          activeTasks: myTasks
             .filter((t) => t.status === "in_progress" || t.status === "todo")
             .slice(0, 3)
             .map((t) => ({

@@ -94,11 +94,11 @@ function KaryawanTasksContent() {
       // Filter tasks based on role:
       // - staff: only their assigned tasks, unassigned pool, or tasks they created
       // - officer_1/2/3, manager, sgm: their own tasks + tasks assigned to subordinates
-      let userTasks = fetchedTasks
+      let userTasks: Task[] = []
       if (activeUser) {
         if (activeUser.role === 'staff') {
           userTasks = fetchedTasks.filter(
-            (t) => t.assigned_to === activeUser.id || !t.assigned_to || t.created_by === activeUser.id
+            (t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id || (t.status === 'unassigned' && !t.assigned_to)
           )
         } else if (activeUser.role !== 'admin') {
           // Officer+ can see their own + their direct subordinates' tasks
@@ -109,13 +109,17 @@ function KaryawanTasksContent() {
             (t) =>
               t.assigned_to === activeUser.id ||
               t.created_by === activeUser.id ||
-              !t.assigned_to ||
+              (t.status === 'unassigned' && !t.assigned_to) ||
               (t.assigned_to && subordinateIds.includes(t.assigned_to))
           )
+        } else {
+          userTasks = fetchedTasks
         }
+      } else {
+        userTasks = fetchedTasks
       }
 
-      setTasks(userTasks.length > 0 ? userTasks : fetchedTasks)
+      setTasks(userTasks)
       setChannels(fetchedChannels)
       setUsers(fetchedUsers)
     } catch (e) {
