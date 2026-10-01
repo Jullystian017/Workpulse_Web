@@ -1,32 +1,26 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import {
   SearchIcon,
   SparklesIcon,
   PlusIcon,
-  HashIcon,
   CheckSquareIcon,
   UsersIcon,
   FileSpreadsheetIcon,
   LayoutDashboardIcon,
   FileBarChartIcon,
   ActivityIcon,
-  Settings2Icon,
-  ShieldIcon,
-  MoonIcon,
-  SunIcon,
+  CalendarIcon,
   ArrowRightIcon,
   XIcon,
   CommandIcon,
 } from "lucide-react"
-import { useTheme } from "next-themes"
-import { toast } from "sonner"
 
 import { useAiPanel } from "@/components/dashboard/ai-panel-context"
-import { getTasks, getChannels, getAllUsers, setActiveUser, getActiveUserFromStorage } from "@/lib/api"
-import { Task, Channel, User, ROLE_LABELS } from "@/types/database"
+import { getTasks, getChannels, getAllUsers, getActiveUserFromStorage } from "@/lib/api"
+import { Task, Channel, User } from "@/types/database"
 
 interface CommandPaletteProps {
   open?: boolean
@@ -55,7 +49,7 @@ export function CommandPalette({
   )
 
   const router = useRouter()
-  const { setTheme, theme } = useTheme()
+  const pathname = usePathname()
   const aiPanel = useAiPanel()
 
   const [query, setQuery] = React.useState("")
@@ -85,7 +79,8 @@ export function CommandPalette({
     if (isOpen) {
       setQuery("")
       setSelectedIndex(0)
-      setActiveUser(getActiveUserFromStorage())
+      const user = getActiveUserFromStorage()
+      setActiveUser(user)
       Promise.all([getTasks(), getChannels(), getAllUsers()])
         .then(([t, c, u]) => {
           setTasks(t)
@@ -96,97 +91,175 @@ export function CommandPalette({
     }
   }, [isOpen])
 
-  // Build filterable items
+  // Detect whether current scope is Karyawan or Admin based on URL and user role
+  const isKaryawan = React.useMemo(() => {
+    if (pathname?.startsWith("/karyawan")) return true
+    if (activeUser && activeUser.role !== "admin") return true
+    return false
+  }, [pathname, activeUser])
+
+  const isAdmin = !isKaryawan
+
+  // Filter tasks tailored for karyawan or admin
+  const userFilteredTasks = React.useMemo(() => {
+    if (isAdmin) {
+      return tasks
+    }
+
+    if (!activeUser) return tasks
+
+    if (activeUser.role === "staff") {
+      return tasks.filter(
+        (t) =>
+          t.assigned_to === activeUser.id ||
+          t.created_by === activeUser.id ||
+          (t.status === "unassigned" && !t.assigned_to)
+      )
+    }
+
+    // Officer, Manager, SGM: own tasks + subordinates' tasks
+    const subordinateIds = users
+      .filter((u) => u.supervisor_id === activeUser.id)
+      .map((u) => u.id)
+
+    return tasks.filter(
+      (t) =>
+        t.assigned_to === activeUser.id ||
+        t.created_by === activeUser.id ||
+        (t.status === "unassigned" && !t.assigned_to) ||
+        (t.assigned_to && subordinateIds.includes(t.assigned_to))
+    )
+  }, [tasks, users, activeUser, isAdmin])
+
+  // Build filterable items strictly matching sidebar pages
   const filteredActions = React.useMemo(() => {
     const q = query.toLowerCase().trim()
 
-    const isAdmin = activeUser?.role === "admin"
-
-    const quickActions = [
-      ...(isAdmin
-        ? [
-            {
-              id: "act-create-task",
-              category: "Aksi Cepat",
-              title: "Buat Penugasan Kantor Baru",
-              subtitle: "Terbitkan tugas ke pool atau langsung delegasikan",
-              icon: PlusIcon,
-              iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400",
-              action: () => {
-                setOpen(false)
-                if (onOpenCreateTask) {
-                  onOpenCreateTask()
-                } else {
-                  router.push("/admin/tasks?action=create")
-                }
-              },
+    // ── 1. AKSI CEPAT (Role-Aware, No Dark Mode) ──
+    const quickActions = isAdmin
+      ? [
+          {
+            id: "act-create-task",
+            category: "Aksi Cepat",
+            title: "Buat Penugasan Kantor Baru",
+            subtitle: "Terbitkan tugas ke pool atau langsung delegasikan",
+            icon: PlusIcon,
+            iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400",
+            action: () => {
+              setOpen(false)
+              if (onOpenCreateTask) {
+                onOpenCreateTask()
+              } else {
+                router.push("/admin/tasks?action=create")
+              }
             },
-          ]
-        : []),
-      {
-        id: "act-ai-assistant",
-        category: "Aksi Cepat",
-        title: "Buka WorkPulse AI Assistant",
-        subtitle: "Analisis beban kerja, SLA, dan rekomendasi delegasi",
-        icon: SparklesIcon,
-        iconColor: "text-purple-600 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-400",
-        action: () => {
-          setOpen(false)
-          aiPanel?.openAiPanel()
-        },
-      },
-      ...(isAdmin
-        ? [
-            {
-              id: "act-export-report",
-              category: "Aksi Cepat",
-              title: "Export Rekap Laporan Kinerja & SLA",
-              subtitle: "Buka halaman download CSV / Cetak PDF Resmi",
-              icon: FileSpreadsheetIcon,
-              iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400",
-              action: () => {
-                setOpen(false)
-                router.push("/admin/laporan/kinerja")
-              },
+          },
+          {
+            id: "act-ai-assistant",
+            category: "Aksi Cepat",
+            title: "Buka WorkPulse AI Assistant",
+            subtitle: "Analisis beban kerja, SLA, dan rekomendasi delegasi",
+            icon: SparklesIcon,
+            iconColor: "text-purple-600 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-400",
+            action: () => {
+              setOpen(false)
+              if (aiPanel) {
+                aiPanel.openAiPanel()
+              } else {
+                router.push("/admin/ai")
+              }
             },
-          ]
-        : []),
-      {
-        id: "act-toggle-theme",
-        category: "Aksi Cepat",
-        title: theme === "dark" ? "Beralih ke Light Mode" : "Beralih ke Dark Mode",
-        subtitle: "Ubah tema tampilan antarmuka",
-        icon: theme === "dark" ? SunIcon : MoonIcon,
-        iconColor: "text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400",
-        action: () => {
-          setTheme(theme === "dark" ? "light" : "dark")
-          toast.success(`Tema diubah ke ${theme === "dark" ? "Light" : "Dark"} Mode`)
-          setOpen(false)
-        },
-      },
-    ]
+          },
+          {
+            id: "act-export-report",
+            category: "Aksi Cepat",
+            title: "Export Rekap Laporan Kinerja & SLA",
+            subtitle: "Buka halaman download CSV / Cetak PDF Resmi",
+            icon: FileSpreadsheetIcon,
+            iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400",
+            action: () => {
+              setOpen(false)
+              router.push("/admin/laporan/kinerja")
+            },
+          },
+        ]
+      : [
+          {
+            id: "act-staff-ai",
+            category: "Aksi Cepat",
+            title: "Buka WorkPulse AI Assistant",
+            subtitle: "Konsultasi cerdas dan ringkasan kerja tugas harian",
+            icon: SparklesIcon,
+            iconColor: "text-purple-600 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-400",
+            action: () => {
+              setOpen(false)
+              if (aiPanel) {
+                aiPanel.openAiPanel()
+              } else {
+                router.push("/karyawan/ai")
+              }
+            },
+          },
+          {
+            id: "act-staff-tasks",
+            category: "Aksi Cepat",
+            title: "Lihat Tugas Saya yang Sedang Berjalan",
+            subtitle: "Buka daftar checklist penugasan aktif Anda",
+            icon: CheckSquareIcon,
+            iconColor: "text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400",
+            action: () => {
+              setOpen(false)
+              router.push("/karyawan/tasks")
+            },
+          },
+          {
+            id: "act-staff-calendar",
+            category: "Aksi Cepat",
+            title: "Buka Kalender Agenda Kerja",
+            subtitle: "Pantau deadline penugasan dalam tampilan kalender mingguan",
+            icon: CalendarIcon,
+            iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400",
+            action: () => {
+              setOpen(false)
+              router.push("/karyawan/tasks?view=calendar")
+            },
+          },
+        ]
 
-    const taskItems = tasks.map((t) => ({
+    // ── 2. DAFTAR TUGAS AKTIF (Filtered strictly by Role) ──
+    const taskCategory = isKaryawan ? "Tugas Saya yang Aktif" : "Penugasan Kantor Aktif"
+    const taskItems = userFilteredTasks.map((t) => ({
       id: `task-${t.id}`,
-      category: "Penugasan Kantor Aktif",
+      category: taskCategory,
       title: `[${t.ticket_code}] ${t.title}`,
       subtitle: `Status: ${t.status.toUpperCase()} • PIC: ${t.assignee?.nama || "Unassigned Pool"} • Prioritas: ${t.priority.toUpperCase()}`,
       icon: CheckSquareIcon,
       iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60 dark:text-red-400",
       action: () => {
         setOpen(false)
-        const baseTaskRoute = isAdmin ? "/admin/tasks" : "/karyawan/tasks"
+        const baseTaskRoute = isKaryawan ? "/karyawan/tasks" : "/admin/tasks"
         router.push(`${baseTaskRoute}?task=${t.id}`)
       },
     }))
 
+    // ── 3. NAVIGASI HALAMAN (STRICTLY matching each sidebar) ──
+    // Admin Sidebar pages:
+    // - Dashboard Utama (/admin/dashboard)
+    // - Penugasan Kantor (/admin/tasks)
+    // - Karyawan & Organogram (/admin/karyawan)
+    // - Laporan Kinerja & SLA (/admin/laporan/kinerja)
+    // - Log Aktivitas & Audit (/admin/log)
+    // Staff Sidebar pages:
+    // - Dashboard Saya (/karyawan/dashboard)
+    // - Tugas Saya (/karyawan/tasks)
+    // - AI Assistant (/karyawan/ai)
     const navItems = isAdmin
       ? [
           {
             id: "nav-dash",
             category: "Navigasi Halaman",
-            title: "Executive Dashboard",
-            subtitle: "Ringkasan KPI, Area Chart interaktif, dan tabel tugas utama",
+            title: "Dashboard Utama",
+            subtitle: "Ringkasan KPI, Area Chart interaktif, dan status tugas kantor",
             icon: LayoutDashboardIcon,
             iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60",
             action: () => {
@@ -197,7 +270,7 @@ export function CommandPalette({
           {
             id: "nav-tasks",
             category: "Navigasi Halaman",
-            title: "Penugasan Kerja Kantor",
+            title: "Penugasan Kantor",
             subtitle: "Kelola Kanban, Tabel, Timeline, dan Kapasitas Tim",
             icon: CheckSquareIcon,
             iconColor: "text-blue-600 bg-blue-50 dark:bg-blue-950/60",
@@ -209,7 +282,7 @@ export function CommandPalette({
           {
             id: "nav-karyawan",
             category: "Navigasi Halaman",
-            title: "Karyawan & Rantai Komando",
+            title: "Karyawan & Organogram",
             subtitle: "Struktur hierarki personil SGM, Manager, Officer, dan Staff",
             icon: UsersIcon,
             iconColor: "text-purple-600 bg-purple-50 dark:bg-purple-950/60",
@@ -221,7 +294,7 @@ export function CommandPalette({
           {
             id: "nav-laporan",
             category: "Navigasi Halaman",
-            title: "Laporan Kinerja & Rekap SLA",
+            title: "Laporan Kinerja & SLA",
             subtitle: "Akuntabilitas pengerjaan tugas dan persentase SLA On-Time",
             icon: FileBarChartIcon,
             iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60",
@@ -233,25 +306,13 @@ export function CommandPalette({
           {
             id: "nav-log",
             category: "Navigasi Halaman",
-            title: "Log Aktivitas & Audit Trail",
-            subtitle: "Rekam jejak digital pengerjaan tugas kantor",
+            title: "Log Aktivitas & Audit",
+            subtitle: "Rekam jejak digital pengerjaan tugas dan perubahan sistem",
             icon: ActivityIcon,
             iconColor: "text-amber-600 bg-amber-50 dark:bg-amber-950/60",
             action: () => {
               setOpen(false)
               router.push("/admin/log")
-            },
-          },
-          {
-            id: "nav-akses",
-            category: "Navigasi Halaman",
-            title: "Hak Akses & Role Matrix",
-            subtitle: "Matriks perizinan modul dan wewenang delegasi",
-            icon: ShieldIcon,
-            iconColor: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60",
-            action: () => {
-              setOpen(false)
-              router.push("/admin/akses")
             },
           },
         ]
@@ -260,7 +321,7 @@ export function CommandPalette({
             id: "nav-staff-dash",
             category: "Navigasi Halaman",
             title: "Dashboard Saya",
-            subtitle: "Statistik tugas harian, kalender agenda kerja, dan rangkuman",
+            subtitle: "Rangkuman tugas harian, ringkasan shift, dan performa kerja",
             icon: LayoutDashboardIcon,
             iconColor: "text-red-600 bg-red-50 dark:bg-red-950/60",
             action: () => {
@@ -280,6 +341,22 @@ export function CommandPalette({
               router.push("/karyawan/tasks")
             },
           },
+          {
+            id: "nav-staff-ai",
+            category: "Navigasi Halaman",
+            title: "WorkPulse AI Assistant",
+            subtitle: "Konsultasi cerdas bantuan AI untuk panduan tugas kerja",
+            icon: SparklesIcon,
+            iconColor: "text-purple-600 bg-purple-50 dark:bg-purple-950/60",
+            action: () => {
+              setOpen(false)
+              if (aiPanel) {
+                aiPanel.openAiPanel()
+              } else {
+                router.push("/karyawan/ai")
+              }
+            },
+          },
         ]
 
     const all = [...quickActions, ...taskItems, ...navItems]
@@ -292,7 +369,16 @@ export function CommandPalette({
         item.subtitle.toLowerCase().includes(q) ||
         item.category.toLowerCase().includes(q)
     )
-  }, [query, channels, tasks, users, activeUser, theme, setTheme, aiPanel, onOpenCreateTask, router, setOpen])
+  }, [
+    query,
+    userFilteredTasks,
+    isAdmin,
+    isKaryawan,
+    aiPanel,
+    onOpenCreateTask,
+    router,
+    setOpen,
+  ])
 
   // Keyboard navigation inside Command Palette (ArrowUp, ArrowDown, Enter)
   React.useEffect(() => {
@@ -348,7 +434,11 @@ export function CommandPalette({
               setQuery(e.target.value)
               setSelectedIndex(0)
             }}
-            placeholder="Ketik tugas, channel, personil, atau aksi cepat..."
+            placeholder={
+              isKaryawan
+                ? "Cari tugas saya, agenda kerja, atau aksi cepat..."
+                : "Ketik tugas kantor, personil, atau aksi cepat..."
+            }
             className="flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-hidden"
           />
           <div className="flex items-center gap-1.5 shrink-0">
@@ -370,7 +460,9 @@ export function CommandPalette({
             <div className="p-8 text-center">
               <p className="text-sm font-semibold text-foreground">Tidak ada hasil ditemukan</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Coba gunakan kata kunci lain seperti &quot;SPJ&quot;, &quot;Operasional&quot;, atau nama personil.
+                {isKaryawan
+                  ? "Coba cari judul tugas, tiket penugasan, atau kata kunci agenda Anda."
+                  : "Coba cari judul tugas kantor, nama personil, atau modul laporan."}
               </p>
             </div>
           ) : (
@@ -440,7 +532,7 @@ export function CommandPalette({
             </span>
           </div>
           <span className="font-semibold text-red-600 dark:text-red-400 flex items-center gap-1">
-            <CommandIcon className="size-3" /> WorkPulse Quick Navigator
+            <CommandIcon className="size-3" /> {isKaryawan ? "Portal Karyawan Navigator" : "WorkPulse Quick Navigator"}
           </span>
         </div>
       </div>
