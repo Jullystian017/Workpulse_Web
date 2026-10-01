@@ -587,15 +587,8 @@ export default function LoginPage() {
           </div>
 
           {/* Footer */}
-          <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-400 gap-2 mt-4">
+          <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-center text-xs text-zinc-400 mt-4 text-center">
             <span>© 2026 WorkPulse Telkom Akses. All rights reserved.</span>
-            <a
-              href="mailto:contact@workpulse.id"
-              className="text-zinc-500 hover:text-red-600 dark:hover:text-red-400 transition-colors inline-flex items-center gap-1.5 font-medium"
-            >
-              <MailIcon className="size-3.5" />
-              <span>Bantuan: contact@workpulse.id</span>
-            </a>
           </div>
         </div>
 

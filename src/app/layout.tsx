@@ -12,7 +12,12 @@ export const metadata: Metadata = {
   title: "WorkPulse - Telkom Akses",
   description: "Enterprise Task Management & Field Coordination Platform",
   icons: {
-    icon: "/workpulse.png",
+    icon: [
+      { url: "/workpulse.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: "/workpulse.png",
+    shortcut: "/workpulse.png",
   },
 };
 

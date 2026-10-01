@@ -34,6 +34,7 @@ import {
   getActiveUserFromStorage,
 } from "@/lib/api"
 import { ManageChannelsModal } from "@/components/dashboard/tasks/manage-channels-modal"
+import { TaskDeadlinePicker } from "@/components/dashboard/tasks/task-deadline-picker"
 
 interface CreateTaskModalProps {
   open: boolean
@@ -70,7 +71,11 @@ export function CreateTaskModal({
   const [channelId, setChannelId] = React.useState("")
   const [priority, setPriority] = React.useState<TaskPriority>("high")
   const [assignedTo, setAssignedTo] = React.useState("")
-  const [deadlineDays, setDeadlineDays] = React.useState(0)
+  const [deadlineDate, setDeadlineDate] = React.useState<Date>(() => {
+    const today = new Date()
+    today.setHours(18, 0, 0, 0)
+    return today
+  })
   const [estimatedHours, setEstimatedHours] = React.useState(2.5)
   const [subtaskInputs, setSubtaskInputs] = React.useState<string[]>([])
   const [newSubtaskText, setNewSubtaskText] = React.useState("")
@@ -122,16 +127,7 @@ export function CreateTaskModal({
     const selectedChannel = channels.find((c) => c.id === channelId)
     const departmentId = selectedChannel?.department_id || "11111111-1111-4111-8111-111111111111"
 
-    let deadline: string
-    if (deadlineDays === 0) {
-      const today = new Date()
-      today.setHours(18, 0, 0, 0)
-      deadline = today.toISOString()
-    } else {
-      const target = new Date(Date.now() + deadlineDays * 24 * 60 * 60 * 1000)
-      target.setHours(18, 0, 0, 0)
-      deadline = target.toISOString()
-    }
+    const deadline = deadlineDate.toISOString()
 
     setIsSubmitting(true)
     try {
@@ -155,6 +151,9 @@ export function CreateTaskModal({
         setTitle("")
         setDescription("")
         setAssignedTo("")
+        const resetDate = new Date()
+        resetDate.setHours(18, 0, 0, 0)
+        setDeadlineDate(resetDate)
         setSubtaskInputs([])
         setNewSubtaskText("")
         onOpenChange(false)
@@ -368,28 +367,10 @@ export function CreateTaskModal({
               <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
                 Target Selesai
               </label>
-              <Select
-                value={String(deadlineDays)}
-                onValueChange={(val) => setDeadlineDays(Number(val || "1"))}
-              >
-                <SelectTrigger className="w-full h-10 rounded-xl bg-background border-border text-xs md:text-sm font-medium">
-                  <div className="flex items-center gap-2 truncate">
-                    <ClockIcon className="size-3.5 text-muted-foreground shrink-0" />
-                    <span className="font-semibold text-foreground truncate">
-                      {DEADLINE_LABELS[deadlineDays] || `${deadlineDays} Hari`}
-                    </span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="w-full">
-                  <SelectItem value="0">Hari Ini (Selesai Hari Ini)</SelectItem>
-                  <SelectItem value="1">Besok (1 Hari / 24 Jam)</SelectItem>
-                  <SelectItem value="2">2 Hari ke Depan</SelectItem>
-                  <SelectItem value="3">3 Hari ke Depan</SelectItem>
-                  <SelectItem value="5">5 Hari Kerja</SelectItem>
-                  <SelectItem value="7">1 Minggu (7 Hari)</SelectItem>
-                  <SelectItem value="14">2 Minggu</SelectItem>
-                </SelectContent>
-              </Select>
+              <TaskDeadlinePicker
+                value={deadlineDate}
+                onChange={setDeadlineDate}
+              />
             </div>
           </div>
 
