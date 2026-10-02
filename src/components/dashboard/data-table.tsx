@@ -683,6 +683,7 @@ export function DataTable({
         {/* Task Detail Sheet */}
         <TaskDetailSheet
           taskId={selectedTaskId}
+          initialTask={selectedTaskId ? tasks.find((t: Task) => t.id === selectedTaskId) || null : null}
           open={isDetailOpen}
           onOpenChange={(open) => {
             setIsDetailOpen(open)
@@ -1071,6 +1072,7 @@ export function DataTable({
       {/* Task Detail Sheet */}
       <TaskDetailSheet
         taskId={selectedTaskId}
+        initialTask={selectedTaskId ? tasks.find((t: Task) => t.id === selectedTaskId) || null : null}
         open={isDetailOpen}
         onOpenChange={(open) => {
           setIsDetailOpen(open)

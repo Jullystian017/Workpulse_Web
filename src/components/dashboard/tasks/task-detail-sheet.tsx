@@ -101,6 +101,7 @@ export type { Task as TaskItem } from "@/types/database"
 
 interface TaskDetailSheetProps {
   taskId: string | null
+  initialTask?: Task | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onTaskUpdated?: () => void
@@ -109,14 +110,16 @@ interface TaskDetailSheetProps {
 
 export function TaskDetailSheet({
   taskId,
+  initialTask,
   open,
   onOpenChange,
   onTaskUpdated,
   onOpenDelegate,
 }: TaskDetailSheetProps) {
-  const [task, setTask] = React.useState<Task | null>(null)
+  const [task, setTask] = React.useState<Task | null>(initialTask || null)
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
   // Edit Mode States
   const [isEditing, setIsEditing] = React.useState(false)
@@ -176,25 +179,45 @@ export function TaskDetailSheet({
   // Fetch Full Task Data
   const loadTaskData = React.useCallback(async () => {
     if (!taskId) return
-    setIsLoading(true)
+    // Only show full loading spinner if we don't have task data yet
+    if (!task && !initialTask) {
+      setIsLoading(true)
+    }
+    setLoadError(null)
     try {
       const activeUser = getActiveUserFromStorage()
       setCurrentUser(activeUser)
       const data = await getTaskById(taskId)
-      setTask(data)
-    } catch (err) {
+      if (data) {
+        setTask(data)
+      } else {
+        if (!task && !initialTask) {
+          setLoadError("Data penugasan tidak ditemukan.")
+        }
+      }
+    } catch (err: any) {
       console.error(err)
+      if (!task && !initialTask) {
+        setLoadError(err?.message || "Terjadi kesalahan saat memuat tugas.")
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [taskId])
+  }, [taskId, task, initialTask])
 
   React.useEffect(() => {
     if (open && taskId) {
+      if (initialTask && initialTask.id === taskId) {
+        setTask(initialTask)
+      }
+      setLoadError(null)
       loadTaskData()
       setIsEditing(false)
+    } else if (!open) {
+      setTask(null)
+      setLoadError(null)
     }
-  }, [open, taskId, loadTaskData])
+  }, [open, taskId, initialTask, loadTaskData])
 
   // Load Channels & Users when entering edit mode
   const handleStartEdit = async () => {
@@ -812,11 +835,29 @@ export function TaskDetailSheet({
         showCloseButton={false}
         className="w-full sm:max-w-md md:max-w-lg overflow-y-auto p-0 border-l border-border bg-background font-sans shadow-2xl"
       >
-        {isLoading || !task ? (
+        {isLoading && !task ? (
           <div className="flex h-full items-center justify-center p-12">
             <div className="flex flex-col items-center gap-3">
               <div className="size-7 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
               <p className="text-xs text-muted-foreground">Memuat data penugasan...</p>
+            </div>
+          </div>
+        ) : !task ? (
+          <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+            <div className="size-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center text-red-600 mb-3">
+              <AlertCircleIcon className="size-6" />
+            </div>
+            <h3 className="font-semibold text-foreground text-sm">Gagal Memuat Detail Tugas</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+              {loadError || "Data penugasan tidak ditemukan atau terjadi kendala jaringan."}
+            </p>
+            <div className="flex items-center gap-2 mt-4">
+              <Button size="sm" variant="outline" onClick={loadTaskData}>
+                Coba Lagi
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>
+                Tutup
+              </Button>
             </div>
           </div>
         ) : (

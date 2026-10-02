@@ -161,26 +161,53 @@ export function logout() {
   }
 }
 
-export async function getAllUsers(): Promise<User[]> {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*, department:departments(*)')
-      .order('nama', { ascending: true });
+let _cachedUsers: User[] | null = null;
+let _cachedUsersTime = 0;
+let _inflightUsersPromise: Promise<User[]> | null = null;
+const USERS_CACHE_TTL = 30 * 1000; // 30 seconds fresh
 
-    if (data && data.length > 0 && !error) {
-      // Map supervisors in memory
-      const userMap = new Map(data.map((u) => [u.id, u]));
-      return data.map((u) => ({
-        ...u,
-        supervisor: u.supervisor_id ? userMap.get(u.supervisor_id) : undefined,
-      })) as User[];
-    }
-  } catch (e) {
-    console.warn('Error querying Supabase users, using fallback:', e);
+export function invalidateUsersCache() {
+  _cachedUsers = null;
+  _cachedUsersTime = 0;
+  _inflightUsersPromise = null;
+}
+
+export async function getAllUsers(forceRefresh = false): Promise<User[]> {
+  if (!forceRefresh && _cachedUsers && Date.now() - _cachedUsersTime < USERS_CACHE_TTL) {
+    return _cachedUsers;
+  }
+  if (!forceRefresh && _inflightUsersPromise) {
+    return _inflightUsersPromise;
   }
 
-  return FALLBACK_USERS;
+  _inflightUsersPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*, department:departments(*)')
+        .order('nama', { ascending: true });
+
+      if (data && data.length > 0 && !error) {
+        // Map supervisors in memory
+        const userMap = new Map(data.map((u) => [u.id, u]));
+        const result = data.map((u) => ({
+          ...u,
+          supervisor: u.supervisor_id ? userMap.get(u.supervisor_id) : undefined,
+        })) as User[];
+        _cachedUsers = result;
+        _cachedUsersTime = Date.now();
+        return result;
+      }
+    } catch (e) {
+      console.warn('Error querying Supabase users, using fallback:', e);
+    } finally {
+      _inflightUsersPromise = null;
+    }
+
+    return FALLBACK_USERS;
+  })();
+
+  return _inflightUsersPromise;
 }
 
 export async function getUserById(id: string): Promise<User | null> {
@@ -215,6 +242,7 @@ export async function createUser(user: Partial<User>): Promise<User | null> {
   }
 
   if (data) {
+    invalidateUsersCache();
     const active = getActiveUserFromStorage();
     recordActivity({
       user: active ? `${active.nama} (${active.nik})` : 'Administrator',
@@ -245,6 +273,7 @@ export async function updateUser(id: string, updates: Partial<User>): Promise<Us
   }
 
   if (data) {
+    invalidateUsersCache();
     const active = getActiveUserFromStorage();
     recordActivity({
       user: active ? `${active.nama} (${active.nik})` : 'Administrator',
@@ -265,6 +294,7 @@ export async function deleteUser(id: string): Promise<boolean> {
     return false;
   }
 
+  invalidateUsersCache();
   const active = getActiveUserFromStorage();
   recordActivity({
     user: active ? `${active.nama} (${active.nik})` : 'Administrator',
@@ -446,41 +476,99 @@ export async function getSubordinatesForUser(userId: string, role: UserRole): Pr
 // 2. DEPARTMENTS & CHANNELS
 // ==========================================
 
-export async function getDepartments(): Promise<Department[]> {
-  try {
-    const { data, error } = await supabase
-      .from('departments')
-      .select('*')
-      .order('name', { ascending: true });
+let _cachedDepartments: Department[] | null = null;
+let _cachedDepartmentsTime = 0;
+let _inflightDepartmentsPromise: Promise<Department[]> | null = null;
+const DEPARTMENTS_CACHE_TTL = 60 * 1000; // 60 seconds
 
-    if (data && data.length > 0 && !error) return data as Department[];
-  } catch (e) {
-    console.warn('Supabase departments error:', e);
-  }
-
-  return [
-    { id: '11111111-1111-4111-8111-111111111111', name: 'Fiber Optic Operation & Maintenance', code: 'FOP' },
-    { id: '11111111-1111-4111-8111-222222222222', name: 'Consumer Access & In-Home Installation', code: 'CUS' },
-    { id: '11111111-1111-4111-8111-333333333333', name: 'Enterprise & Corporate Solutions', code: 'B2B' },
-  ];
+export function invalidateDepartmentsCache() {
+  _cachedDepartments = null;
+  _cachedDepartmentsTime = 0;
+  _inflightDepartmentsPromise = null;
 }
 
-export async function getChannels(): Promise<Channel[]> {
-  try {
-    const { data, error } = await supabase
-      .from('channels')
-      .select('*, department:departments(*)')
-    if (data && data.length > 0 && !error) return data as Channel[];
-  } catch (e) {
-    console.warn('Supabase channels error:', e);
+export async function getDepartments(forceRefresh = false): Promise<Department[]> {
+  if (!forceRefresh && _cachedDepartments && Date.now() - _cachedDepartmentsTime < DEPARTMENTS_CACHE_TTL) {
+    return _cachedDepartments;
+  }
+  if (!forceRefresh && _inflightDepartmentsPromise) {
+    return _inflightDepartmentsPromise;
   }
 
-  return [
-    { id: '22222222-2222-4222-8222-111111111111', department_id: '11111111-1111-4111-8111-111111111111', name: 'Divisi Operasional', slug: 'divisi-operasional', icon: 'Layers' },
-    { id: '22222222-2222-4222-8222-222222222222', department_id: '11111111-1111-4111-8111-111111111111', name: 'Anggaran & SPJ', slug: 'anggaran-spj', icon: 'FileText' },
-    { id: '22222222-2222-4222-8222-333333333333', department_id: '11111111-1111-4111-8111-222222222222', name: 'Audit Kepatuhan ISO', slug: 'audit-kepatuhan-iso', icon: 'Shield' },
-    { id: '22222222-2222-4222-8222-444444444444', department_id: '11111111-1111-4111-8111-333333333333', name: 'SDM & Pelatihan', slug: 'sdm-pelatihan', icon: 'Users' },
-  ];
+  _inflightDepartmentsPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (data && data.length > 0 && !error) {
+        const res = data as Department[];
+        _cachedDepartments = res;
+        _cachedDepartmentsTime = Date.now();
+        return res;
+      }
+    } catch (e) {
+      console.warn('Supabase departments error:', e);
+    } finally {
+      _inflightDepartmentsPromise = null;
+    }
+
+    return [
+      { id: '11111111-1111-4111-8111-111111111111', name: 'Fiber Optic Operation & Maintenance', code: 'FOP' },
+      { id: '11111111-1111-4111-8111-222222222222', name: 'Consumer Access & In-Home Installation', code: 'CUS' },
+      { id: '11111111-1111-4111-8111-333333333333', name: 'Enterprise & Corporate Solutions', code: 'B2B' },
+    ];
+  })();
+
+  return _inflightDepartmentsPromise;
+}
+
+let _cachedChannels: Channel[] | null = null;
+let _cachedChannelsTime = 0;
+let _inflightChannelsPromise: Promise<Channel[]> | null = null;
+const CHANNELS_CACHE_TTL = 45 * 1000; // 45 seconds
+
+export function invalidateChannelsCache() {
+  _cachedChannels = null;
+  _cachedChannelsTime = 0;
+  _inflightChannelsPromise = null;
+}
+
+export async function getChannels(forceRefresh = false): Promise<Channel[]> {
+  if (!forceRefresh && _cachedChannels && Date.now() - _cachedChannelsTime < CHANNELS_CACHE_TTL) {
+    return _cachedChannels;
+  }
+  if (!forceRefresh && _inflightChannelsPromise) {
+    return _inflightChannelsPromise;
+  }
+
+  _inflightChannelsPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('channels')
+        .select('*, department:departments(*)');
+      if (data && data.length > 0 && !error) {
+        const res = data as Channel[];
+        _cachedChannels = res;
+        _cachedChannelsTime = Date.now();
+        return res;
+      }
+    } catch (e) {
+      console.warn('Supabase channels error:', e);
+    } finally {
+      _inflightChannelsPromise = null;
+    }
+
+    return [
+      { id: '22222222-2222-4222-8222-111111111111', department_id: '11111111-1111-4111-8111-111111111111', name: 'Divisi Operasional', slug: 'divisi-operasional', icon: 'Layers' },
+      { id: '22222222-2222-4222-8222-222222222222', department_id: '11111111-1111-4111-8111-111111111111', name: 'Anggaran & SPJ', slug: 'anggaran-spj', icon: 'FileText' },
+      { id: '22222222-2222-4222-8222-333333333333', department_id: '11111111-1111-4111-8111-222222222222', name: 'Audit Kepatuhan ISO', slug: 'audit-kepatuhan-iso', icon: 'Shield' },
+      { id: '22222222-2222-4222-8222-444444444444', department_id: '11111111-1111-4111-8111-333333333333', name: 'SDM & Pelatihan', slug: 'sdm-pelatihan', icon: 'Users' },
+    ];
+  })();
+
+  return _inflightChannelsPromise;
 }
 
 export async function createChannel(params: {
@@ -489,6 +577,7 @@ export async function createChannel(params: {
   department_id?: string;
   icon?: string;
 }): Promise<Channel | null> {
+  invalidateChannelsCache();
   const slug = params.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const newChannel: Partial<Channel> = {
     name: params.name,
@@ -522,6 +611,7 @@ export async function createChannel(params: {
 }
 
 export async function deleteChannel(channelId: string): Promise<boolean> {
+  invalidateChannelsCache();
   try {
     const { error } = await supabase.from('channels').delete().eq('id', channelId);
     if (!error) return true;
@@ -535,6 +625,7 @@ export async function updateChannel(
   channelId: string,
   params: { name?: string; description?: string; icon?: string }
 ): Promise<Channel | null> {
+  invalidateChannelsCache();
   try {
     const updates: Partial<Channel> = { ...params };
     if (params.name) {
@@ -557,102 +648,176 @@ export async function updateChannel(
 // 3. TASKS MANAGEMENT
 // ==========================================
 
-export async function getTasks(filters?: {
+export interface TaskFilters {
   channelId?: string;
   departmentId?: string;
   status?: TaskStatus;
   assignedTo?: string;
   search?: string;
-}): Promise<Task[]> {
-  try {
-    let query = supabase
-      .from('tasks')
-      .select('*, channel:channels(*), department:departments(*), subtasks(*)')
-      .order('created_at', { ascending: false });
-
-    if (filters?.channelId) {
-      query = query.eq('channel_id', filters.channelId);
-    }
-    if (filters?.departmentId) {
-      query = query.eq('department_id', filters.departmentId);
-    }
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters?.assignedTo) {
-      query = query.eq('assigned_to', filters.assignedTo);
-    }
-    if (filters?.search) {
-      query = query.or(`title.ilike.%${filters.search}%,ticket_code.ilike.%${filters.search}%`);
-    }
-
-    const { data: rawTasks, error } = await query;
-    if (rawTasks && rawTasks.length > 0 && !error) {
-      const users = await getAllUsers();
-      const userMap = new Map(users.map((u) => [u.id, u]));
-
-      return rawTasks.map((t) => ({
-        ...t,
-        creator: t.created_by ? userMap.get(t.created_by) : undefined,
-        assignee: t.assigned_to ? userMap.get(t.assigned_to) : undefined,
-        delegator: t.delegated_by ? userMap.get(t.delegated_by) : undefined,
-      })) as Task[];
-    }
-  } catch (e) {
-    console.warn('Supabase getTasks error:', e);
-  }
-
-  return [];
 }
 
-export async function getTaskById(taskId: string): Promise<Task | null> {
-  try {
-    const { data: task, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        channel:channels(*),
-        department:departments(*),
-        subtasks(*, attachments:subtask_attachments(*)),
-        attachments:task_attachments(*),
-        comments:task_comments(*)
-      `)
-      .eq('id', taskId)
-      .single();
+const _tasksCache = new Map<string, { data: Task[]; timestamp: number }>();
+const _inflightTasks = new Map<string, Promise<Task[]>>();
+const TASKS_CACHE_TTL = 10 * 1000; // 10 seconds
 
-    if (task && !error) {
-      const users = await getAllUsers();
-      const userMap = new Map(users.map((u) => [u.id, u]));
+export function invalidateTasksCache() {
+  _tasksCache.clear();
+  _inflightTasks.clear();
+}
 
-      return {
-        ...task,
-        creator: task.created_by ? userMap.get(task.created_by) : undefined,
-        assignee: task.assigned_to ? userMap.get(task.assigned_to) : undefined,
-        delegator: task.delegated_by ? userMap.get(task.delegated_by) : undefined,
-        subtasks: (task.subtasks || [])
-          .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((st: any) => ({
-            ...st,
-            attachments: (st.attachments || []).map((a: any) => ({
-              ...a,
-              uploader: a.uploaded_by ? userMap.get(a.uploaded_by) : undefined,
-            })),
-          })),
-        attachments: (task.attachments || []).map((att: any) => ({
-          ...att,
-          uploader: att.uploaded_by ? userMap.get(att.uploaded_by) : undefined,
-        })),
-        comments: (task.comments || []).map((cmt: any) => ({
-          ...cmt,
-          user: cmt.user_id ? userMap.get(cmt.user_id) : undefined,
-        })),
-      } as Task;
+const _taskDetailCache = new Map<string, { data: Task; timestamp: number }>();
+const _inflightTaskDetail = new Map<string, Promise<Task | null>>();
+const TASK_DETAIL_CACHE_TTL = 20 * 1000; // 20 seconds
+
+export function invalidateTaskCache(taskId?: string) {
+  if (taskId) {
+    _taskDetailCache.delete(taskId);
+    _inflightTaskDetail.delete(taskId);
+  } else {
+    _taskDetailCache.clear();
+    _inflightTaskDetail.clear();
+  }
+  invalidateTasksCache();
+}
+
+export async function getTasks(filters?: TaskFilters, forceRefresh = false): Promise<Task[]> {
+  const cacheKey = JSON.stringify(filters || {});
+  if (!forceRefresh) {
+    const cached = _tasksCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < TASKS_CACHE_TTL) {
+      return cached.data;
     }
-  } catch (e) {
-    console.warn('Error fetching task details:', e);
+    const inflight = _inflightTasks.get(cacheKey);
+    if (inflight) {
+      return inflight;
+    }
   }
 
-  return null;
+  const promise = (async () => {
+    try {
+      let query = supabase
+        .from('tasks')
+        .select('*, channel:channels(*), department:departments(*), subtasks(*)')
+        .order('created_at', { ascending: false });
+
+      if (filters?.channelId) {
+        query = query.eq('channel_id', filters.channelId);
+      }
+      if (filters?.departmentId) {
+        query = query.eq('department_id', filters.departmentId);
+      }
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.assignedTo) {
+        query = query.eq('assigned_to', filters.assignedTo);
+      }
+      if (filters?.search) {
+        query = query.or(`title.ilike.%${filters.search}%,ticket_code.ilike.%${filters.search}%`);
+      }
+
+      const [{ data: rawTasks, error }, users] = await Promise.all([
+        query,
+        getAllUsers(),
+      ]);
+
+      if (rawTasks && rawTasks.length > 0 && !error) {
+        const userMap = new Map(users.map((u) => [u.id, u]));
+
+        const result = rawTasks.map((t) => ({
+          ...t,
+          creator: t.created_by ? userMap.get(t.created_by) : undefined,
+          assignee: t.assigned_to ? userMap.get(t.assigned_to) : undefined,
+          delegator: t.delegated_by ? userMap.get(t.delegated_by) : undefined,
+        })) as Task[];
+
+        _tasksCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
+      }
+    } catch (e) {
+      console.warn('Supabase getTasks error:', e);
+    } finally {
+      _inflightTasks.delete(cacheKey);
+    }
+
+    return [];
+  })();
+
+  _inflightTasks.set(cacheKey, promise);
+  return promise;
+}
+
+export async function getTaskById(taskId: string, forceRefresh = false): Promise<Task | null> {
+  if (!forceRefresh) {
+    const cached = _taskDetailCache.get(taskId);
+    if (cached && Date.now() - cached.timestamp < TASK_DETAIL_CACHE_TTL) {
+      return cached.data;
+    }
+    const inflight = _inflightTaskDetail.get(taskId);
+    if (inflight) {
+      return inflight;
+    }
+  }
+
+  const promise = (async () => {
+    try {
+      const [{ data: task, error }, users] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select(`
+            *,
+            channel:channels(*),
+            department:departments(*),
+            subtasks(*, attachments:subtask_attachments(*)),
+            attachments:task_attachments(*),
+            comments:task_comments(*)
+          `)
+          .eq('id', taskId)
+          .single(),
+        getAllUsers(),
+      ]);
+
+      if (task && !error) {
+        const userMap = new Map(users.map((u) => [u.id, u]));
+
+        const result = {
+          ...task,
+          creator: task.created_by ? userMap.get(task.created_by) : undefined,
+          assignee: task.assigned_to ? userMap.get(task.assigned_to) : undefined,
+          delegator: task.delegated_by ? userMap.get(task.delegated_by) : undefined,
+          subtasks: (task.subtasks || [])
+            .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            .map((st: any) => ({
+              ...st,
+              attachments: (st.attachments || []).map((a: any) => ({
+                ...a,
+                uploader: a.uploaded_by ? userMap.get(a.uploaded_by) : undefined,
+              })),
+            })),
+          attachments: (task.attachments || []).map((att: any) => ({
+            ...att,
+            uploader: att.uploaded_by ? userMap.get(att.uploaded_by) : undefined,
+          })),
+          comments: (task.comments || []).map((cmt: any) => ({
+            ...cmt,
+            user: cmt.user_id ? userMap.get(cmt.user_id) : undefined,
+          })),
+        } as Task;
+
+        _taskDetailCache.set(taskId, { data: result, timestamp: Date.now() });
+        return result;
+      }
+    } catch (e) {
+      console.warn('Error fetching task details:', e);
+    } finally {
+      _inflightTaskDetail.delete(taskId);
+    }
+
+    return null;
+  })();
+
+  _inflightTaskDetail.set(taskId, promise);
+  return promise;
 }
 
 export async function createTask(task: {
@@ -734,6 +899,7 @@ export async function createTask(task: {
     detail: `[${ticketCode}] Tugas '${newTask.title}' dibuat (${task.priority.toUpperCase()}).${task.assigned_to ? ' Ditugaskan langsung.' : ' Masuk ke Unassigned Pool.'}`,
   });
 
+  invalidateTasksCache();
   return getTaskById(newTask.id);
 }
 
@@ -767,6 +933,7 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus, userI
     detail: `Status penugasan diubah menjadi ${status.toUpperCase().replace('_', ' ')}.`,
   });
 
+  invalidateTaskCache(taskId);
   return true;
 }
 
@@ -805,6 +972,7 @@ export async function updateTask(taskId: string, input: UpdateTaskInput, userId?
     ]);
   }
 
+  invalidateTaskCache(taskId);
   return getTaskById(taskId);
 }
 
@@ -874,6 +1042,7 @@ export async function delegateTask(
     },
   ]);
 
+  invalidateTaskCache(taskId);
   return true;
 }
 
@@ -899,6 +1068,7 @@ export async function claimTask(taskId: string, staffUserId: string): Promise<bo
     },
   ]);
 
+  invalidateTaskCache(taskId);
   return true;
 }
 
@@ -946,6 +1116,7 @@ export async function submitTaskForReview(taskId: string, userId: string, notes?
     console.warn('Could not insert submit notification:', err);
   }
 
+  invalidateTaskCache(taskId);
   return true;
 }
 
@@ -1000,6 +1171,7 @@ export async function approveTask(taskId: string, supervisorId: string): Promise
     console.warn('Could not insert approve notification:', err);
   }
 
+  invalidateTaskCache(taskId);
   return true;
 }
 
@@ -1044,6 +1216,7 @@ export async function returnTaskForRevision(taskId: string, supervisorId: string
     console.warn('Could not insert return notification:', err);
   }
 
+  invalidateTaskCache(taskId);
   return true;
 }
 
@@ -1060,6 +1233,7 @@ export async function toggleSubtask(subtaskId: string, isCompleted: boolean): Pr
     })
     .eq('id', subtaskId);
 
+  if (!error) invalidateTaskCache();
   return !error;
 }
 
@@ -1078,6 +1252,7 @@ export async function addSubtask(taskId: string, title: string): Promise<Subtask
     .single();
 
   if (error) return null;
+  invalidateTaskCache(taskId);
   return data as Subtask;
 }
 
@@ -1099,6 +1274,7 @@ export async function approveSubtask(
     .eq('id', subtaskId);
 
   if (!error) {
+    invalidateTaskCache();
     const activeUser = getActiveUserFromStorage();
     recordActivity({
       user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Atasan',
@@ -1130,6 +1306,7 @@ export async function rejectSubtask(
     .eq('id', subtaskId);
 
   if (!error) {
+    invalidateTaskCache();
     const activeUser = getActiveUserFromStorage();
     recordActivity({
       user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Atasan',
@@ -1157,6 +1334,8 @@ export async function submitSubtaskForApproval(
       rejection_note: null,
     })
     .eq('id', subtaskId);
+
+  if (!error) invalidateTaskCache();
   return !error;
 }
 
@@ -1182,6 +1361,7 @@ export async function addSubtaskAttachment(attachment: {
   }
 
   if (data) {
+    invalidateTaskCache(attachment.task_id);
     const activeUser = getActiveUserFromStorage();
     recordActivity({
       user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Staff',
@@ -1210,6 +1390,7 @@ export async function getSubtaskAttachments(subtaskId: string): Promise<SubtaskA
 // ── Delete subtask attachment ──
 export async function deleteSubtaskAttachment(id: string): Promise<boolean> {
   const { error } = await supabase.from('subtask_attachments').delete().eq('id', id);
+  if (!error) invalidateTaskCache();
   return !error;
 }
 
@@ -1236,6 +1417,7 @@ export async function addAttachment(attachment: {
   }
 
   if (data) {
+    invalidateTaskCache(attachment.task_id);
     const activeUser = getActiveUserFromStorage();
     const isSpj = attachment.attachment_type === 'receipt_nota';
     recordActivity({
@@ -1260,6 +1442,7 @@ export async function deleteTask(taskId: string): Promise<boolean> {
     await supabase.from('task_attachments').delete().eq('task_id', taskId);
     await supabase.from('task_delegation_history').delete().eq('task_id', taskId);
     const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (!error) invalidateTaskCache(taskId);
     return !error;
   } catch (err) {
     console.error('Error deleting task:', err);
@@ -1270,6 +1453,7 @@ export async function deleteTask(taskId: string): Promise<boolean> {
 export async function deleteSubtask(subtaskId: string): Promise<boolean> {
   try {
     const { error } = await supabase.from('subtasks').delete().eq('id', subtaskId);
+    if (!error) invalidateTaskCache();
     return !error;
   } catch (err) {
     console.error('Error deleting subtask:', err);
@@ -1280,6 +1464,7 @@ export async function deleteSubtask(subtaskId: string): Promise<boolean> {
 export async function updateSubtask(subtaskId: string, title: string): Promise<boolean> {
   try {
     const { error } = await supabase.from('subtasks').update({ title }).eq('id', subtaskId);
+    if (!error) invalidateTaskCache();
     return !error;
   } catch (err) {
     console.error('Error updating subtask:', err);
@@ -1290,6 +1475,7 @@ export async function updateSubtask(subtaskId: string, title: string): Promise<b
 export async function deleteAttachment(attachmentId: string): Promise<boolean> {
   try {
     const { error } = await supabase.from('task_attachments').delete().eq('id', attachmentId);
+    if (!error) invalidateTaskCache();
     return !error;
   } catch (err) {
     console.error('Error deleting attachment:', err);
@@ -1312,12 +1498,14 @@ export async function addComment(taskId: string, userId: string, comment: string
     .single();
 
   if (error) return null;
+  invalidateTaskCache(taskId);
   return data as TaskComment;
 }
 
 export async function deleteComment(commentId: string): Promise<boolean> {
   try {
     const { error } = await supabase.from('task_comments').delete().eq('id', commentId);
+    if (!error) invalidateTaskCache();
     return !error;
   } catch (err) {
     console.error('Error deleting comment:', err);

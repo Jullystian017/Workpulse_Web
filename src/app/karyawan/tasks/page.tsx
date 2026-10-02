@@ -707,6 +707,7 @@ function KaryawanTasksContent() {
       {/* Modals & Sheets */}
       <TaskDetailSheet
         taskId={selectedTask?.id || null}
+        initialTask={selectedTask}
         open={isDetailOpen}
         onOpenChange={handleCloseDetail}
         onTaskUpdated={() => loadAllData()}
