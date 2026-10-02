@@ -38,12 +38,20 @@ import {
   ChevronUpIcon,
   HistoryIcon,
   FileCheckIcon,
+  MoreHorizontalIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import {
   Sheet,
   SheetContent,
@@ -997,61 +1005,62 @@ export function TaskDetailSheet({
           </div>
         ) : (
           <div className="flex flex-col min-h-full">
-            {/* Top Navigation Bar (Clean & Minimalist) */}
-            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-5 py-3">
-              {/* Left: Clean Ticket Code */}
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2 py-0.5 rounded border border-red-200 dark:border-red-900">
+            {/* Top Navigation Bar (Clean, Minimalist & Spacious) */}
+            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-5 py-3 gap-3">
+              {/* Left: Clean Ticket Code & Divisi Pill */}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2 py-0.5 rounded border border-red-200 dark:border-red-900 shrink-0">
                   {task.ticket_code}
                 </span>
-                <span className="text-xs text-muted-foreground font-semibold">
+                <span className="text-xs text-muted-foreground font-semibold truncate max-w-[180px] sm:max-w-[260px]">
                   {task.channel?.name || "Divisi Operasional"}
                 </span>
               </div>
 
-              {/* Right: Clean Compact Action Buttons */}
-              <div className="flex items-center gap-1.5">
-                {!isEditing && !isStaff && task.status !== "done" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onOpenDelegate?.(task)}
-                    className="h-7 px-2 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg gap-1 cursor-pointer"
-                  >
-                    <CornerDownRightIcon className="size-3.5" />
-                    <span>Delegasikan</span>
-                  </Button>
-                )}
-
+              {/* Right: Quick Menu Dropdown & Close Button */}
+              <div className="flex items-center gap-1 shrink-0">
                 {!isEditing && !isStaff && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleStartEdit}
-                    className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg gap-1 cursor-pointer"
-                  >
-                    <PencilIcon className="size-3.5" />
-                    <span>Edit</span>
-                  </Button>
-                )}
-
-                {!isEditing && !isStaff && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsDeleteTaskOpen(true)}
-                    className="size-7 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
-                    title="Hapus Penugasan"
-                  >
-                    <Trash2Icon className="size-3.5" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer outline-none"
+                      title="Opsi Penugasan"
+                    >
+                      <MoreHorizontalIcon className="size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 p-1">
+                      {task.status !== "done" && (
+                        <DropdownMenuItem
+                          onClick={() => onOpenDelegate?.(task)}
+                          className="flex items-center gap-2 text-xs font-semibold text-blue-600 focus:text-blue-700 cursor-pointer"
+                        >
+                          <CornerDownRightIcon className="size-3.5" />
+                          <span>Delegasikan Tugas</span>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        onClick={handleStartEdit}
+                        className="flex items-center gap-2 text-xs font-medium cursor-pointer"
+                      >
+                        <PencilIcon className="size-3.5" />
+                        <span>Edit Penugasan</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setIsDeleteTaskOpen(true)}
+                        className="flex items-center gap-2 text-xs font-medium text-red-600 focus:text-red-700 cursor-pointer"
+                      >
+                        <Trash2Icon className="size-3.5" />
+                        <span>Hapus Penugasan</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
 
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onOpenChange(false)}
-                  className="size-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+                  className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer ml-0.5"
                   title="Tutup Panel"
                 >
                   <XIcon className="size-4" />
@@ -1211,11 +1220,46 @@ export function TaskDetailSheet({
             ) : (
               /* VIEW MODE (Clean, Linear / Notion Style with Subtasks & Comments Tabs) */
               <div className="flex flex-col gap-4 p-5">
-                {/* 1. Task Title */}
-                <div>
+                {/* 1. Task Title & Quick Action Toolbar */}
+                <div className="space-y-3">
                   <h2 className="text-base sm:text-lg font-bold text-foreground leading-snug tracking-tight">
                     {task.title}
                   </h2>
+
+                  {/* Actions Toolbar - Spacious, Modern & Clean (Moved from the crowded top bar) */}
+                  {!isStaff && task.status !== "done" && (
+                    <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onOpenDelegate?.(task)}
+                        className="h-7.5 px-3 text-xs font-semibold text-blue-600 border-blue-200 bg-blue-50/40 hover:bg-blue-100/60 dark:border-blue-900/60 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 rounded-lg gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <CornerDownRightIcon className="size-3.5" />
+                        <span>Delegasikan</span>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleStartEdit}
+                        className="h-7.5 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <PencilIcon className="size-3.5" />
+                        <span>Edit</span>
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsDeleteTaskOpen(true)}
+                        className="h-7.5 px-2.5 text-xs font-semibold text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg gap-1.5 cursor-pointer ml-auto"
+                      >
+                        <Trash2Icon className="size-3.5" />
+                        <span>Hapus</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Clean Key-Value Properties Table */}
