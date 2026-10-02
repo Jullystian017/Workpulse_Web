@@ -163,8 +163,8 @@ export function TaskDetailSheet({
   const [isSubtaskUploadOpen, setIsSubtaskUploadOpen] = React.useState(false)
   const [isSubtaskUploading, setIsSubtaskUploading] = React.useState(false)
 
-  // Tab Navigation State: subtasks | comments (human only) | attachments (all files) | logs (audit trail)
-  const [activeDetailTab, setActiveDetailTab] = React.useState<"subtasks" | "comments" | "attachments" | "logs">("subtasks")
+  // Tab Navigation State: subtasks | comments | attachments
+  const [activeDetailTab, setActiveDetailTab] = React.useState<"subtasks" | "comments" | "attachments">("subtasks")
 
   // Comment state
   const [commentText, setCommentText] = React.useState("")
@@ -384,20 +384,16 @@ export function TaskDetailSheet({
       ? 85
       : 20
 
-  // ── Separation: Human comments vs System audit logs ──
+  // ── Human comments across task and all subtasks (excludes system audit logs) ──
   const humanComments = React.useMemo(() => {
-    return (task?.comments || []).filter((c) => !c.is_system_log && !c.subtask_id)
-  }, [task?.comments])
-
-  const systemLogs = React.useMemo(() => {
-    return (task?.comments || []).filter((c) => Boolean(c.is_system_log))
+    return (task?.comments || []).filter((c) => !c.is_system_log)
   }, [task?.comments])
 
   const totalSubtaskAttachmentsCount = React.useMemo(() => {
     return (task?.subtasks || []).reduce((acc, st) => acc + (st.attachments || []).length, 0)
   }, [task?.subtasks])
 
-  const totalAttachmentsCount = (task?.attachments || []).length + totalSubtaskAttachmentsCount
+  const totalAttachmentsCount = totalSubtaskAttachmentsCount
 
   // Subtask Toggle Handler
   const handleToggleSubtask = async (st: Subtask) => {
@@ -1539,9 +1535,9 @@ export function TaskDetailSheet({
                   </div>
                 )}
 
-                {/* 5. TAB BAR: Tahapan | Catatan Atasan | Semua Lampiran | Riwayat Log */}
+                {/* 5. TAB BAR: Tahapan | Catatan | Lampiran */}
                 <div className="pt-2">
-                  <div className="flex items-center border-b border-border/80 gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
+                  <div className="flex items-center border-b border-border/80 gap-6">
                     {/* Tahapan Subtask Tab */}
                     <button
                       type="button"
@@ -1564,7 +1560,7 @@ export function TaskDetailSheet({
                       </span>
                     </button>
 
-                    {/* Catatan Atasan (Human Comments Only) Tab */}
+                    {/* Catatan Tab (All human notes across task & subtasks) */}
                     <button
                       type="button"
                       onClick={() => setActiveDetailTab("comments")}
@@ -1574,7 +1570,7 @@ export function TaskDetailSheet({
                           : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
                       }`}
                     >
-                      <span>Catatan Atasan</span>
+                      <span>Catatan</span>
                       <span
                         className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
                           activeDetailTab === "comments"
@@ -1605,28 +1601,6 @@ export function TaskDetailSheet({
                         }`}
                       >
                         {totalAttachmentsCount}
-                      </span>
-                    </button>
-
-                    {/* Riwayat Log (System Activity Logs) Tab */}
-                    <button
-                      type="button"
-                      onClick={() => setActiveDetailTab("logs")}
-                      className={`flex items-center gap-1.5 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px shrink-0 ${
-                        activeDetailTab === "logs"
-                          ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
-                          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
-                      }`}
-                    >
-                      <span>Riwayat Log</span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
-                          activeDetailTab === "logs"
-                            ? "bg-red-50 text-red-600 dark:bg-red-950/80 dark:text-red-300 border border-red-100 dark:border-red-900/50"
-                            : "bg-muted text-muted-foreground border border-border/40"
-                        }`}
-                      >
-                        {systemLogs.length}
                       </span>
                     </button>
                   </div>
@@ -2195,7 +2169,7 @@ export function TaskDetailSheet({
                   )}
 
                   {/* ─────────────────────────────────────────────────────────────
-                      TAB 2: CATATAN ATASAN & DISKUSI (Human Comments Only)
+                      TAB 2: CATATAN (Human Comments & Subtask Notes)
                       ───────────────────────────────────────────────────────────── */}
                   {activeDetailTab === "comments" && (
                     <div className="space-y-3 pt-3">
@@ -2203,74 +2177,93 @@ export function TaskDetailSheet({
                         <div>
                           <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                             <MessageSquareIcon className="size-3.5 text-red-600" />
-                            Catatan & Arahan Atasan
+                            Catatan
                           </h4>
                           <p className="text-[10px] text-muted-foreground">
-                            Ruang khusus instruksi atasan, catatan pekerjaan, dan diskusi tim pelaksana.
+                            Ruang catatan, instruksi, dan diskusi tim dari seluruh tahapan pekerjaan.
                           </p>
                         </div>
                       </div>
 
                       <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                        {humanComments.map((cmt) => (
-                          <div
-                            key={cmt.id}
-                            className="group p-3 rounded-xl bg-card border border-border/70 text-xs space-y-1.5 shadow-xs"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={
-                                    cmt.user?.avatar_url ||
-                                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                                  }
-                                  alt={cmt.user?.nama || "User"}
-                                  className="size-5 rounded-full object-cover"
-                                />
-                                <span className="font-bold text-[11px] text-foreground">
-                                  {cmt.user?.nama || "User"}
-                                </span>
-                                {cmt.user?.role && (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-muted text-muted-foreground uppercase border border-border/40">
-                                    {ROLE_LABELS[cmt.user.role]?.label || cmt.user.role}
+                        {humanComments.map((cmt) => {
+                          const targetSt = cmt.subtask_id
+                            ? (task.subtasks || []).find((s) => s.id === cmt.subtask_id)
+                            : null
+                          const stIdx = cmt.subtask_id
+                            ? (task.subtasks || []).findIndex((s) => s.id === cmt.subtask_id)
+                            : -1
+
+                          return (
+                            <div
+                              key={cmt.id}
+                              className="group p-3 rounded-xl bg-card border border-border/70 text-xs space-y-1.5 shadow-xs"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <img
+                                    src={
+                                      cmt.user?.avatar_url ||
+                                      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                                    }
+                                    alt={cmt.user?.nama || "User"}
+                                    className="size-5 rounded-full object-cover"
+                                  />
+                                  <span className="font-bold text-[11px] text-foreground">
+                                    {cmt.user?.nama || "User"}
                                   </span>
-                                )}
+                                  {cmt.user?.role && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-muted text-muted-foreground uppercase border border-border/40">
+                                      {ROLE_LABELS[cmt.user.role]?.label || cmt.user.role}
+                                    </span>
+                                  )}
+                                  {targetSt ? (
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                      <TagIcon className="size-2.5" />
+                                      Tahap {stIdx >= 0 ? stIdx + 1 : ""}: {targetSt.title}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/40">
+                                      Umum
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {cmt.created_at
+                                      ? new Date(cmt.created_at).toLocaleString("id-ID", {
+                                          day: "numeric",
+                                          month: "short",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : ""}
+                                  </span>
+                                  {(!isStaff || cmt.user_id === currentUser?.id) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteComment(cmt.id)}
+                                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-0.5 transition-opacity cursor-pointer"
+                                      title="Hapus catatan"
+                                    >
+                                      <Trash2Icon className="size-3" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-muted-foreground">
-                                  {cmt.created_at
-                                    ? new Date(cmt.created_at).toLocaleString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })
-                                    : ""}
-                                </span>
-                                {(!isStaff || cmt.user_id === currentUser?.id) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteComment(cmt.id)}
-                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-0.5 transition-opacity cursor-pointer"
-                                    title="Hapus catatan"
-                                  >
-                                    <Trash2Icon className="size-3" />
-                                  </button>
-                                )}
-                              </div>
+                              <p className="text-foreground text-[12px] leading-relaxed whitespace-pre-line pl-7">
+                                {cmt.comment}
+                              </p>
                             </div>
-                            <p className="text-foreground text-[12px] leading-relaxed whitespace-pre-line pl-7">
-                              {cmt.comment}
-                            </p>
-                          </div>
-                        ))}
+                          )
+                        })}
 
                         {humanComments.length === 0 && (
                           <div className="text-center py-8 text-muted-foreground space-y-1">
                             <MessageSquareIcon className="size-8 mx-auto text-muted-foreground/30" />
-                            <p className="text-xs font-semibold">Belum Ada Catatan Atasan</p>
+                            <p className="text-xs font-semibold">Belum Ada Catatan</p>
                             <p className="text-[11px] text-muted-foreground">
-                              Atasan atau staf dapat memberikan instruksi dan feedback melalui kolom di bawah.
+                              Catatan atau instruksi pada tugas maupun di tiap tahapan akan tampil di sini.
                             </p>
                           </div>
                         )}
@@ -2281,7 +2274,7 @@ export function TaskDetailSheet({
                         <Input
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
-                          placeholder="Tulis catatan arahan atasan atau pesan..."
+                          placeholder="Tulis catatan atau pesan..."
                           className="h-8.5 rounded-lg text-xs bg-muted/20"
                         />
                         <Button
@@ -2304,42 +2297,22 @@ export function TaskDetailSheet({
                   )}
 
                   {/* ─────────────────────────────────────────────────────────────
-                      TAB 3: SEMUA LAMPIRAN (Subtask Evidence + General SPJ)
+                      TAB 3: LAMPIRAN (Bukti Pengerjaan Per-Tahapan Subtask)
                       ───────────────────────────────────────────────────────────── */}
                   {activeDetailTab === "attachments" && (
                     <div className="space-y-4 pt-3">
-                      <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                        <div>
-                          <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <PaperclipIcon className="size-3.5 text-blue-600" />
-                            Seluruh Lampiran & Bukti
-                          </h4>
-                          <p className="text-[10px] text-muted-foreground">
-                            Berkas bukti pengerjaan per tahapan serta berkas administrasi / nota SPJ.
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedFile(null)
-                            setUploadFileName("")
-                            setUploadAmount("")
-                            setIsUploadOpen(true)
-                          }}
-                          className="h-7 px-2.5 text-xs font-semibold text-blue-600 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg gap-1.5 cursor-pointer"
-                        >
-                          <UploadIcon className="size-3" />
-                          <span>Unggah SPJ / Berkas Umum</span>
-                        </Button>
+                      <div className="border-b border-border/50 pb-2">
+                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <PaperclipIcon className="size-3.5 text-blue-600" />
+                          Lampiran Bukti Pengerjaan
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground">
+                          Seluruh berkas foto atau dokumen bukti pengerjaan dari setiap tahapan penugasan.
+                        </p>
                       </div>
 
-                      {/* 1. Lampiran Berdasarkan Tahapan Subtask */}
+                      {/* Lampiran Berdasarkan Tahapan Subtask */}
                       <div className="space-y-2.5">
-                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          📁 Bukti Pengerjaan Berdasarkan Tahapan
-                        </span>
-
                         {subtasks.filter((st) => (st.attachments || []).length > 0).length > 0 ? (
                           <div className="space-y-2.5">
                             {subtasks
@@ -2392,131 +2365,11 @@ export function TaskDetailSheet({
                               ))}
                           </div>
                         ) : (
-                          <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-3 rounded-lg border border-dashed text-center">
-                            Belum ada bukti yang dilampirkan pada tahapan subtask.
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 2. Lampiran Umum & Nota Biaya SPJ */}
-                      <div className="space-y-2 pt-2 border-t border-border/40">
-                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          🧾 Lampiran Umum & Nota SPJ
-                        </span>
-
-                        <div className="space-y-1.5 max-h-56 overflow-y-auto">
-                          {(task.attachments || []).map((att) => (
-                            <div
-                              key={att.id}
-                              className="p-2.5 rounded-lg border border-border bg-card flex items-center justify-between text-xs group hover:border-blue-300 transition-colors"
-                            >
-                              <a
-                                href={att.file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
-                                title="Buka / lihat file"
-                              >
-                                {att.attachment_type === "receipt_nota" ? (
-                                  <ReceiptIcon className="size-4 text-amber-600 shrink-0" />
-                                ) : att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-                                  <ImageIcon className="size-4 text-emerald-600 shrink-0" />
-                                ) : (
-                                  <FileTextIcon className="size-4 text-blue-600 shrink-0" />
-                                )}
-                                <span className="truncate font-medium text-foreground">
-                                  {att.file_name}
-                                </span>
-                                <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </a>
-
-                              <div className="flex items-center gap-2 shrink-0 pl-2">
-                                {att.amount && (
-                                  <span className="text-[11px] font-bold text-emerald-600">
-                                    Rp {att.amount.toLocaleString("id-ID")}
-                                  </span>
-                                )}
-                                {!isStaff && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteAttachment(att.id)}
-                                    className="text-muted-foreground hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                    title="Hapus lampiran"
-                                  >
-                                    <Trash2Icon className="size-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-
-                          {(task.attachments || []).length === 0 && (
-                            <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-3 rounded-lg border border-dashed text-center">
-                              Belum ada nota SPJ atau lampiran umum.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ─────────────────────────────────────────────────────────────
-                      TAB 4: RIWAYAT LOG (System Activity Logs & Audit Trail)
-                      ───────────────────────────────────────────────────────────── */}
-                  {activeDetailTab === "logs" && (
-                    <div className="space-y-3 pt-3">
-                      <div className="border-b border-border/50 pb-2">
-                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <HistoryIcon className="size-3.5 text-purple-600" />
-                          Riwayat Aktivitas & Audit Trail
-                        </h4>
-                        <p className="text-[10px] text-muted-foreground">
-                          Catatan otomatis sistem: perubahan status, delegasi tugas, dan riwayat approval.
-                        </p>
-                      </div>
-
-                      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                        {systemLogs.map((log, lIdx) => (
-                          <div key={log.id} className="relative flex gap-3 text-xs">
-                            {/* Vertical line connecting log entries */}
-                            {lIdx !== systemLogs.length - 1 && (
-                              <div className="absolute left-[11px] top-6 bottom-0 w-[1.5px] bg-border" />
-                            )}
-
-                            {/* Dot Icon */}
-                            <div className="size-6 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
-                              <HistoryIcon className="size-3" />
-                            </div>
-
-                            <div className="flex-1 pb-3 space-y-0.5">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-[11px] text-foreground">
-                                  {log.user?.nama || "Sistem"}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {log.created_at
-                                    ? new Date(log.created_at).toLocaleString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })
-                                    : ""}
-                                </span>
-                              </div>
-                              <p className="text-muted-foreground text-[11px] leading-relaxed">
-                                {log.comment}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-
-                        {systemLogs.length === 0 && (
-                          <div className="text-center py-8 text-muted-foreground space-y-1">
-                            <HistoryIcon className="size-8 mx-auto text-muted-foreground/30" />
-                            <p className="text-xs font-semibold">Belum Ada Riwayat Log</p>
+                          <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-6 rounded-lg border border-dashed text-center space-y-1">
+                            <PaperclipIcon className="size-6 mx-auto text-muted-foreground/40" />
+                            <p className="font-semibold text-foreground">Belum Ada Bukti Lampiran</p>
                             <p className="text-[11px] text-muted-foreground">
-                              Aktivitas perubahan status atau delegasi otomatis akan tercatat di sini.
+                              Bukti pengerjaan dilampirkan langsung pada masing-masing tahapan di tab Tahapan.
                             </p>
                           </div>
                         )}
