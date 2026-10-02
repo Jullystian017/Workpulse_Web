@@ -33,6 +33,11 @@ import {
   ShieldCheckIcon,
   XCircleIcon,
   Loader2Icon,
+  MessageSquareIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  HistoryIcon,
+  FileCheckIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -134,7 +139,15 @@ export function TaskDetailSheet({
 
   // Subtask creation state
   const [newSubtaskTitle, setNewSubtaskTitle] = React.useState("")
+  const [newSubtaskDesc, setNewSubtaskDesc] = React.useState("")
+  const [isAddSubtaskExpanded, setIsAddSubtaskExpanded] = React.useState(false)
   const [isAddingSubtask, setIsAddingSubtask] = React.useState(false)
+
+  // Subtask comments and approval submission state
+  const [subtaskCommentInputs, setSubtaskCommentInputs] = React.useState<Record<string, string>>({})
+  const [subtaskCommentsExpanded, setSubtaskCommentsExpanded] = React.useState<Record<string, boolean>>({})
+  const [isSubmittingSubtaskComment, setIsSubmittingSubtaskComment] = React.useState<Record<string, boolean>>({})
+  const [isSubmittingSubtaskApproval, setIsSubmittingSubtaskApproval] = React.useState<Record<string, boolean>>({})
 
   // Subtask approval/rejection dialog state
   const [approvalTargetSubtask, setApprovalTargetSubtask] = React.useState<Subtask | null>(null)
@@ -150,8 +163,8 @@ export function TaskDetailSheet({
   const [isSubtaskUploadOpen, setIsSubtaskUploadOpen] = React.useState(false)
   const [isSubtaskUploading, setIsSubtaskUploading] = React.useState(false)
 
-  // Tab Navigation State
-  const [activeDetailTab, setActiveDetailTab] = React.useState<"subtasks" | "comments" | "attachments">("subtasks")
+  // Tab Navigation State: subtasks | comments (human only) | attachments (all files) | logs (audit trail)
+  const [activeDetailTab, setActiveDetailTab] = React.useState<"subtasks" | "comments" | "attachments" | "logs">("subtasks")
 
   // Comment state
   const [commentText, setCommentText] = React.useState("")
@@ -371,6 +384,21 @@ export function TaskDetailSheet({
       ? 85
       : 20
 
+  // ── Separation: Human comments vs System audit logs ──
+  const humanComments = React.useMemo(() => {
+    return (task?.comments || []).filter((c) => !c.is_system_log && !c.subtask_id)
+  }, [task?.comments])
+
+  const systemLogs = React.useMemo(() => {
+    return (task?.comments || []).filter((c) => Boolean(c.is_system_log))
+  }, [task?.comments])
+
+  const totalSubtaskAttachmentsCount = React.useMemo(() => {
+    return (task?.subtasks || []).reduce((acc, st) => acc + (st.attachments || []).length, 0)
+  }, [task?.subtasks])
+
+  const totalAttachmentsCount = (task?.attachments || []).length + totalSubtaskAttachmentsCount
+
   // Subtask Toggle Handler
   const handleToggleSubtask = async (st: Subtask) => {
     if (!task) return
@@ -390,28 +418,37 @@ export function TaskDetailSheet({
     }
   }
 
-  // Add Subtask Handler
+  // Add Subtask Handler (With Title & Optional Description)
   const handleAddSubtask = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!task || !newSubtaskTitle.trim()) return
     setIsAddingSubtask(true)
     try {
-      const created = await addSubtask(task.id, newSubtaskTitle.trim())
+      const created = await addSubtask(
+        task.id,
+        newSubtaskTitle.trim(),
+        newSubtaskDesc.trim() || undefined
+      )
       if (created) {
         setTask((prev) => {
           if (!prev) return null
           return {
             ...prev,
-            subtasks: [...(prev.subtasks || []), created],
+            subtasks: [
+              ...(prev.subtasks || []),
+              { ...created, attachments: [], comments: [] },
+            ],
           }
         })
         setNewSubtaskTitle("")
-        toast.success("Subtask ditambahkan")
+        setNewSubtaskDesc("")
+        setIsAddSubtaskExpanded(false)
+        toast.success("Tahapan baru berhasil ditambahkan!")
         onTaskUpdated?.()
       }
     } catch (err) {
       console.error(err)
-      toast.error("Gagal menambahkan subtask")
+      toast.error("Gagal menambahkan tahapan.")
     } finally {
       setIsAddingSubtask(false)
     }
@@ -430,9 +467,78 @@ export function TaskDetailSheet({
           subtasks: (prev.subtasks || []).filter((item) => item.id !== subtaskId),
         }
       })
-      toast.info("Subtask dihapus")
+      toast.info("Tahapan berhasil dihapus.")
       onTaskUpdated?.()
     }
+  }
+
+  // ── Staff Submits Subtask Step for Approval ──
+  const handleSubmitSubtaskApproval = async (subtaskId: string) => {
+    if (!task || !currentUser) return
+    setIsSubmittingSubtaskApproval((prev) => ({ ...prev, [subtaskId]: true }))
+    try {
+      const ok = await submitSubtaskForApproval(subtaskId, currentUser.id)
+      if (ok) {
+        toast.success("Tahapan berhasil diajukan untuk persetujuan atasan!")
+        setTask((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            subtasks: (prev.subtasks || []).map((s) =>
+              s.id === subtaskId
+                ? { ...s, approval_status: "pending", rejection_note: null }
+                : s
+            ),
+          }
+        })
+        onTaskUpdated?.()
+      } else {
+        toast.error("Gagal mengajukan tahapan.")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Terjadi kesalahan saat mengajukan tahapan.")
+    } finally {
+      setIsSubmittingSubtaskApproval((prev) => ({ ...prev, [subtaskId]: false }))
+    }
+  }
+
+  // ── Send Subtask-Specific Comment/Note ──
+  const handleSendSubtaskComment = async (subtaskId: string) => {
+    const text = (subtaskCommentInputs[subtaskId] || "").trim()
+    if (!task || !currentUser || !text) return
+    setIsSubmittingSubtaskComment((prev) => ({ ...prev, [subtaskId]: true }))
+    try {
+      const c = await addComment(task.id, currentUser.id, text, subtaskId)
+      if (c) {
+        const fullComment = { ...c, user: currentUser }
+        setTask((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            comments: [...(prev.comments || []), fullComment],
+            subtasks: (prev.subtasks || []).map((st) =>
+              st.id === subtaskId
+                ? { ...st, comments: [...(st.comments || []), fullComment] }
+                : st
+            ),
+          }
+        })
+        setSubtaskCommentInputs((prev) => ({ ...prev, [subtaskId]: "" }))
+        toast.success("Catatan tahapan terkirim!")
+      } else {
+        toast.error("Gagal mengirim catatan tahapan.")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Terjadi kendala saat mengirim catatan.")
+    } finally {
+      setIsSubmittingSubtaskComment((prev) => ({ ...prev, [subtaskId]: false }))
+    }
+  }
+
+  const toggleSubtaskComments = (subtaskId: string) => {
+    setSubtaskCommentsExpanded((prev) => ({ ...prev, [subtaskId]: !prev[subtaskId] }))
   }
 
   // ── Approve Subtask Handler (atasan) ──
@@ -442,10 +548,28 @@ export function TaskDetailSheet({
     try {
       const ok = await approveSubtask(approvalTargetSubtask.id, currentUser.id)
       if (ok) {
-        toast.success(`Tahap "${approvalTargetSubtask.title}" disetujui!`)
+        toast.success(`Tahap "${approvalTargetSubtask.title}" disetujui! Tahap selanjutnya terbuka.`)
         setIsApprovalDialogOpen(false)
         setApprovalTargetSubtask(null)
-        loadTaskData()
+        setTask((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            subtasks: (prev.subtasks || []).map((st) =>
+              st.id === approvalTargetSubtask.id
+                ? {
+                    ...st,
+                    approval_status: "approved",
+                    is_completed: true,
+                    approved_by: currentUser.id,
+                    approver: currentUser,
+                    approved_at: new Date().toISOString(),
+                    rejection_note: null,
+                  }
+                : st
+            ),
+          }
+        })
         onTaskUpdated?.()
       } else {
         toast.error("Gagal menyetujui tahap ini.")
@@ -471,7 +595,22 @@ export function TaskDetailSheet({
         setIsRejectionDialogOpen(false)
         setApprovalTargetSubtask(null)
         setRejectionNote("")
-        loadTaskData()
+        setTask((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            subtasks: (prev.subtasks || []).map((st) =>
+              st.id === approvalTargetSubtask.id
+                ? {
+                    ...st,
+                    approval_status: "rejected",
+                    is_completed: false,
+                    rejection_note: rejectionNote.trim(),
+                  }
+                : st
+            ),
+          }
+        })
         onTaskUpdated?.()
       } else {
         toast.error("Gagal menolak tahap ini.")
@@ -1400,20 +1539,20 @@ export function TaskDetailSheet({
                   </div>
                 )}
 
-                {/* 5. TAB BAR: Subtasks [ count ] | Comments [ count ] | Lampiran [ count ] */}
+                {/* 5. TAB BAR: Tahapan | Catatan Atasan | Semua Lampiran | Riwayat Log */}
                 <div className="pt-2">
-                  <div className="flex items-center border-b border-border/80 gap-6">
-                    {/* Subtasks Tab */}
+                  <div className="flex items-center border-b border-border/80 gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
+                    {/* Tahapan Subtask Tab */}
                     <button
                       type="button"
                       onClick={() => setActiveDetailTab("subtasks")}
-                      className={`flex items-center gap-2 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px ${
+                      className={`flex items-center gap-1.5 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px shrink-0 ${
                         activeDetailTab === "subtasks"
                           ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
                           : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
                       }`}
                     >
-                      <span>Subtasks</span>
+                      <span>Tahapan</span>
                       <span
                         className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
                           activeDetailTab === "subtasks"
@@ -1421,21 +1560,21 @@ export function TaskDetailSheet({
                             : "bg-muted text-muted-foreground border border-border/40"
                         }`}
                       >
-                        {subtasks.length}
+                        {completedSubtasks}/{subtasks.length}
                       </span>
                     </button>
 
-                    {/* Comments Tab */}
+                    {/* Catatan Atasan (Human Comments Only) Tab */}
                     <button
                       type="button"
                       onClick={() => setActiveDetailTab("comments")}
-                      className={`flex items-center gap-2 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px ${
+                      className={`flex items-center gap-1.5 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px shrink-0 ${
                         activeDetailTab === "comments"
                           ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
                           : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
                       }`}
                     >
-                      <span>Comments</span>
+                      <span>Catatan Atasan</span>
                       <span
                         className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
                           activeDetailTab === "comments"
@@ -1443,7 +1582,7 @@ export function TaskDetailSheet({
                             : "bg-muted text-muted-foreground border border-border/40"
                         }`}
                       >
-                        {(task.comments || []).length}
+                        {humanComments.length}
                       </span>
                     </button>
 
@@ -1451,7 +1590,7 @@ export function TaskDetailSheet({
                     <button
                       type="button"
                       onClick={() => setActiveDetailTab("attachments")}
-                      className={`flex items-center gap-2 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px ${
+                      className={`flex items-center gap-1.5 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px shrink-0 ${
                         activeDetailTab === "attachments"
                           ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
                           : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
@@ -1465,397 +1604,921 @@ export function TaskDetailSheet({
                             : "bg-muted text-muted-foreground border border-border/40"
                         }`}
                       >
-                        {(task.attachments || []).length}
+                        {totalAttachmentsCount}
+                      </span>
+                    </button>
+
+                    {/* Riwayat Log (System Activity Logs) Tab */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveDetailTab("logs")}
+                      className={`flex items-center gap-1.5 pb-2.5 text-xs font-semibold transition-all relative cursor-pointer -mb-px shrink-0 ${
+                        activeDetailTab === "logs"
+                          ? "text-red-600 dark:text-red-400 border-b-2 border-red-600 dark:border-red-400"
+                          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
+                      }`}
+                    >
+                      <span>Riwayat Log</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
+                          activeDetailTab === "logs"
+                            ? "bg-red-50 text-red-600 dark:bg-red-950/80 dark:text-red-300 border border-red-100 dark:border-red-900/50"
+                            : "bg-muted text-muted-foreground border border-border/40"
+                        }`}
+                      >
+                        {systemLogs.length}
                       </span>
                     </button>
                   </div>
 
-                  {/* TAB CONTENT: SUBTASKS — Sequential Approval Workflow */}
+                  {/* ─────────────────────────────────────────────────────────────
+                      TAB 1: TAHAPAN (SUBTASK) — Strict Sequential Approval Workflow
+                      ───────────────────────────────────────────────────────────── */}
                   {activeDetailTab === "subtasks" && (
-                    <div className="space-y-3 pt-3">
-                      {/* Progress header */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-muted-foreground">
-                          Progres: {completedSubtasks}/{subtasks.length} Disetujui ({progressPercent}%)
-                        </span>
-                        {subtasks.some(s => s.approval_status === 'rejected') && (
-                          <span className="flex items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                    <div className="space-y-3.5 pt-3">
+                      {/* Workflow summary & guide */}
+                      <div className="p-3 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between gap-2">
+                        <div className="text-xs">
+                          <span className="font-bold text-foreground block">
+                            Alur Tahapan Terstruktur (Sequential)
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            Progres: {completedSubtasks} dari {subtasks.length} tahap disetujui ({progressPercent}%). Setiap tahap harus disetujui atasan sebelum membuka tahap selanjutnya.
+                          </span>
+                        </div>
+                        {subtasks.some((s) => s.approval_status === "rejected") && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-md shrink-0">
                             <XCircleIcon className="size-3" />
-                            Ada tahap yang dikembalikan
+                            Perlu Perbaikan
                           </span>
                         )}
                       </div>
 
-                      {/* Hidden file input for subtask attachment */}
+                      {/* Hidden file input for subtask evidence attachment */}
                       <input
                         ref={subtaskFileInputRef}
                         type="file"
                         className="hidden"
                         onChange={handleSubtaskFileChange}
-                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip"
                       />
 
-                      {/* Stepper Items */}
-                      <div className="space-y-2">
+                      {/* Stepper Cards */}
+                      <div className="space-y-3">
                         {subtasks.map((st, idx) => {
-                          // A subtask is "unlocked" if:
-                          // - It's the first step, OR
-                          // - All previous steps are approved
-                          const allPrevApproved = subtasks
-                            .slice(0, idx)
-                            .every(s => s.approval_status === 'approved')
+                          // Strict sequential rule:
+                          // Step at index idx is unlocked ONLY IF idx === 0 OR all steps prior to idx are approved
+                          const prevSteps = subtasks.slice(0, idx)
+                          const allPrevApproved = prevSteps.every((s) => s.approval_status === "approved")
                           const isUnlocked = idx === 0 || allPrevApproved
-                          const isApproved = st.approval_status === 'approved'
-                          const isRejected = st.approval_status === 'rejected'
-                          const isPending = !isApproved && !isRejected
+                          const isApproved = st.approval_status === "approved"
+                          const isRejected = st.approval_status === "rejected"
+                          const isPending = st.approval_status === "pending"
+                          const prevStep = idx > 0 ? subtasks[idx - 1] : null
+                          const isPIC = currentUser?.id === task.assigned_to
+                          const canActAsPIC = isPIC || isStaff || currentUser?.role === "admin"
 
+                          // 1. LOCKED STAGE (Tahap Sebelumnya Belum Disetujui)
+                          if (!isUnlocked) {
+                            return (
+                              <div
+                                key={st.id}
+                                className="rounded-xl border border-border/50 bg-muted/15 p-3.5 space-y-2 opacity-75 select-none transition-all"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="flex items-center justify-center size-6.5 rounded-full bg-muted border border-border/80 text-muted-foreground text-[11px] font-bold shrink-0">
+                                      <LockIcon className="size-3 text-muted-foreground/70" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                          Tahap {idx + 1}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
+                                          <LockIcon className="size-2.5" /> Terkunci
+                                        </span>
+                                      </div>
+                                      <h4 className="text-xs font-semibold text-muted-foreground">
+                                        {st.title}
+                                      </h4>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-[11px] text-muted-foreground bg-muted/40 p-2 rounded-lg border border-border/40 flex items-center gap-2">
+                                  <AlertCircleIcon className="size-3.5 text-muted-foreground/80 shrink-0" />
+                                  <span>
+                                    Tahap ini terkunci. Tunggu persetujuan resmi atasan pada{" "}
+                                    <strong>Tahap {idx} ({prevStep?.title})</strong> sebelum dapat dikerjakan.
+                                  </span>
+                                </div>
+
+                                {st.description && (
+                                  <div className="text-[11px] text-muted-foreground/80 pl-9 italic line-clamp-2">
+                                    Instruksi: {st.description}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          }
+
+                          // 2. UNLOCKED STAGE (Sedang Dikerjakan / Menunggu Review / Disetujui / Perlu Revisi)
                           return (
                             <div
                               key={st.id}
-                              className={`rounded-xl border transition-all ${
+                              className={`rounded-xl border p-3.5 space-y-3 transition-all ${
                                 isApproved
-                                  ? "bg-emerald-50/60 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/50"
+                                  ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-800/60"
                                   : isRejected
-                                  ? "bg-red-50/60 border-red-200 dark:bg-red-950/30 dark:border-red-800/50"
-                                  : !isUnlocked
-                                  ? "bg-muted/20 border-border/40 opacity-60"
-                                  : "bg-card border-border"
+                                  ? "bg-red-50/50 border-red-200 dark:bg-red-950/25 dark:border-red-800/60 shadow-xs"
+                                  : isPending
+                                  ? "bg-amber-50/40 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/60 shadow-xs"
+                                  : "bg-card border-border shadow-xs hover:border-blue-300 dark:hover:border-blue-900"
                               }`}
                             >
-                              {/* Step Header */}
-                              <div className="flex items-center gap-2.5 px-3 py-2.5">
-                                {/* Step number / status icon */}
-                                <div className={`flex items-center justify-center size-6 rounded-full shrink-0 text-[10px] font-bold border-2 ${
-                                  isApproved
-                                    ? "bg-emerald-500 border-emerald-500 text-white"
-                                    : isRejected
-                                    ? "bg-red-500 border-red-500 text-white"
-                                    : !isUnlocked
-                                    ? "bg-muted border-border/60 text-muted-foreground"
-                                    : "bg-background border-red-400 text-red-600 dark:border-red-600 dark:text-red-400"
-                                }`}>
-                                  {isApproved ? (
-                                    <ShieldCheckIcon className="size-3.5" />
-                                  ) : isRejected ? (
-                                    <XCircleIcon className="size-3.5" />
-                                  ) : !isUnlocked ? (
-                                    <LockIcon className="size-3" />
-                                  ) : (
-                                    <span>{idx + 1}</span>
-                                  )}
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-                                  <p className={`text-xs font-semibold truncate ${
-                                    isApproved ? "text-emerald-700 dark:text-emerald-400 line-through"
-                                    : isRejected ? "text-red-700 dark:text-red-400"
-                                    : !isUnlocked ? "text-muted-foreground"
-                                    : "text-foreground"
-                                  }`}>
-                                    {st.title}
-                                  </p>
-                                  {isApproved && st.approved_at && (
-                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5">
-                                      ✓ Disetujui {new Date(st.approved_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                                    </p>
-                                  )}
-                                  {isRejected && st.rejection_note && (
-                                    <p className="text-[10px] text-red-600 dark:text-red-400 mt-0.5 italic">
-                                      ↩ {st.rejection_note}
-                                    </p>
-                                  )}
-                                  {!isUnlocked && (
-                                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                                      Selesaikan tahap sebelumnya terlebih dahulu
-                                    </p>
-                                  )}
-                                </div>
-
-                                {/* Approval status badge */}
-                                {isApproved && (
-                                  <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                                    Disetujui
-                                  </span>
-                                )}
-                                {isRejected && (
-                                  <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 border border-red-200 dark:border-red-800">
-                                    Ditolak
-                                  </span>
-                                )}
-                                {isPending && isUnlocked && (
-                                  <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                                    Menunggu
-                                  </span>
-                                )}
-
-                                {/* Action buttons */}
-                                {!isStaff && isUnlocked && !isApproved && canApprove && (
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <button
-                                      type="button"
-                                      title="Setujui tahap ini"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        setApprovalTargetSubtask(st)
-                                        setIsApprovalDialogOpen(true)
-                                      }}
-                                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold cursor-pointer transition-colors"
-                                    >
-                                      <ThumbsUpIcon className="size-3" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      title="Kembalikan untuk revisi"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        setApprovalTargetSubtask(st)
-                                        setIsRejectionDialogOpen(true)
-                                      }}
-                                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold cursor-pointer transition-colors"
-                                    >
-                                      <ThumbsDownIcon className="size-3" />
-                                    </button>
+                              {/* Header Card */}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                  {/* Step Circle */}
+                                  <div
+                                    className={`flex items-center justify-center size-6.5 rounded-full shrink-0 text-[11px] font-bold border-2 mt-0.5 ${
+                                      isApproved
+                                        ? "bg-emerald-500 border-emerald-500 text-white"
+                                        : isRejected
+                                        ? "bg-red-500 border-red-500 text-white"
+                                        : isPending
+                                        ? "bg-amber-500 border-amber-500 text-white"
+                                        : "bg-background border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-300"
+                                    }`}
+                                  >
+                                    {isApproved ? (
+                                      <ShieldCheckIcon className="size-3.5" />
+                                    ) : isRejected ? (
+                                      <XCircleIcon className="size-3.5" />
+                                    ) : isPending ? (
+                                      <ClockIcon className="size-3.5" />
+                                    ) : (
+                                      <span>{idx + 1}</span>
+                                    )}
                                   </div>
-                                )}
 
-                                {/* Delete button (admin/non-staff only, not if approved) */}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        Tahap {idx + 1}
+                                      </span>
+                                      {/* Status Badges */}
+                                      {isApproved && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                          <ShieldCheckIcon className="size-3" /> Disetujui Atasan
+                                        </span>
+                                      )}
+                                      {isRejected && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300 border border-red-200 dark:border-red-800">
+                                          <XCircleIcon className="size-3" /> Perlu Revisi
+                                        </span>
+                                      )}
+                                      {isPending && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                          <ClockIcon className="size-3 animate-pulse" /> Menunggu Review Atasan
+                                        </span>
+                                      )}
+                                      {!isApproved && !isRejected && !isPending && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                                          ⚡ Sedang Dikerjakan
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 className="text-xs font-bold text-foreground mt-0.5">
+                                      {st.title}
+                                    </h4>
+                                  </div>
+                                </div>
+
+                                {/* Right: Quick Delete Button (Non-staff only, when not approved) */}
                                 {!isStaff && !isApproved && (
                                   <button
                                     type="button"
                                     onClick={(e) => handleDeleteSubtask(st.id, e)}
-                                    className="shrink-0 text-muted-foreground hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                    title="Hapus tahap"
+                                    className="text-muted-foreground hover:text-red-600 p-1 rounded-md hover:bg-muted transition-colors cursor-pointer shrink-0"
+                                    title="Hapus tahap ini"
                                   >
-                                    <Trash2Icon className="size-3" />
+                                    <Trash2Icon className="size-3.5" />
                                   </button>
                                 )}
                               </div>
 
-                              {/* File attachments per step — only show when unlocked */}
-                              {isUnlocked && (
-                                <div className="border-t border-border/40 px-3 py-2 space-y-1.5">
-                                  {/* Existing attachments */}
-                                  {(st.attachments || []).length > 0 && (
-                                    <div className="space-y-1">
-                                      {(st.attachments || []).map((att) => (
-                                        <div key={att.id} className="flex items-center gap-1.5 text-[11px] group">
-                                          {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-                                            <ImageIcon className="size-3 text-emerald-600 shrink-0" />
-                                          ) : (
-                                            <FileTextIcon className="size-3 text-blue-600 shrink-0" />
-                                          )}
-                                          <a
-                                            href={att.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="truncate flex-1 text-blue-600 hover:underline"
-                                            title={att.file_name}
-                                          >
-                                            {att.file_name}
-                                          </a>
-                                          {!isApproved && (
-                                            <button
-                                              type="button"
-                                              onClick={(e) => handleDeleteSubtaskAttachment(att.id, st.id, e)}
-                                              className="shrink-0 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                            >
-                                              <Trash2Icon className="size-3" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
+                              {/* Subtask Description / Detailed Instructions */}
+                              {st.description && (
+                                <div className="bg-muted/30 p-2.5 rounded-lg border border-border/40 text-xs space-y-1">
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                                    📋 Detail & Instruksi Pengerjaan
+                                  </span>
+                                  <p className="text-foreground/90 text-xs leading-relaxed whitespace-pre-line">
+                                    {st.description}
+                                  </p>
+                                </div>
+                              )}
 
-                                  {/* Upload button — only for assignee or staff when step is not approved */}
-                                  {!isApproved && (currentUser?.id === task?.assigned_to || isStaff) && (
-                                    <button
+                              {/* Approved Banner */}
+                              {isApproved && (
+                                <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center justify-between flex-wrap gap-2">
+                                  <span className="flex items-center gap-1.5 font-medium">
+                                    <ShieldCheckIcon className="size-3.5 text-emerald-600" />
+                                    Disetujui oleh: <strong>{st.approver?.nama || "Atasan"}</strong>
+                                  </span>
+                                  {st.approved_at && (
+                                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400">
+                                      {new Date(st.approved_at).toLocaleString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Rejection Note Alert Banner */}
+                              {isRejected && (
+                                <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-[11px] text-red-900 dark:text-red-200 space-y-1.5">
+                                  <span className="font-bold flex items-center gap-1.5 text-red-700 dark:text-red-400">
+                                    <AlertTriangleIcon className="size-3.5" />
+                                    Catatan Revisi dari Atasan:
+                                  </span>
+                                  <div className="italic bg-background/80 p-2 rounded border border-red-200 dark:border-red-900/60 font-medium">
+                                    &ldquo;{st.rejection_note}&rdquo;
+                                  </div>
+                                  <p className="text-[10px] text-red-700/80">
+                                    Silakan perbaiki hasil kerja, unggah bukti tambahan di bawah, lalu klik tombol &ldquo;Ajukan Ulang&rdquo;.
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Dedicated Per-Subtask Attachments Section */}
+                              <div className="space-y-1.5 pt-1 border-t border-border/40">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5">
+                                    <PaperclipIcon className="size-3 text-muted-foreground" />
+                                    Lampiran Bukti Tahap Ini ({(st.attachments || []).length})
+                                  </span>
+                                  {/* Upload button (only if not yet approved) */}
+                                  {!isApproved && (canActAsPIC || !isStaff) && (
+                                    <Button
                                       type="button"
+                                      size="sm"
+                                      variant="ghost"
                                       onClick={() => {
                                         setUploadTargetSubtaskId(st.id)
                                         subtaskFileInputRef.current?.click()
                                       }}
-                                      className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 font-semibold cursor-pointer transition-colors"
+                                      className="h-6 px-2 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded gap-1 cursor-pointer"
                                     >
                                       <UploadIcon className="size-3" />
-                                      {(st.attachments || []).length > 0 ? "Tambah bukti" : "Lampirkan bukti tahap ini"}
-                                    </button>
+                                      <span>Unggah Bukti</span>
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {/* List of attachments for this subtask */}
+                                {(st.attachments || []).length > 0 ? (
+                                  <div className="grid grid-cols-1 gap-1.5">
+                                    {(st.attachments || []).map((att) => (
+                                      <div
+                                        key={att.id}
+                                        className="flex items-center justify-between p-2 rounded-lg border border-border/70 bg-background hover:bg-muted/30 text-xs group transition-colors"
+                                      >
+                                        <a
+                                          href={att.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
+                                          title={att.file_name}
+                                        >
+                                          {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                            <ImageIcon className="size-3.5 text-emerald-600 shrink-0" />
+                                          ) : (
+                                            <FileTextIcon className="size-3.5 text-blue-600 shrink-0" />
+                                          )}
+                                          <span className="truncate font-medium text-foreground">
+                                            {att.file_name}
+                                          </span>
+                                          {att.file_size_bytes && (
+                                            <span className="text-[10px] text-muted-foreground shrink-0">
+                                              ({(att.file_size_bytes / 1024).toFixed(0)} KB)
+                                            </span>
+                                          )}
+                                          <ExternalLinkIcon className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                        </a>
+                                        {!isApproved && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => handleDeleteSubtaskAttachment(att.id, st.id, e)}
+                                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-1 transition-opacity cursor-pointer shrink-0 ml-1"
+                                            title="Hapus lampiran bukti"
+                                          >
+                                            <Trash2Icon className="size-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-2 rounded-lg border border-dashed border-border/60 text-center">
+                                    {!isApproved
+                                      ? "Belum ada bukti lampiran. Unggah foto atau dokumen pengerjaan tahap ini."
+                                      : "Tidak ada lampiran untuk tahap ini."}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Action Bar (Submit Approval by Staff & Approve/Reject by Atasan) */}
+                              {!isApproved && (
+                                <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2 flex-wrap">
+                                  {/* Staff Submission */}
+                                  {!isPending ? (
+                                    (canActAsPIC || isStaff) && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleSubmitSubtaskApproval(st.id)}
+                                        disabled={isSubmittingSubtaskApproval[st.id]}
+                                        className="h-7.5 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg gap-1.5 cursor-pointer shadow-xs"
+                                      >
+                                        {isSubmittingSubtaskApproval[st.id] ? (
+                                          <Loader2Icon className="size-3 animate-spin" />
+                                        ) : (
+                                          <SendIcon className="size-3" />
+                                        )}
+                                        {isRejected ? "Ajukan Ulang Persetujuan Tahap" : "Ajukan Persetujuan Tahap"}
+                                      </Button>
+                                    )
+                                  ) : (
+                                    <div className="text-[11px] text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1.5">
+                                      <ClockIcon className="size-3 text-amber-600 animate-pulse" />
+                                      <span>Menunggu verifikasi atasan ({reviewerName})</span>
+                                    </div>
                                   )}
 
-                                  {(st.attachments || []).length === 0 && isApproved && (
-                                    <p className="text-[10px] text-muted-foreground italic">Tidak ada lampiran.</p>
+                                  {/* Supervisor Approval Actions */}
+                                  {canApprove && (
+                                    <div className="flex items-center gap-1.5 ml-auto">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => {
+                                          setApprovalTargetSubtask(st)
+                                          setIsApprovalDialogOpen(true)
+                                        }}
+                                        className="h-7.5 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 cursor-pointer shadow-xs"
+                                      >
+                                        <ShieldCheckIcon className="size-3.5" />
+                                        Setujui Tahap
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setApprovalTargetSubtask(st)
+                                          setIsRejectionDialogOpen(true)
+                                        }}
+                                        className="h-7.5 px-2.5 text-xs font-bold text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg gap-1 cursor-pointer"
+                                      >
+                                        <XCircleIcon className="size-3.5" />
+                                        Minta Revisi
+                                      </Button>
+                                    </div>
                                   )}
                                 </div>
                               )}
+
+                              {/* Subtask-Specific Comments Thread Accordion */}
+                              <div className="pt-2 border-t border-border/40">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSubtaskComments(st.id)}
+                                  className="flex items-center justify-between w-full text-[11px] font-bold text-muted-foreground hover:text-foreground cursor-pointer py-1"
+                                >
+                                  <span className="flex items-center gap-1.5">
+                                    <MessageSquareIcon className="size-3 text-muted-foreground" />
+                                    Catatan Khusus Tahap Ini ({(st.comments || []).length})
+                                  </span>
+                                  {subtaskCommentsExpanded[st.id] ? (
+                                    <ChevronUpIcon className="size-3.5" />
+                                  ) : (
+                                    <ChevronDownIcon className="size-3.5" />
+                                  )}
+                                </button>
+
+                                {subtaskCommentsExpanded[st.id] && (
+                                  <div className="mt-2 space-y-2 bg-muted/20 p-2.5 rounded-lg border border-border/50">
+                                    {(st.comments || []).length > 0 ? (
+                                      <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                        {(st.comments || []).map((c) => (
+                                          <div
+                                            key={c.id}
+                                            className="p-2 rounded-lg bg-background border border-border/60 text-xs space-y-0.5 group"
+                                          >
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="font-bold text-[11px] text-foreground">
+                                                  {c.user?.nama || "User"}
+                                                </span>
+                                                {c.user?.role && (
+                                                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-muted text-muted-foreground uppercase">
+                                                    {ROLE_LABELS[c.user.role]?.label || c.user.role}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-1">
+                                                <span className="text-[10px] text-muted-foreground">
+                                                  {c.created_at
+                                                    ? new Date(c.created_at).toLocaleTimeString("id-ID", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                      })
+                                                    : ""}
+                                                </span>
+                                                {(!isStaff || c.user_id === currentUser?.id) && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteComment(c.id)}
+                                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-0.5 transition-opacity cursor-pointer"
+                                                    title="Hapus"
+                                                  >
+                                                    <Trash2Icon className="size-2.5" />
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <p className="text-foreground/90 text-[11px] leading-relaxed whitespace-pre-line">
+                                              {c.comment}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-[11px] text-muted-foreground italic text-center py-1">
+                                        Belum ada catatan khusus pada tahap ini.
+                                      </p>
+                                    )}
+
+                                    {/* Input to write subtask-specific comment */}
+                                    <div className="flex items-center gap-1.5 pt-1">
+                                      <Input
+                                        value={subtaskCommentInputs[st.id] || ""}
+                                        onChange={(e) =>
+                                          setSubtaskCommentInputs((prev) => ({ ...prev, [st.id]: e.target.value }))
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault()
+                                            handleSendSubtaskComment(st.id)
+                                          }
+                                        }}
+                                        placeholder="Tulis catatan arahan tahap ini..."
+                                        className="h-7.5 rounded-lg text-xs bg-background"
+                                      />
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() => handleSendSubtaskComment(st.id)}
+                                        disabled={
+                                          isSubmittingSubtaskComment[st.id] ||
+                                          !(subtaskCommentInputs[st.id] || "").trim()
+                                        }
+                                        className="h-7.5 px-2.5 rounded-lg text-xs font-bold bg-foreground text-background shrink-0 cursor-pointer"
+                                      >
+                                        {isSubmittingSubtaskComment[st.id] ? (
+                                          <Loader2Icon className="size-3 animate-spin" />
+                                        ) : (
+                                          <SendIcon className="size-3" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )
                         })}
 
                         {subtasks.length === 0 && (
-                          <p className="text-xs text-muted-foreground italic py-1">
-                            {isStaff ? "Belum ada tahapan yang ditentukan." : "Belum ada tahapan. Tambahkan di bawah."}
-                          </p>
+                          <div className="p-6 text-center rounded-xl border border-dashed border-border/80 bg-muted/20 space-y-1">
+                            <CheckSquareIcon className="size-7 mx-auto text-muted-foreground/50" />
+                            <p className="text-xs font-semibold text-foreground">Belum Ada Tahapan Pengerjaan</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {isStaff
+                                ? "Atasan belum menentukan tahapan pekerjaan untuk tugas ini."
+                                : "Tambahkan tahapan di bawah agar pekerjaan tersusun rapi dan terverifikasi berurutan."}
+                            </p>
+                          </div>
                         )}
                       </div>
 
-                      {/* Add Stage Form — hidden for staff */}
+                      {/* Add Subtask Form — for atasan / admin / non-staff */}
                       {!isStaff && (
-                        <form onSubmit={handleAddSubtask} className="flex items-center gap-1.5 pt-1">
-                          <Input
-                            value={newSubtaskTitle}
-                            onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                            placeholder="Tambah tahapan baru..."
-                            className="h-8 rounded-lg text-xs bg-muted/20"
-                          />
-                          <Button
-                            type="submit"
-                            size="sm"
-                            disabled={isAddingSubtask || !newSubtaskTitle.trim()}
-                            className="h-8 px-2.5 rounded-lg text-xs font-bold bg-foreground text-background shrink-0 cursor-pointer"
-                          >
-                            <PlusIcon className="size-3" />
-                          </Button>
-                        </form>
+                        <div className="pt-2">
+                          {!isAddSubtaskExpanded ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAddSubtaskExpanded(true)}
+                              className="w-full h-8 text-xs font-bold border-dashed border-border hover:border-red-400 text-muted-foreground hover:text-foreground rounded-lg gap-1.5 cursor-pointer"
+                            >
+                              <PlusIcon className="size-3.5" />
+                              Tambah Tahapan (Subtask) Baru
+                            </Button>
+                          ) : (
+                            <form onSubmit={handleAddSubtask} className="p-3 rounded-xl border border-border bg-muted/20 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                  <PlusIcon className="size-3.5 text-red-600" />
+                                  Tambah Tahapan Baru (Tahap {subtasks.length + 1})
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setIsAddSubtaskExpanded(false)}
+                                  className="h-6 px-1.5 text-xs text-muted-foreground cursor-pointer"
+                                >
+                                  Batal
+                                </Button>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-muted-foreground block">
+                                  Judul Tahapan *
+                                </label>
+                                <Input
+                                  value={newSubtaskTitle}
+                                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                  placeholder="Contoh: Pengecekan Lapangan & Pengukuran Redaman ODP"
+                                  required
+                                  className="h-8 rounded-lg text-xs bg-background"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-muted-foreground block">
+                                  Detail / Instruksi Tahap (Opsional)
+                                </label>
+                                <Textarea
+                                  value={newSubtaskDesc}
+                                  onChange={(e) => setNewSubtaskDesc(e.target.value)}
+                                  placeholder="Tuliskan instruksi detail, standar operasional, atau bukti apa yang wajib dilampirkan pelaksana..."
+                                  className="text-xs rounded-lg min-h-[60px] bg-background"
+                                />
+                              </div>
+
+                              <div className="flex justify-end gap-2 pt-1">
+                                <Button
+                                  type="submit"
+                                  size="sm"
+                                  disabled={isAddingSubtask || !newSubtaskTitle.trim()}
+                                  className="h-7.5 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                                >
+                                  {isAddingSubtask ? (
+                                    <><Loader2Icon className="size-3 animate-spin mr-1" /> Menyimpan...</>
+                                  ) : (
+                                    <><PlusIcon className="size-3 mr-1" /> Tambahkan Tahap</>
+                                  )}
+                                </Button>
+                              </div>
+                            </form>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
 
-                  {/* TAB CONTENT: COMMENTS */}
+                  {/* ─────────────────────────────────────────────────────────────
+                      TAB 2: CATATAN ATASAN & DISKUSI (Human Comments Only)
+                      ───────────────────────────────────────────────────────────── */}
                   {activeDetailTab === "comments" && (
-                    <div className="space-y-2.5 pt-3">
-                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                        {(task.comments || []).map((cmt) => (
+                    <div className="space-y-3 pt-3">
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            <MessageSquareIcon className="size-3.5 text-red-600" />
+                            Catatan & Arahan Atasan
+                          </h4>
+                          <p className="text-[10px] text-muted-foreground">
+                            Ruang khusus instruksi atasan, catatan pekerjaan, dan diskusi tim pelaksana.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                        {humanComments.map((cmt) => (
                           <div
                             key={cmt.id}
-                            className="group p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1"
+                            className="group p-3 rounded-xl bg-card border border-border/70 text-xs space-y-1.5 shadow-xs"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-[11px] text-foreground">
-                                {cmt.user?.nama || "User"}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={
+                                    cmt.user?.avatar_url ||
+                                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                                  }
+                                  alt={cmt.user?.nama || "User"}
+                                  className="size-5 rounded-full object-cover"
+                                />
+                                <span className="font-bold text-[11px] text-foreground">
+                                  {cmt.user?.nama || "User"}
+                                </span>
+                                {cmt.user?.role && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-muted text-muted-foreground uppercase border border-border/40">
+                                    {ROLE_LABELS[cmt.user.role]?.label || cmt.user.role}
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[10px] text-muted-foreground">
                                   {cmt.created_at
-                                    ? new Date(cmt.created_at).toLocaleTimeString("id-ID", {
+                                    ? new Date(cmt.created_at).toLocaleString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
                                         hour: "2-digit",
                                         minute: "2-digit",
                                       })
                                     : ""}
                                 </span>
-                                {!isStaff && (
+                                {(!isStaff || cmt.user_id === currentUser?.id) && (
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteComment(cmt.id)}
                                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-0.5 transition-opacity cursor-pointer"
-                                    title="Hapus komentar"
+                                    title="Hapus catatan"
                                   >
-                                    <Trash2Icon className="size-2.5" />
+                                    <Trash2Icon className="size-3" />
                                   </button>
                                 )}
                               </div>
                             </div>
-                            <p className="text-muted-foreground text-[11px] leading-relaxed">
+                            <p className="text-foreground text-[12px] leading-relaxed whitespace-pre-line pl-7">
                               {cmt.comment}
                             </p>
                           </div>
                         ))}
-                        {(task.comments || []).length === 0 && (
-                          <p className="text-xs text-muted-foreground italic py-1">
-                            Belum ada komentar.
-                          </p>
+
+                        {humanComments.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground space-y-1">
+                            <MessageSquareIcon className="size-8 mx-auto text-muted-foreground/30" />
+                            <p className="text-xs font-semibold">Belum Ada Catatan Atasan</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Atasan atau staf dapat memberikan instruksi dan feedback melalui kolom di bawah.
+                            </p>
+                          </div>
                         )}
                       </div>
 
+                      {/* Comment Input */}
                       <form onSubmit={handleSendComment} className="flex items-center gap-1.5 pt-1">
                         <Input
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
-                          placeholder="Tulis pesan atau catatan..."
-                          className="h-8 rounded-lg text-xs bg-muted/20"
+                          placeholder="Tulis catatan arahan atasan atau pesan..."
+                          className="h-8.5 rounded-lg text-xs bg-muted/20"
                         />
                         <Button
                           type="submit"
                           size="sm"
                           disabled={isSubmittingComment || !commentText.trim()}
-                          className="h-8 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white shrink-0 cursor-pointer"
+                          className="h-8.5 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white shrink-0 cursor-pointer shadow-xs gap-1"
                         >
-                          <SendIcon className="size-3" />
+                          {isSubmittingComment ? (
+                            <Loader2Icon className="size-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <SendIcon className="size-3" />
+                              <span>Kirim</span>
+                            </>
+                          )}
                         </Button>
                       </form>
                     </div>
                   )}
 
-                  {/* TAB CONTENT: ATTACHMENTS / LAMPIRAN */}
+                  {/* ─────────────────────────────────────────────────────────────
+                      TAB 3: SEMUA LAMPIRAN (Subtask Evidence + General SPJ)
+                      ───────────────────────────────────────────────────────────── */}
                   {activeDetailTab === "attachments" && (
-                    <div className="space-y-2.5 pt-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground font-medium">
-                          Berkas & Bukti Terlampir
-                        </span>
+                    <div className="space-y-4 pt-3">
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            <PaperclipIcon className="size-3.5 text-blue-600" />
+                            Seluruh Lampiran & Bukti
+                          </h4>
+                          <p className="text-[10px] text-muted-foreground">
+                            Berkas bukti pengerjaan per tahapan serta berkas administrasi / nota SPJ.
+                          </p>
+                        </div>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           onClick={() => {
                             setSelectedFile(null)
                             setUploadFileName("")
                             setUploadAmount("")
                             setIsUploadOpen(true)
                           }}
-                          className="h-6 px-2 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded gap-1 cursor-pointer"
+                          className="h-7 px-2.5 text-xs font-semibold text-blue-600 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg gap-1.5 cursor-pointer"
                         >
-                          <UploadIcon className="size-3" /> Unggah File
+                          <UploadIcon className="size-3" />
+                          <span>Unggah SPJ / Berkas Umum</span>
                         </Button>
                       </div>
 
-                      <div className="space-y-1.5 max-h-56 overflow-y-auto">
-                        {(task.attachments || []).map((att) => (
-                          <div
-                            key={att.id}
-                            className="p-2.5 rounded-lg border border-border bg-card flex items-center justify-between text-xs group hover:border-blue-300 transition-colors"
-                          >
-                            <a
-                              href={att.file_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
-                              title="Buka / lihat file"
-                            >
-                              {att.attachment_type === "receipt_nota" ? (
-                                <ReceiptIcon className="size-4 text-amber-600 shrink-0" />
-                              ) : att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-                                <ImageIcon className="size-4 text-emerald-600 shrink-0" />
-                              ) : (
-                                <FileTextIcon className="size-4 text-blue-600 shrink-0" />
-                              )}
-                              <span className="truncate font-medium text-foreground">
-                                {att.file_name}
-                              </span>
-                              <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </a>
+                      {/* 1. Lampiran Berdasarkan Tahapan Subtask */}
+                      <div className="space-y-2.5">
+                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                          📁 Bukti Pengerjaan Berdasarkan Tahapan
+                        </span>
 
-                            <div className="flex items-center gap-2 shrink-0 pl-2">
-                              {att.amount && (
-                                <span className="text-[11px] font-bold text-emerald-600">
-                                  Rp {att.amount.toLocaleString("id-ID")}
+                        {subtasks.filter((st) => (st.attachments || []).length > 0).length > 0 ? (
+                          <div className="space-y-2.5">
+                            {subtasks
+                              .filter((st) => (st.attachments || []).length > 0)
+                              .map((st, sIdx) => (
+                                <div key={st.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                      <span className="size-4.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[10px] flex items-center justify-center font-bold">
+                                        {sIdx + 1}
+                                      </span>
+                                      {st.title}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-muted-foreground">
+                                      {(st.attachments || []).length} berkas
+                                    </span>
+                                  </div>
+
+                                  <div className="space-y-1.5">
+                                    {(st.attachments || []).map((att) => (
+                                      <div
+                                        key={att.id}
+                                        className="p-2 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between text-xs group hover:border-blue-300 transition-colors"
+                                      >
+                                        <a
+                                          href={att.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
+                                        >
+                                          {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                            <ImageIcon className="size-3.5 text-emerald-600 shrink-0" />
+                                          ) : (
+                                            <FileTextIcon className="size-3.5 text-blue-600 shrink-0" />
+                                          )}
+                                          <span className="truncate font-medium text-foreground">
+                                            {att.file_name}
+                                          </span>
+                                          {att.file_size_bytes && (
+                                            <span className="text-[10px] text-muted-foreground shrink-0">
+                                              ({(att.file_size_bytes / 1024).toFixed(0)} KB)
+                                            </span>
+                                          )}
+                                          <ExternalLinkIcon className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                        </a>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-3 rounded-lg border border-dashed text-center">
+                            Belum ada bukti yang dilampirkan pada tahapan subtask.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 2. Lampiran Umum & Nota Biaya SPJ */}
+                      <div className="space-y-2 pt-2 border-t border-border/40">
+                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                          🧾 Lampiran Umum & Nota SPJ
+                        </span>
+
+                        <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                          {(task.attachments || []).map((att) => (
+                            <div
+                              key={att.id}
+                              className="p-2.5 rounded-lg border border-border bg-card flex items-center justify-between text-xs group hover:border-blue-300 transition-colors"
+                            >
+                              <a
+                                href={att.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
+                                title="Buka / lihat file"
+                              >
+                                {att.attachment_type === "receipt_nota" ? (
+                                  <ReceiptIcon className="size-4 text-amber-600 shrink-0" />
+                                ) : att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                  <ImageIcon className="size-4 text-emerald-600 shrink-0" />
+                                ) : (
+                                  <FileTextIcon className="size-4 text-blue-600 shrink-0" />
+                                )}
+                                <span className="truncate font-medium text-foreground">
+                                  {att.file_name}
                                 </span>
-                              )}
-                              {!isStaff && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteAttachment(att.id)}
-                                  className="text-muted-foreground hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                  title="Hapus lampiran"
-                                >
-                                  <Trash2Icon className="size-3.5" />
-                                </button>
-                              )}
+                                <ExternalLinkIcon className="size-3 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </a>
+
+                              <div className="flex items-center gap-2 shrink-0 pl-2">
+                                {att.amount && (
+                                  <span className="text-[11px] font-bold text-emerald-600">
+                                    Rp {att.amount.toLocaleString("id-ID")}
+                                  </span>
+                                )}
+                                {!isStaff && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteAttachment(att.id)}
+                                    className="text-muted-foreground hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                    title="Hapus lampiran"
+                                  >
+                                    <Trash2Icon className="size-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+
+                          {(task.attachments || []).length === 0 && (
+                            <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-3 rounded-lg border border-dashed text-center">
+                              Belum ada nota SPJ atau lampiran umum.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      TAB 4: RIWAYAT LOG (System Activity Logs & Audit Trail)
+                      ───────────────────────────────────────────────────────────── */}
+                  {activeDetailTab === "logs" && (
+                    <div className="space-y-3 pt-3">
+                      <div className="border-b border-border/50 pb-2">
+                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <HistoryIcon className="size-3.5 text-purple-600" />
+                          Riwayat Aktivitas & Audit Trail
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground">
+                          Catatan otomatis sistem: perubahan status, delegasi tugas, dan riwayat approval.
+                        </p>
+                      </div>
+
+                      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        {systemLogs.map((log, lIdx) => (
+                          <div key={log.id} className="relative flex gap-3 text-xs">
+                            {/* Vertical line connecting log entries */}
+                            {lIdx !== systemLogs.length - 1 && (
+                              <div className="absolute left-[11px] top-6 bottom-0 w-[1.5px] bg-border" />
+                            )}
+
+                            {/* Dot Icon */}
+                            <div className="size-6 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
+                              <HistoryIcon className="size-3" />
+                            </div>
+
+                            <div className="flex-1 pb-3 space-y-0.5">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-[11px] text-foreground">
+                                  {log.user?.nama || "Sistem"}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {log.created_at
+                                    ? new Date(log.created_at).toLocaleString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : ""}
+                                </span>
+                              </div>
+                              <p className="text-muted-foreground text-[11px] leading-relaxed">
+                                {log.comment}
+                              </p>
                             </div>
                           </div>
                         ))}
-                        {(task.attachments || []).length === 0 && (
-                          <p className="text-xs text-muted-foreground italic py-1">
-                            Belum ada lampiran file atau foto.
-                          </p>
+
+                        {systemLogs.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground space-y-1">
+                            <HistoryIcon className="size-8 mx-auto text-muted-foreground/30" />
+                            <p className="text-xs font-semibold">Belum Ada Riwayat Log</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Aktivitas perubahan status atau delegasi otomatis akan tercatat di sini.
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>

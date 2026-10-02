@@ -780,6 +780,11 @@ export async function getTaskById(taskId: string, forceRefresh = false): Promise
       if (task && !error) {
         const userMap = new Map(users.map((u) => [u.id, u]));
 
+        const allComments = (task.comments || []).map((cmt: any) => ({
+          ...cmt,
+          user: cmt.user_id ? userMap.get(cmt.user_id) : undefined,
+        }));
+
         const result = {
           ...task,
           creator: task.created_by ? userMap.get(task.created_by) : undefined,
@@ -789,19 +794,18 @@ export async function getTaskById(taskId: string, forceRefresh = false): Promise
             .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
             .map((st: any) => ({
               ...st,
+              approver: st.approved_by ? userMap.get(st.approved_by) : undefined,
               attachments: (st.attachments || []).map((a: any) => ({
                 ...a,
                 uploader: a.uploaded_by ? userMap.get(a.uploaded_by) : undefined,
               })),
+              comments: allComments.filter((c: any) => c.subtask_id === st.id),
             })),
           attachments: (task.attachments || []).map((att: any) => ({
             ...att,
             uploader: att.uploaded_by ? userMap.get(att.uploaded_by) : undefined,
           })),
-          comments: (task.comments || []).map((cmt: any) => ({
-            ...cmt,
-            user: cmt.user_id ? userMap.get(cmt.user_id) : undefined,
-          })),
+          comments: allComments,
         } as Task;
 
         _taskDetailCache.set(taskId, { data: result, timestamp: Date.now() });
@@ -1237,13 +1241,25 @@ export async function toggleSubtask(subtaskId: string, isCompleted: boolean): Pr
   return !error;
 }
 
-export async function addSubtask(taskId: string, title: string): Promise<Subtask | null> {
+export async function addSubtask(taskId: string, title: string, description?: string): Promise<Subtask | null> {
+  // Get max sort_order
+  const { data: existing } = await supabase
+    .from('subtasks')
+    .select('sort_order')
+    .eq('task_id', taskId)
+    .order('sort_order', { ascending: false })
+    .limit(1);
+
+  const nextOrder = existing && existing.length > 0 ? (existing[0].sort_order ?? 0) + 1 : 0;
+
   const { data, error } = await supabase
     .from('subtasks')
     .insert([
       {
         task_id: taskId,
         title,
+        description: description || null,
+        sort_order: nextOrder,
         is_completed: false,
         approval_status: 'pending',
       },
@@ -1483,12 +1499,18 @@ export async function deleteAttachment(attachmentId: string): Promise<boolean> {
   }
 }
 
-export async function addComment(taskId: string, userId: string, comment: string): Promise<TaskComment | null> {
+export async function addComment(
+  taskId: string,
+  userId: string,
+  comment: string,
+  subtaskId?: string
+): Promise<TaskComment | null> {
   const { data, error } = await supabase
     .from('task_comments')
     .insert([
       {
         task_id: taskId,
+        subtask_id: subtaskId || null,
         user_id: userId,
         comment,
         is_system_log: false,

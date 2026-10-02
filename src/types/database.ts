@@ -78,6 +78,7 @@ export interface Subtask {
   id: string;
   task_id: string;
   title: string;
+  description?: string | null;
   is_completed: boolean;
   sort_order: number;
   completed_at?: string | null;
@@ -87,8 +88,11 @@ export interface Subtask {
   approved_by?: string | null;
   approved_at?: string | null;
   rejection_note?: string | null;
+  approver?: User;
   // Per-subtask attachment (bukti pelaksanaan tahap)
   attachments?: SubtaskAttachment[];
+  // Per-subtask comments/notes
+  comments?: TaskComment[];
 }
 
 export interface TaskAttachment {
@@ -112,6 +116,7 @@ export interface TaskAttachment {
 export interface TaskComment {
   id: string;
   task_id: string;
+  subtask_id?: string | null;
   user_id?: string | null;
   comment: string;
   is_system_log: boolean;
