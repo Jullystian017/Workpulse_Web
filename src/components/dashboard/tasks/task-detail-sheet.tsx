@@ -27,6 +27,12 @@ import {
   FileIcon,
   AlertTriangleIcon,
   PlayIcon,
+  LockIcon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  ShieldCheckIcon,
+  XCircleIcon,
+  Loader2Icon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -54,6 +60,7 @@ import {
 import {
   Task,
   Subtask,
+  SubtaskAttachment,
   User,
   Channel,
   TaskPriority,
@@ -70,6 +77,11 @@ import {
   toggleSubtask,
   addSubtask,
   deleteSubtask,
+  approveSubtask,
+  rejectSubtask,
+  submitSubtaskForApproval,
+  addSubtaskAttachment,
+  deleteSubtaskAttachment,
   submitTaskForReview,
   approveTask,
   returnTaskForRevision,
@@ -120,6 +132,20 @@ export function TaskDetailSheet({
   // Subtask creation state
   const [newSubtaskTitle, setNewSubtaskTitle] = React.useState("")
   const [isAddingSubtask, setIsAddingSubtask] = React.useState(false)
+
+  // Subtask approval/rejection dialog state
+  const [approvalTargetSubtask, setApprovalTargetSubtask] = React.useState<Subtask | null>(null)
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = React.useState(false)
+  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = React.useState(false)
+  const [rejectionNote, setRejectionNote] = React.useState("")
+  const [isSubtaskActionLoading, setIsSubtaskActionLoading] = React.useState(false)
+
+  // Per-subtask file upload state
+  const subtaskFileInputRef = React.useRef<HTMLInputElement | null>(null)
+  const [uploadTargetSubtaskId, setUploadTargetSubtaskId] = React.useState<string | null>(null)
+  const [subtaskSelectedFile, setSubtaskSelectedFile] = React.useState<File | null>(null)
+  const [isSubtaskUploadOpen, setIsSubtaskUploadOpen] = React.useState(false)
+  const [isSubtaskUploading, setIsSubtaskUploading] = React.useState(false)
 
   // Tab Navigation State
   const [activeDetailTab, setActiveDetailTab] = React.useState<"subtasks" | "comments" | "attachments">("subtasks")
@@ -383,6 +409,163 @@ export function TaskDetailSheet({
       })
       toast.info("Subtask dihapus")
       onTaskUpdated?.()
+    }
+  }
+
+  // ── Approve Subtask Handler (atasan) ──
+  const handleApproveSubtask = async () => {
+    if (!approvalTargetSubtask || !currentUser) return
+    setIsSubtaskActionLoading(true)
+    try {
+      const ok = await approveSubtask(approvalTargetSubtask.id, currentUser.id)
+      if (ok) {
+        toast.success(`Tahap "${approvalTargetSubtask.title}" disetujui!`)
+        setIsApprovalDialogOpen(false)
+        setApprovalTargetSubtask(null)
+        loadTaskData()
+        onTaskUpdated?.()
+      } else {
+        toast.error("Gagal menyetujui tahap ini.")
+      }
+    } catch (err) {
+      toast.error("Terjadi kesalahan.")
+    } finally {
+      setIsSubtaskActionLoading(false)
+    }
+  }
+
+  // ── Reject Subtask Handler (atasan) ──
+  const handleRejectSubtask = async () => {
+    if (!approvalTargetSubtask || !currentUser || !rejectionNote.trim()) {
+      toast.error("Harap isi catatan penolakan.")
+      return
+    }
+    setIsSubtaskActionLoading(true)
+    try {
+      const ok = await rejectSubtask(approvalTargetSubtask.id, currentUser.id, rejectionNote.trim())
+      if (ok) {
+        toast.warning(`Tahap "${approvalTargetSubtask.title}" dikembalikan untuk diperbaiki.`)
+        setIsRejectionDialogOpen(false)
+        setApprovalTargetSubtask(null)
+        setRejectionNote("")
+        loadTaskData()
+        onTaskUpdated?.()
+      } else {
+        toast.error("Gagal menolak tahap ini.")
+      }
+    } catch (err) {
+      toast.error("Terjadi kesalahan.")
+    } finally {
+      setIsSubtaskActionLoading(false)
+    }
+  }
+
+  // ── Upload file bukti per subtask (karyawan) ──
+  const handleSubtaskFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSubtaskSelectedFile(file)
+      setIsSubtaskUploadOpen(true)
+    }
+  }
+
+  const handleSubtaskUploadConfirm = async () => {
+    if (!subtaskSelectedFile || !uploadTargetSubtaskId || !task || !currentUser) return
+    setIsSubtaskUploading(true)
+    try {
+      const { supabase } = await import("@/lib/api").then(m => ({ supabase: m.supabase }))
+      // Use a signed storage path
+      const ext = subtaskSelectedFile.name.split(".").pop() || "bin"
+      const path = `subtask-attachments/${uploadTargetSubtaskId}/${Date.now()}.${ext}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("task-attachments")
+        .upload(path, subtaskSelectedFile, { upsert: false })
+
+      if (uploadError) {
+        // Fallback: Store the object URL so files can still be previewed locally
+        const localUrl = URL.createObjectURL(subtaskSelectedFile)
+        const created = await addSubtaskAttachment({
+          task_id: task.id,
+          subtask_id: uploadTargetSubtaskId,
+          uploaded_by: currentUser.id,
+          file_name: subtaskSelectedFile.name,
+          file_url: localUrl,
+          file_type: subtaskSelectedFile.type,
+          file_size_bytes: subtaskSelectedFile.size,
+        })
+        if (created) {
+          setTask((prev) => {
+            if (!prev) return null
+            return {
+              ...prev,
+              subtasks: (prev.subtasks || []).map((st) =>
+                st.id === uploadTargetSubtaskId
+                  ? { ...st, attachments: [...(st.attachments || []), created] }
+                  : st
+              ),
+            }
+          })
+          toast.success("Bukti tahapan berhasil diunggah!")
+        } else {
+          toast.error("Gagal mengunggah bukti tahapan.")
+        }
+      } else {
+        const { data: { publicUrl } } = supabase.storage.from("task-attachments").getPublicUrl(path)
+        const created = await addSubtaskAttachment({
+          task_id: task.id,
+          subtask_id: uploadTargetSubtaskId,
+          uploaded_by: currentUser.id,
+          file_name: subtaskSelectedFile.name,
+          file_url: publicUrl,
+          file_type: subtaskSelectedFile.type,
+          file_size_bytes: subtaskSelectedFile.size,
+        })
+        if (created) {
+          setTask((prev) => {
+            if (!prev) return null
+            return {
+              ...prev,
+              subtasks: (prev.subtasks || []).map((st) =>
+                st.id === uploadTargetSubtaskId
+                  ? { ...st, attachments: [...(st.attachments || []), created] }
+                  : st
+              ),
+            }
+          })
+          toast.success("Bukti tahapan berhasil diunggah!")
+        } else {
+          toast.error("Gagal menyimpan metadata bukti.")
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal mengunggah file.")
+    } finally {
+      setIsSubtaskUploading(false)
+      setIsSubtaskUploadOpen(false)
+      setSubtaskSelectedFile(null)
+      setUploadTargetSubtaskId(null)
+      if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = ""
+    }
+  }
+
+  // ── Delete subtask attachment ──
+  const handleDeleteSubtaskAttachment = async (attachId: string, subtaskId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const ok = await deleteSubtaskAttachment(attachId)
+    if (ok) {
+      setTask((prev) => {
+        if (!prev) return null
+        return {
+          ...prev,
+          subtasks: (prev.subtasks || []).map((st) =>
+            st.id === subtaskId
+              ? { ...st, attachments: (st.attachments || []).filter((a) => a.id !== attachId) }
+              : st
+          ),
+        }
+      })
+      toast.info("Lampiran dihapus.")
     }
   }
 
@@ -1246,61 +1429,241 @@ export function TaskDetailSheet({
                     </button>
                   </div>
 
-                  {/* TAB CONTENT: SUBTASKS */}
+                  {/* TAB CONTENT: SUBTASKS — Sequential Approval Workflow */}
                   {activeDetailTab === "subtasks" && (
-                    <div className="space-y-2 pt-3">
+                    <div className="space-y-3 pt-3">
+                      {/* Progress header */}
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-semibold text-muted-foreground">
-                          Progres: {completedSubtasks}/{subtasks.length} Selesai ({progressPercent}%)
+                          Progres: {completedSubtasks}/{subtasks.length} Disetujui ({progressPercent}%)
                         </span>
+                        {subtasks.some(s => s.approval_status === 'rejected') && (
+                          <span className="flex items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                            <XCircleIcon className="size-3" />
+                            Ada tahap yang dikembalikan
+                          </span>
+                        )}
                       </div>
 
-                      {/* Checklist Items */}
-                      <div className="space-y-1">
-                        {subtasks.map((st) => (
-                          <div
-                            key={st.id}
-                            onClick={() => handleToggleSubtask(st)}
-                            className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-colors text-xs ${
-                              st.is_completed
-                                ? "bg-muted/30 border-border/50 text-muted-foreground line-through"
-                                : "bg-card border-border hover:border-red-300 text-foreground font-medium"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              {st.is_completed ? (
-                                <CheckCircle2Icon className="size-3.5 text-emerald-600 shrink-0" />
-                              ) : (
-                                <SquareIcon className="size-3.5 text-muted-foreground shrink-0" />
+                      {/* Hidden file input for subtask attachment */}
+                      <input
+                        ref={subtaskFileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleSubtaskFileChange}
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                      />
+
+                      {/* Stepper Items */}
+                      <div className="space-y-2">
+                        {subtasks.map((st, idx) => {
+                          // A subtask is "unlocked" if:
+                          // - It's the first step, OR
+                          // - All previous steps are approved
+                          const allPrevApproved = subtasks
+                            .slice(0, idx)
+                            .every(s => s.approval_status === 'approved')
+                          const isUnlocked = idx === 0 || allPrevApproved
+                          const isApproved = st.approval_status === 'approved'
+                          const isRejected = st.approval_status === 'rejected'
+                          const isPending = !isApproved && !isRejected
+
+                          return (
+                            <div
+                              key={st.id}
+                              className={`rounded-xl border transition-all ${
+                                isApproved
+                                  ? "bg-emerald-50/60 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/50"
+                                  : isRejected
+                                  ? "bg-red-50/60 border-red-200 dark:bg-red-950/30 dark:border-red-800/50"
+                                  : !isUnlocked
+                                  ? "bg-muted/20 border-border/40 opacity-60"
+                                  : "bg-card border-border"
+                              }`}
+                            >
+                              {/* Step Header */}
+                              <div className="flex items-center gap-2.5 px-3 py-2.5">
+                                {/* Step number / status icon */}
+                                <div className={`flex items-center justify-center size-6 rounded-full shrink-0 text-[10px] font-bold border-2 ${
+                                  isApproved
+                                    ? "bg-emerald-500 border-emerald-500 text-white"
+                                    : isRejected
+                                    ? "bg-red-500 border-red-500 text-white"
+                                    : !isUnlocked
+                                    ? "bg-muted border-border/60 text-muted-foreground"
+                                    : "bg-background border-red-400 text-red-600 dark:border-red-600 dark:text-red-400"
+                                }`}>
+                                  {isApproved ? (
+                                    <ShieldCheckIcon className="size-3.5" />
+                                  ) : isRejected ? (
+                                    <XCircleIcon className="size-3.5" />
+                                  ) : !isUnlocked ? (
+                                    <LockIcon className="size-3" />
+                                  ) : (
+                                    <span>{idx + 1}</span>
+                                  )}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs font-semibold truncate ${
+                                    isApproved ? "text-emerald-700 dark:text-emerald-400 line-through"
+                                    : isRejected ? "text-red-700 dark:text-red-400"
+                                    : !isUnlocked ? "text-muted-foreground"
+                                    : "text-foreground"
+                                  }`}>
+                                    {st.title}
+                                  </p>
+                                  {isApproved && st.approved_at && (
+                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5">
+                                      ✓ Disetujui {new Date(st.approved_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                                    </p>
+                                  )}
+                                  {isRejected && st.rejection_note && (
+                                    <p className="text-[10px] text-red-600 dark:text-red-400 mt-0.5 italic">
+                                      ↩ {st.rejection_note}
+                                    </p>
+                                  )}
+                                  {!isUnlocked && (
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                                      Selesaikan tahap sebelumnya terlebih dahulu
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Approval status badge */}
+                                {isApproved && (
+                                  <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                                    Disetujui
+                                  </span>
+                                )}
+                                {isRejected && (
+                                  <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 border border-red-200 dark:border-red-800">
+                                    Ditolak
+                                  </span>
+                                )}
+                                {isPending && isUnlocked && (
+                                  <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                    Menunggu
+                                  </span>
+                                )}
+
+                                {/* Action buttons */}
+                                {!isStaff && isUnlocked && !isApproved && canApprove && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      title="Setujui tahap ini"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setApprovalTargetSubtask(st)
+                                        setIsApprovalDialogOpen(true)
+                                      }}
+                                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold cursor-pointer transition-colors"
+                                    >
+                                      <ThumbsUpIcon className="size-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title="Kembalikan untuk revisi"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setApprovalTargetSubtask(st)
+                                        setIsRejectionDialogOpen(true)
+                                      }}
+                                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold cursor-pointer transition-colors"
+                                    >
+                                      <ThumbsDownIcon className="size-3" />
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Delete button (admin/non-staff only, not if approved) */}
+                                {!isStaff && !isApproved && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteSubtask(st.id, e)}
+                                    className="shrink-0 text-muted-foreground hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                    title="Hapus tahap"
+                                  >
+                                    <Trash2Icon className="size-3" />
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* File attachments per step — only show when unlocked */}
+                              {isUnlocked && (
+                                <div className="border-t border-border/40 px-3 py-2 space-y-1.5">
+                                  {/* Existing attachments */}
+                                  {(st.attachments || []).length > 0 && (
+                                    <div className="space-y-1">
+                                      {(st.attachments || []).map((att) => (
+                                        <div key={att.id} className="flex items-center gap-1.5 text-[11px] group">
+                                          {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                            <ImageIcon className="size-3 text-emerald-600 shrink-0" />
+                                          ) : (
+                                            <FileTextIcon className="size-3 text-blue-600 shrink-0" />
+                                          )}
+                                          <a
+                                            href={att.file_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="truncate flex-1 text-blue-600 hover:underline"
+                                            title={att.file_name}
+                                          >
+                                            {att.file_name}
+                                          </a>
+                                          {!isApproved && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => handleDeleteSubtaskAttachment(att.id, st.id, e)}
+                                              className="shrink-0 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                            >
+                                              <Trash2Icon className="size-3" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Upload button — only for assignee or staff when step is not approved */}
+                                  {!isApproved && (currentUser?.id === task?.assigned_to || isStaff) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setUploadTargetSubtaskId(st.id)
+                                        subtaskFileInputRef.current?.click()
+                                      }}
+                                      className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 font-semibold cursor-pointer transition-colors"
+                                    >
+                                      <UploadIcon className="size-3" />
+                                      {(st.attachments || []).length > 0 ? "Tambah bukti" : "Lampirkan bukti tahap ini"}
+                                    </button>
+                                  )}
+
+                                  {(st.attachments || []).length === 0 && isApproved && (
+                                    <p className="text-[10px] text-muted-foreground italic">Tidak ada lampiran.</p>
+                                  )}
+                                </div>
                               )}
-                              <span className="truncate">{st.title}</span>
                             </div>
-                            {!isStaff && (
-                              <button
-                                type="button"
-                                onClick={(e) => handleDeleteSubtask(st.id, e)}
-                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-1 transition-opacity cursor-pointer"
-                                title="Hapus subtask"
-                              >
-                                <Trash2Icon className="size-3" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                          )
+                        })}
+
                         {subtasks.length === 0 && (
                           <p className="text-xs text-muted-foreground italic py-1">
-                            {isStaff ? "Belum ada subtask yang ditambahkan." : "Belum ada subtask. Tambahkan di bawah."}
+                            {isStaff ? "Belum ada tahapan yang ditentukan." : "Belum ada tahapan. Tambahkan di bawah."}
                           </p>
                         )}
                       </div>
 
-                      {/* Add Subtask Inline Form — hidden for staff */}
+                      {/* Add Stage Form — hidden for staff */}
                       {!isStaff && (
                         <form onSubmit={handleAddSubtask} className="flex items-center gap-1.5 pt-1">
                           <Input
                             value={newSubtaskTitle}
                             onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                            placeholder="Tambah subtask baru..."
+                            placeholder="Tambah tahapan baru..."
                             className="h-8 rounded-lg text-xs bg-muted/20"
                           />
                           <Button
@@ -1459,6 +1822,156 @@ export function TaskDetailSheet({
                 </div>
               </div>
             )}
+
+            {/* DIALOG: APPROVE SUBTASK (Atasan) */}
+            <Dialog open={isApprovalDialogOpen} onOpenChange={(o) => { setIsApprovalDialogOpen(o); if (!o) setApprovalTargetSubtask(null) }}>
+              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <ShieldCheckIcon className="size-4 text-emerald-600" />
+                    Setujui Tahapan Ini
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Anda akan menyetujui tahapan berikut dan membuka tahap selanjutnya.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800">
+                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                    {approvalTargetSubtask?.title}
+                  </p>
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 rounded-lg text-xs font-semibold cursor-pointer"
+                    onClick={() => { setIsApprovalDialogOpen(false); setApprovalTargetSubtask(null) }}
+                    disabled={isSubtaskActionLoading}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                    onClick={handleApproveSubtask}
+                    disabled={isSubtaskActionLoading}
+                  >
+                    {isSubtaskActionLoading ? (
+                      <Loader2Icon className="size-3 animate-spin" />
+                    ) : (
+                      <><ShieldCheckIcon className="size-3" /> Ya, Setujui</>
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* DIALOG: REJECT SUBTASK (Atasan) */}
+            <Dialog open={isRejectionDialogOpen} onOpenChange={(o) => { setIsRejectionDialogOpen(o); if (!o) { setApprovalTargetSubtask(null); setRejectionNote("") } }}>
+              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <XCircleIcon className="size-4 text-red-600" />
+                    Kembalikan untuk Revisi
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Tahapan ini akan dikembalikan ke karyawan dengan catatan perbaikan.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-800">
+                  <p className="text-xs font-semibold text-red-800 dark:text-red-300">
+                    {approvalTargetSubtask?.title}
+                  </p>
+                </div>
+
+                <div className="mt-3 space-y-1.5">
+                  <label className="text-[11px] font-bold text-muted-foreground">
+                    Catatan Revisi <span className="text-red-500">*</span>
+                  </label>
+                  <Textarea
+                    value={rejectionNote}
+                    onChange={(e) => setRejectionNote(e.target.value)}
+                    placeholder="Apa yang perlu diperbaiki dari tahapan ini?"
+                    className="text-xs rounded-lg min-h-[80px]"
+                  />
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 rounded-lg text-xs font-semibold cursor-pointer"
+                    onClick={() => { setIsRejectionDialogOpen(false); setApprovalTargetSubtask(null); setRejectionNote("") }}
+                    disabled={isSubtaskActionLoading}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                    onClick={handleRejectSubtask}
+                    disabled={isSubtaskActionLoading || !rejectionNote.trim()}
+                  >
+                    {isSubtaskActionLoading ? (
+                      <Loader2Icon className="size-3 animate-spin" />
+                    ) : (
+                      <><XCircleIcon className="size-3" /> Kembalikan</>
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* DIALOG: SUBTASK FILE UPLOAD CONFIRMATION */}
+            <Dialog open={isSubtaskUploadOpen} onOpenChange={(o) => { if (!o) { setIsSubtaskUploadOpen(false); setSubtaskSelectedFile(null); if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = "" } }}>
+              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <UploadIcon className="size-4 text-blue-600" />
+                    Unggah Bukti Tahapan
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    File ini akan dilampirkan ke tahap yang sedang dikerjakan.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {subtaskSelectedFile && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-muted/40 border border-border text-xs space-y-1">
+                    <p className="font-semibold text-foreground truncate">{subtaskSelectedFile.name}</p>
+                    <p className="text-muted-foreground">
+                      {(subtaskSelectedFile.size / 1024).toFixed(1)} KB — {subtaskSelectedFile.type || "File"}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 rounded-lg text-xs font-semibold cursor-pointer"
+                    onClick={() => { setIsSubtaskUploadOpen(false); setSubtaskSelectedFile(null); if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = "" }}
+                    disabled={isSubtaskUploading}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                    onClick={handleSubtaskUploadConfirm}
+                    disabled={isSubtaskUploading}
+                  >
+                    {isSubtaskUploading ? (
+                      <><Loader2Icon className="size-3 animate-spin" /> Mengunggah...</>
+                    ) : (
+                      <><UploadIcon className="size-3" /> Unggah</>
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* DIALOG 1: SUBMIT FOR REVIEW */}
             <Dialog open={isSubmitReviewOpen} onOpenChange={setIsSubmitReviewOpen}>

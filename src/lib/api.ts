@@ -5,6 +5,7 @@ import {
   Channel,
   Task,
   Subtask,
+  SubtaskAttachment,
   TaskAttachment,
   TaskComment,
   TaskPriority,
@@ -612,7 +613,7 @@ export async function getTaskById(taskId: string): Promise<Task | null> {
         *,
         channel:channels(*),
         department:departments(*),
-        subtasks(*),
+        subtasks(*, attachments:subtask_attachments(*)),
         attachments:task_attachments(*),
         comments:task_comments(*)
       `)
@@ -628,6 +629,15 @@ export async function getTaskById(taskId: string): Promise<Task | null> {
         creator: task.created_by ? userMap.get(task.created_by) : undefined,
         assignee: task.assigned_to ? userMap.get(task.assigned_to) : undefined,
         delegator: task.delegated_by ? userMap.get(task.delegated_by) : undefined,
+        subtasks: (task.subtasks || [])
+          .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((st: any) => ({
+            ...st,
+            attachments: (st.attachments || []).map((a: any) => ({
+              ...a,
+              uploader: a.uploaded_by ? userMap.get(a.uploaded_by) : undefined,
+            })),
+          })),
         attachments: (task.attachments || []).map((att: any) => ({
           ...att,
           uploader: att.uploaded_by ? userMap.get(att.uploaded_by) : undefined,
@@ -1061,6 +1071,7 @@ export async function addSubtask(taskId: string, title: string): Promise<Subtask
         task_id: taskId,
         title,
         is_completed: false,
+        approval_status: 'pending',
       },
     ])
     .select()
@@ -1068,6 +1079,138 @@ export async function addSubtask(taskId: string, title: string): Promise<Subtask
 
   if (error) return null;
   return data as Subtask;
+}
+
+// ── Approve a specific subtask step (atasan only) ──
+export async function approveSubtask(
+  subtaskId: string,
+  approvedByUserId: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('subtasks')
+    .update({
+      approval_status: 'approved',
+      approved_by: approvedByUserId,
+      approved_at: new Date().toISOString(),
+      is_completed: true,
+      completed_at: new Date().toISOString(),
+      rejection_note: null,
+    })
+    .eq('id', subtaskId);
+
+  if (!error) {
+    const activeUser = getActiveUserFromStorage();
+    recordActivity({
+      user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Atasan',
+      user_id: approvedByUserId,
+      action: 'APPROVE_SUBTASK',
+      module: 'Task Management',
+      level: 'AUDIT',
+      detail: `Tahapan subtask disetujui oleh atasan (${approvedByUserId}).`,
+    });
+  }
+
+  return !error;
+}
+
+// ── Reject / kembalikan subtask step untuk diperbaiki ──
+export async function rejectSubtask(
+  subtaskId: string,
+  rejectedByUserId: string,
+  note: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('subtasks')
+    .update({
+      approval_status: 'rejected',
+      is_completed: false,
+      completed_at: null,
+      rejection_note: note,
+    })
+    .eq('id', subtaskId);
+
+  if (!error) {
+    const activeUser = getActiveUserFromStorage();
+    recordActivity({
+      user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Atasan',
+      user_id: rejectedByUserId,
+      action: 'REJECT_SUBTASK',
+      module: 'Task Management',
+      level: 'AUDIT',
+      detail: `Tahapan subtask dikembalikan untuk perbaikan: ${note}`,
+    });
+  }
+
+  return !error;
+}
+
+// ── Submit subtask step for review (karyawan marks step as ready for approval) ──
+export async function submitSubtaskForApproval(
+  subtaskId: string,
+  userId: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('subtasks')
+    .update({
+      approval_status: 'pending',
+      is_completed: false,
+      rejection_note: null,
+    })
+    .eq('id', subtaskId);
+  return !error;
+}
+
+// ── Upload lampiran per subtask step ──
+export async function addSubtaskAttachment(attachment: {
+  task_id: string;
+  subtask_id: string;
+  uploaded_by: string;
+  file_name: string;
+  file_url: string;
+  file_type?: string;
+  file_size_bytes?: number;
+}): Promise<SubtaskAttachment | null> {
+  const { data, error } = await supabase
+    .from('subtask_attachments')
+    .insert([attachment])
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error adding subtask attachment:', error);
+    return null;
+  }
+
+  if (data) {
+    const activeUser = getActiveUserFromStorage();
+    recordActivity({
+      user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'Staff',
+      user_id: attachment.uploaded_by,
+      action: 'UPLOAD_SUBTASK_EVIDENCE',
+      module: 'Task Management',
+      level: 'AUDIT',
+      detail: `Mengunggah bukti tahapan: ${attachment.file_name}`,
+    });
+  }
+
+  return data as SubtaskAttachment;
+}
+
+// ── Get subtask attachments by subtask_id ──
+export async function getSubtaskAttachments(subtaskId: string): Promise<SubtaskAttachment[]> {
+  const { data, error } = await supabase
+    .from('subtask_attachments')
+    .select('*, uploader:users!subtask_attachments_uploaded_by_fkey(id, nama, nik, role)')
+    .eq('subtask_id', subtaskId)
+    .order('created_at', { ascending: true });
+  if (error) return [];
+  return (data || []) as SubtaskAttachment[];
+}
+
+// ── Delete subtask attachment ──
+export async function deleteSubtaskAttachment(id: string): Promise<boolean> {
+  const { error } = await supabase.from('subtask_attachments').delete().eq('id', id);
+  return !error;
 }
 
 export async function addAttachment(attachment: {

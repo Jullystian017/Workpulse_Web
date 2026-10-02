@@ -59,6 +59,21 @@ export interface User {
   subordinates?: User[];
 }
 
+export type SubtaskApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface SubtaskAttachment {
+  id: string;
+  subtask_id: string;
+  task_id: string;
+  uploaded_by?: string | null;
+  file_name: string;
+  file_url: string;
+  file_type?: string;
+  file_size_bytes?: number | null;
+  created_at?: string;
+  uploader?: User;
+}
+
 export interface Subtask {
   id: string;
   task_id: string;
@@ -67,11 +82,19 @@ export interface Subtask {
   sort_order: number;
   completed_at?: string | null;
   created_at?: string;
+  // Sequential approval fields
+  approval_status?: SubtaskApprovalStatus | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  rejection_note?: string | null;
+  // Per-subtask attachment (bukti pelaksanaan tahap)
+  attachments?: SubtaskAttachment[];
 }
 
 export interface TaskAttachment {
   id: string;
   task_id: string;
+  subtask_id?: string | null;  // If set, this attachment belongs to a specific subtask step
   uploaded_by?: string | null;
   file_name: string;
   file_url: string;
