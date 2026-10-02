@@ -135,14 +135,18 @@ export default function AuditLogPage() {
     setCurrentPage(1)
   }
 
-  const handleLevelChange = (val: string) => {
-    setSelectedLevel(val)
-    setCurrentPage(1)
+  const handleLevelChange = (val: string | null) => {
+    if (val) {
+      setSelectedLevel(val)
+      setCurrentPage(1)
+    }
   }
 
-  const handleModuleChange = (val: string) => {
-    setSelectedModule(val)
-    setCurrentPage(1)
+  const handleModuleChange = (val: string | null) => {
+    if (val) {
+      setSelectedModule(val)
+      setCurrentPage(1)
+    }
   }
 
   const handleResetFilters = () => {
@@ -564,9 +568,11 @@ export default function AuditLogPage() {
                     <span>Per halaman:</span>
                     <Select
                       value={String(pageSize)}
-                      onValueChange={(val) => {
-                        setPageSize(Number(val))
-                        setCurrentPage(1)
+                      onValueChange={(val: string | null) => {
+                        if (val) {
+                          setPageSize(Number(val))
+                          setCurrentPage(1)
+                        }
                       }}
                     >
                       <SelectTrigger className="h-7 w-16 text-[11px] rounded-md bg-background">
