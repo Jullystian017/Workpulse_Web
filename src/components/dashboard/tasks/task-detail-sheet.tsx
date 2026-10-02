@@ -1537,65 +1537,52 @@ export function TaskDetailSheet({
                   </div>
 
                   {/* Pelaksana (PIC) */}
-                  <div className="flex items-start justify-between py-1.5 gap-2">
-                    <span className="text-muted-foreground font-medium flex items-center gap-1.5 shrink-0 pt-0.5">
+                  <div className="flex items-center justify-between py-1.5 gap-2">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5 shrink-0">
                       <UserCheckIcon className="size-3.5 text-muted-foreground/70" />
                       Pelaksana (PIC)
                     </span>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                        {task.assignee ? (
-                          <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
-                            <img
-                              src={
-                                task.assignee.avatar_url ||
-                                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                              }
-                              alt={task.assignee.nama}
-                              className="size-4 rounded-full object-cover shrink-0"
-                            />
-                            <span className="font-bold text-foreground text-xs">
-                              {task.assignee.nama}
-                            </span>
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 font-bold border border-blue-500/20">
-                              Utama
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-semibold text-amber-600 text-[11px]">
-                            Belum Ditugaskan
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {task.assignee ? (
+                        <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+                          <img
+                            src={
+                              task.assignee.avatar_url ||
+                              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                            }
+                            alt={task.assignee.nama}
+                            className="size-4 rounded-full object-cover shrink-0"
+                          />
+                          <span className="font-bold text-foreground text-xs">
+                            {task.assignee.nama}
                           </span>
-                        )}
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 font-bold border border-blue-500/20">
+                            Utama
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-amber-600 text-[11px]">
+                          Belum Ditugaskan
+                        </span>
+                      )}
 
-                        {task.secondary_assignee && (
-                          <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
-                            <img
-                              src={
-                                task.secondary_assignee.avatar_url ||
-                                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                              }
-                              alt={task.secondary_assignee.nama}
-                              className="size-4 rounded-full object-cover shrink-0"
-                            />
-                            <span className="font-bold text-foreground text-xs">
-                              {task.secondary_assignee.nama}
-                            </span>
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/10 text-purple-600 font-bold border border-purple-500/20">
-                              Rekan
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {!isStaff && task.status !== "done" && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenDelegate?.(task)}
-                          className="text-[11px] text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold flex items-center gap-1 hover:underline cursor-pointer pt-0.5"
-                        >
-                          <CornerDownRightIcon className="size-3" />
-                          Ubah / Delegasikan Pelaksana
-                        </button>
+                      {task.secondary_assignee && (
+                        <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+                          <img
+                            src={
+                              task.secondary_assignee.avatar_url ||
+                              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                            }
+                            alt={task.secondary_assignee.nama}
+                            className="size-4 rounded-full object-cover shrink-0"
+                          />
+                          <span className="font-bold text-foreground text-xs">
+                            {task.secondary_assignee.nama}
+                          </span>
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/10 text-purple-600 font-bold border border-purple-500/20">
+                            Rekan
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1617,24 +1604,16 @@ export function TaskDetailSheet({
                       <CalendarIcon className="size-3.5 text-muted-foreground/70" />
                       Target Selesai
                     </span>
-                    {!isStaff && task.status !== "done" ? (
-                      <TaskDeadlinePicker
-                        value={task.deadline_at ? new Date(task.deadline_at) : new Date()}
-                        onChange={handleQuickDeadlineChange}
-                        className="h-7 text-xs font-bold border-dashed border-red-300 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 max-w-[210px]"
-                      />
-                    ) : (
-                      <span className="font-bold text-red-600 dark:text-red-400 font-mono">
-                        {task.deadline_at
-                          ? new Date(task.deadline_at).toLocaleString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "Tidak ditentukan"}
-                      </span>
-                    )}
+                    <span className="font-bold text-red-600 dark:text-red-400 font-mono">
+                      {task.deadline_at
+                        ? new Date(task.deadline_at).toLocaleString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Tidak ditentukan"}
+                    </span>
                   </div>
 
                   {/* Waktu Pengumpulan / Penyelesaian */}
