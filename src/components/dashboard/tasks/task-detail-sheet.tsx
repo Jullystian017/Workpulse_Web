@@ -156,6 +156,16 @@ export function TaskDetailSheet({
   const [isAddSubtaskExpanded, setIsAddSubtaskExpanded] = React.useState(false)
   const [isAddingSubtask, setIsAddingSubtask] = React.useState(false)
 
+  // Subtask accordion collapse/expand state (allows collapsing cards to minimize height)
+  const [subtaskExpandedMap, setSubtaskExpandedMap] = React.useState<Record<string, boolean>>({})
+
+  const toggleSubtaskCard = (subtaskId: string, currentExpanded: boolean) => {
+    setSubtaskExpandedMap((prev) => ({
+      ...prev,
+      [subtaskId]: !currentExpanded,
+    }))
+  }
+
   // Subtask comments and approval submission state
   const [subtaskCommentInputs, setSubtaskCommentInputs] = React.useState<Record<string, string>>({})
   const [subtaskCommentsExpanded, setSubtaskCommentsExpanded] = React.useState<Record<string, boolean>>({})
@@ -429,6 +439,24 @@ export function TaskDetailSheet({
   const subtasks = task?.subtasks || []
   const completedSubtasks = subtasks.filter((s) => s.is_completed).length
   const isStaff = currentUser?.role === "staff"
+
+  // Quick accordion helper for all subtasks
+  const areAllSubtasksExpanded = React.useMemo(() => {
+    if (subtasks.length === 0) return false
+    return subtasks.every((st) => {
+      const isApproved = st.approval_status === "approved"
+      return subtaskExpandedMap[st.id] !== undefined ? subtaskExpandedMap[st.id] : !isApproved
+    })
+  }, [subtasks, subtaskExpandedMap])
+
+  const toggleAllSubtasks = () => {
+    const nextState = !areAllSubtasksExpanded
+    const newMap: Record<string, boolean> = {}
+    subtasks.forEach((st) => {
+      newMap[st.id] = nextState
+    })
+    setSubtaskExpandedMap(newMap)
+  }
 
   // Hanya atasan (supervisor langsung), delegator, pembuat tugas, atau Admin/SGM yang berhak Approve / Setujui
   const canApprove = React.useMemo(() => {
@@ -1867,12 +1895,35 @@ export function TaskDetailSheet({
                             Progres: {completedSubtasks} dari {subtasks.length} tahap disetujui ({progressPercent}%). Setiap tahap harus disetujui atasan sebelum membuka tahap selanjutnya.
                           </span>
                         </div>
-                        {subtasks.some((s) => s.approval_status === "rejected") && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-md shrink-0">
-                            <XCircleIcon className="size-3" />
-                            Perlu Perbaikan
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {subtasks.some((s) => s.approval_status === "rejected") && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-md">
+                              <XCircleIcon className="size-3" />
+                              Perlu Perbaikan
+                            </span>
+                          )}
+                          {subtasks.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={toggleAllSubtasks}
+                              className="h-6.5 px-2 text-[10px] font-bold rounded-md border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer gap-1"
+                            >
+                              {areAllSubtasksExpanded ? (
+                                <>
+                                  <ChevronUpIcon className="size-3" />
+                                  <span>Tutup Semua</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDownIcon className="size-3" />
+                                  <span>Buka Semua</span>
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Hidden file input for subtask evidence attachment (supports multiple files/photos) */}
@@ -1947,26 +1998,36 @@ export function TaskDetailSheet({
                             )
                           }
 
+                          const isExpanded =
+                            subtaskExpandedMap[st.id] !== undefined
+                              ? subtaskExpandedMap[st.id]
+                              : !isApproved
+                          const attachmentsCount = (st.attachments || []).length
+                          const commentsCount = (st.comments || []).length
+
                           // 2. UNLOCKED STAGE (Sedang Dikerjakan / Menunggu Review / Disetujui / Perlu Revisi)
                           return (
                             <div
                               key={st.id}
-                              className={`rounded-xl border p-3.5 space-y-3 transition-all ${
+                              className={`rounded-xl border transition-all overflow-hidden ${
                                 isApproved
-                                  ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/25 dark:border-emerald-800/60"
+                                  ? "bg-emerald-50/40 border-emerald-200/80 dark:bg-emerald-950/20 dark:border-emerald-800/50"
                                   : isRejected
-                                  ? "bg-red-50/50 border-red-200 dark:bg-red-950/25 dark:border-red-800/60 shadow-xs"
+                                  ? "bg-red-50/40 border-red-200 dark:bg-red-950/25 dark:border-red-800/60 shadow-xs"
                                   : isPending
                                   ? "bg-amber-50/40 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/60 shadow-xs"
                                   : "bg-card border-border shadow-xs hover:border-blue-300 dark:hover:border-blue-900"
                               }`}
                             >
-                              {/* Header Card */}
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex items-start gap-2.5 min-w-0">
+                              {/* Header Card (Clickable to Collapse / Expand) */}
+                              <div
+                                onClick={() => toggleSubtaskCard(st.id, isExpanded)}
+                                className="flex items-center justify-between gap-2 p-3 sm:p-3.5 cursor-pointer select-none hover:bg-muted/40 transition-colors"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
                                   {/* Step Circle */}
                                   <div
-                                    className={`flex items-center justify-center size-6.5 rounded-full shrink-0 text-[11px] font-bold border-2 mt-0.5 ${
+                                    className={`flex items-center justify-center size-6.5 rounded-full shrink-0 text-[11px] font-bold border-2 ${
                                       isApproved
                                         ? "bg-emerald-500 border-emerald-500 text-white"
                                         : isRejected
@@ -2014,26 +2075,60 @@ export function TaskDetailSheet({
                                         </span>
                                       )}
                                     </div>
-                                    <h4 className="text-xs font-bold text-foreground mt-0.5">
-                                      {st.title}
-                                    </h4>
+                                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                      <h4 className="text-xs font-bold text-foreground">
+                                        {st.title}
+                                      </h4>
+                                      {/* Collapsed summary badges */}
+                                      {!isExpanded && (
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                                          {attachmentsCount > 0 && (
+                                            <span className="inline-flex items-center gap-0.5 bg-muted/80 px-1.5 py-0.2 rounded border border-border/50">
+                                              <PaperclipIcon className="size-2.5" /> {attachmentsCount} berkas
+                                            </span>
+                                          )}
+                                          {commentsCount > 0 && (
+                                            <span className="inline-flex items-center gap-0.5 bg-muted/80 px-1.5 py-0.2 rounded border border-border/50">
+                                              <MessageSquareIcon className="size-2.5" /> {commentsCount} catatan
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
-                                {/* Right: Quick Delete Button (Non-staff only, when not approved) */}
-                                {!isStaff && !isApproved && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleDeleteSubtask(st.id, e)}
-                                    className="text-muted-foreground hover:text-red-600 p-1 rounded-md hover:bg-muted transition-colors cursor-pointer shrink-0"
-                                    title="Hapus tahap ini"
+                                {/* Right: Quick Delete Button & Collapse/Expand Toggle */}
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {!isStaff && !isApproved && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteSubtask(st.id, e)
+                                      }}
+                                      className="text-muted-foreground hover:text-red-600 p-1 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                                      title="Hapus tahap ini"
+                                    >
+                                      <Trash2Icon className="size-3.5" />
+                                    </button>
+                                  )}
+
+                                  <div
+                                    className={`size-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-transform duration-200 ${
+                                      isExpanded ? "rotate-180" : ""
+                                    }`}
+                                    title={isExpanded ? "Tutup detail tahapan" : "Buka detail tahapan"}
                                   >
-                                    <Trash2Icon className="size-3.5" />
-                                  </button>
-                                )}
+                                    <ChevronDownIcon className="size-4" />
+                                  </div>
+                                </div>
                               </div>
 
-                              {/* Subtask Description / Detailed Instructions */}
+                              {/* Collapsible Body (Rendered when expanded) */}
+                              {isExpanded && (
+                                <div className="p-3.5 pt-1 space-y-3 border-t border-border/40">
+                                  {/* Subtask Description / Detailed Instructions */}
                               {st.description && (
                                 <div className="bg-muted/30 p-2.5 rounded-lg border border-border/40 text-xs space-y-1">
                                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
@@ -2324,7 +2419,9 @@ export function TaskDetailSheet({
                                 )}
                               </div>
                             </div>
-                          )
+                          )}
+                        </div>
+                      )
                         })}
 
                         {subtasks.length === 0 && (
