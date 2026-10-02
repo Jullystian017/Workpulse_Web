@@ -198,47 +198,61 @@ export function TaskDetailSheet({
   const [isDeletingTask, setIsDeletingTask] = React.useState(false)
 
   // Fetch Full Task Data
-  const loadTaskData = React.useCallback(async () => {
+  const loadTaskData = React.useCallback(async (forceRefresh = true) => {
     if (!taskId) return
-    // Only show full loading spinner if we don't have task data yet
-    if (!task && !initialTask) {
-      setIsLoading(true)
-    }
     setLoadError(null)
     try {
       const activeUser = getActiveUserFromStorage()
       setCurrentUser(activeUser)
-      const data = await getTaskById(taskId)
+      const data = await getTaskById(taskId, forceRefresh)
       if (data) {
         setTask(data)
       } else {
-        if (!task && !initialTask) {
-          setLoadError("Data penugasan tidak ditemukan.")
-        }
+        setLoadError("Data penugasan tidak ditemukan.")
       }
     } catch (err: any) {
       console.error(err)
-      if (!task && !initialTask) {
-        setLoadError(err?.message || "Terjadi kesalahan saat memuat tugas.")
-      }
+      setLoadError(err?.message || "Terjadi kesalahan saat memuat tugas.")
     } finally {
       setIsLoading(false)
     }
-  }, [taskId, task, initialTask])
+  }, [taskId])
 
+  // Sync initialTask when opened or when initialTask updates from parent
+  React.useEffect(() => {
+    if (!open || !taskId) return
+    if (initialTask && initialTask.id === taskId) {
+      setTask((prev) => {
+        if (!prev) return initialTask
+        return {
+          ...prev,
+          ...initialTask,
+          status: initialTask.status || prev.status,
+          subtasks: initialTask.subtasks && initialTask.subtasks.length > 0 ? initialTask.subtasks : prev.subtasks,
+          attachments: initialTask.attachments && initialTask.attachments.length > 0 ? initialTask.attachments : prev.attachments,
+          comments: initialTask.comments && initialTask.comments.length > 0 ? initialTask.comments : prev.comments,
+        }
+      })
+    }
+  }, [initialTask, open, taskId])
+
+  // Initial load when sheet opens or taskId changes
   React.useEffect(() => {
     if (open && taskId) {
       if (initialTask && initialTask.id === taskId) {
         setTask(initialTask)
+      } else {
+        setIsLoading(true)
       }
       setLoadError(null)
-      loadTaskData()
       setIsEditing(false)
+      loadTaskData(true)
     } else if (!open) {
       setTask(null)
       setLoadError(null)
+      setIsEditing(false)
     }
-  }, [open, taskId, initialTask, loadTaskData])
+  }, [open, taskId, loadTaskData])
 
   // Load Channels & Users when entering edit mode
   const handleStartEdit = async () => {
@@ -307,18 +321,52 @@ export function TaskDetailSheet({
     }
   }
 
-  // Quick Status Changer
+  // Quick Status Changer (Instant Optimistic Update - Zero Lag)
   const handleQuickStatusChange = async (newStatus: TaskStatus) => {
     if (!task) return
     if (newStatus === "done" && task.status === "review" && !canApprove) {
       toast.error("Hanya atasan atau delegator tugas yang berhak menyetujui tugas ini.")
       return
     }
-    const ok = await updateTaskStatus(task.id, newStatus, currentUser?.id)
-    if (ok) {
-      setTask((prev) => (prev ? { ...prev, status: newStatus } : null))
-      toast.success(`Status diubah ke ${TASK_STATUS_LABELS[newStatus]?.label || newStatus}`)
-      onTaskUpdated?.()
+
+    const previousStatus = task.status
+    const previousCompletedAt = task.completed_at
+    const nowIso = new Date().toISOString()
+
+    // 1. INSTANT OPTIMISTIC UPDATE: Change status immediately so UI and banners update instantly
+    setTask((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: newStatus,
+            completed_at: newStatus === "done" ? nowIso : prev.completed_at,
+          }
+        : null
+    )
+
+    try {
+      const ok = await updateTaskStatus(task.id, newStatus, currentUser?.id)
+      if (ok) {
+        toast.success(`Status diubah ke ${TASK_STATUS_LABELS[newStatus]?.label || newStatus}`)
+        onTaskUpdated?.()
+        loadTaskData(true)
+      } else {
+        // Rollback on failure
+        setTask((prev) =>
+          prev
+            ? { ...prev, status: previousStatus, completed_at: previousCompletedAt }
+            : null
+        )
+        toast.error("Gagal mengubah status tugas.")
+      }
+    } catch (err) {
+      console.error(err)
+      setTask((prev) =>
+        prev
+          ? { ...prev, status: previousStatus, completed_at: previousCompletedAt }
+          : null
+      )
+      toast.error("Terjadi kesalahan saat mengubah status tugas.")
     }
   }
 
@@ -738,38 +786,92 @@ export function TaskDetailSheet({
   // Submit Task For Review
   const handleSubmitForReview = async () => {
     if (!task || !currentUser) return
+    const prevStatus = task.status
+    const prevNotes = task.review_notes
+
+    // Optimistic Update
+    setTask((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "review",
+            review_notes: submitNotes,
+          }
+        : null
+    )
+    setIsSubmitReviewOpen(false)
     setIsActionLoading(true)
     try {
       const ok = await submitTaskForReview(task.id, currentUser.id, submitNotes)
       if (ok) {
         toast.success("Tugas diajukan untuk review atasan!")
-        setIsSubmitReviewOpen(false)
-        loadTaskData()
+        setSubmitNotes("")
         onTaskUpdated?.()
+        loadTaskData(true)
+      } else {
+        setTask((prev) =>
+          prev
+            ? { ...prev, status: prevStatus, review_notes: prevNotes }
+            : null
+        )
+        toast.error("Gagal mengajukan review")
       }
     } catch (err) {
+      setTask((prev) =>
+        prev
+          ? { ...prev, status: prevStatus, review_notes: prevNotes }
+          : null
+      )
       toast.error("Gagal mengajukan review")
     } finally {
       setIsActionLoading(false)
     }
   }
 
-  // Supervisor Approve Task
+  // Supervisor Approve Task (Instant Optimistic - Eliminates banner instantly)
   const handleApprove = async () => {
     if (!task || !currentUser) return
     if (!canApprove) {
       toast.error("Hanya atasan atau delegator tugas yang berhak menyetujui tugas ini.")
       return
     }
+
+    const prevStatus = task.status
+    const prevCompletedAt = task.completed_at
+    const nowIso = new Date().toISOString()
+
+    // 1. INSTANT OPTIMISTIC UPDATE: status becomes 'done', banner disappears instantly
+    setTask((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "done",
+            completed_at: nowIso,
+          }
+        : null
+    )
+
     setIsActionLoading(true)
     try {
       const ok = await approveTask(task.id, currentUser.id)
       if (ok) {
-        toast.success("Tugas Disetujui & Selesai!")
-        loadTaskData()
+        toast.success("Tugas Disetujui & Selesai! ✅")
         onTaskUpdated?.()
+        loadTaskData(true)
+      } else {
+        setTask((prev) =>
+          prev
+            ? { ...prev, status: prevStatus, completed_at: prevCompletedAt }
+            : null
+        )
+        toast.error("Gagal menyetujui tugas")
       }
     } catch (err) {
+      setTask((prev) =>
+        prev
+          ? { ...prev, status: prevStatus, completed_at: prevCompletedAt }
+          : null
+      )
       toast.error("Gagal menyetujui tugas")
     } finally {
       setIsActionLoading(false)
@@ -786,17 +888,43 @@ export function TaskDetailSheet({
       toast.error("Hanya atasan atau delegator tugas yang berhak mengembalikan tugas ini.")
       return
     }
+
+    const prevStatus = task.status
+    const prevReviewNotes = task.review_notes
+
+    // Instant optimistic update
+    setTask((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "in_progress",
+            review_notes: revisionNotes,
+          }
+        : null
+    )
+    setIsRevisionOpen(false)
     setIsActionLoading(true)
     try {
       const ok = await returnTaskForRevision(task.id, currentUser.id, revisionNotes)
       if (ok) {
         toast.warning("Tugas dikembalikan untuk revisi.")
-        setIsRevisionOpen(false)
         setRevisionNotes("")
-        loadTaskData()
         onTaskUpdated?.()
+        loadTaskData(true)
+      } else {
+        setTask((prev) =>
+          prev
+            ? { ...prev, status: prevStatus, review_notes: prevReviewNotes }
+            : null
+        )
+        toast.error("Gagal mengembalikan tugas")
       }
     } catch (err) {
+      setTask((prev) =>
+        prev
+          ? { ...prev, status: prevStatus, review_notes: prevReviewNotes }
+          : null
+      )
       toast.error("Gagal mengembalikan tugas")
     } finally {
       setIsActionLoading(false)
@@ -811,8 +939,8 @@ export function TaskDetailSheet({
       const ok = await claimTask(task.id, currentUser.id)
       if (ok) {
         toast.success("Tugas berhasil Anda klaim!")
-        loadTaskData()
         onTaskUpdated?.()
+        loadTaskData(true)
       }
     } catch (err) {
       toast.error("Gagal mengklaim tugas")
@@ -824,29 +952,51 @@ export function TaskDetailSheet({
   // Ambil Tugas / Mulai Kerjakan (To Do -> Dalam Pengerjaan)
   const handleTakeTask = async () => {
     if (!task || !currentUser) return
+
+    const prevStatus = task.status
+    const prevAssignee = task.assignee
+    const prevAssignedTo = task.assigned_to
+
+    // Instant optimistic update
+    setTask((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "in_progress",
+            assigned_to: currentUser.id,
+            assignee: currentUser,
+          }
+        : null
+    )
+
     setIsActionLoading(true)
     try {
       if (!task.assigned_to) {
         const ok = await claimTask(task.id, currentUser.id)
         if (ok) {
           toast.success("Tugas berhasil diambil & mulai dikerjakan!")
-          loadTaskData()
           onTaskUpdated?.()
+          loadTaskData(true)
         } else {
-          toast.error("Gagal mengambil tugas.")
+          throw new Error("Gagal mengambil tugas.")
         }
       } else {
         const ok = await updateTaskStatus(task.id, "in_progress", currentUser.id)
         if (ok) {
           toast.success("Tugas mulai dikerjakan (Dalam Pengerjaan)!")
-          loadTaskData()
           onTaskUpdated?.()
+          loadTaskData(true)
         } else {
-          toast.error("Gagal memperbarui status tugas.")
+          throw new Error("Gagal memperbarui status tugas.")
         }
       }
     } catch (err) {
       console.error(err)
+      setTask((prev) =>
+        prev
+          ? { ...prev, status: prevStatus, assigned_to: prevAssignedTo, assignee: prevAssignee }
+          : null
+      )
       toast.error("Terjadi kendala saat mengambil tugas.")
     } finally {
       setIsActionLoading(false)
@@ -995,7 +1145,7 @@ export function TaskDetailSheet({
               {loadError || "Data penugasan tidak ditemukan atau terjadi kendala jaringan."}
             </p>
             <div className="flex items-center gap-2 mt-4">
-              <Button size="sm" variant="outline" onClick={loadTaskData}>
+              <Button size="sm" variant="outline" onClick={() => loadTaskData(true)}>
                 Coba Lagi
               </Button>
               <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>
@@ -1017,50 +1167,13 @@ export function TaskDetailSheet({
                 </span>
               </div>
 
-              {/* Right: Quick Menu Dropdown & Close Button */}
+              {/* Right: Close Button */}
               <div className="flex items-center gap-1 shrink-0">
-                {!isEditing && !isStaff && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer outline-none"
-                      title="Opsi Penugasan"
-                    >
-                      <MoreHorizontalIcon className="size-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 p-1">
-                      {task.status !== "done" && (
-                        <DropdownMenuItem
-                          onClick={() => onOpenDelegate?.(task)}
-                          className="flex items-center gap-2 text-xs font-semibold text-blue-600 focus:text-blue-700 cursor-pointer"
-                        >
-                          <CornerDownRightIcon className="size-3.5" />
-                          <span>Delegasikan Tugas</span>
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        onClick={handleStartEdit}
-                        className="flex items-center gap-2 text-xs font-medium cursor-pointer"
-                      >
-                        <PencilIcon className="size-3.5" />
-                        <span>Edit Penugasan</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => setIsDeleteTaskOpen(true)}
-                        className="flex items-center gap-2 text-xs font-medium text-red-600 focus:text-red-700 cursor-pointer"
-                      >
-                        <Trash2Icon className="size-3.5" />
-                        <span>Hapus Penugasan</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onOpenChange(false)}
-                  className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer ml-0.5"
+                  className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
                   title="Tutup Panel"
                 >
                   <XIcon className="size-4" />
@@ -2361,19 +2474,24 @@ export function TaskDetailSheet({
                           <div className="space-y-2.5">
                             {subtasks
                               .filter((st) => (st.attachments || []).length > 0)
-                              .map((st, sIdx) => (
-                                <div key={st.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                                      <span className="size-4.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[10px] flex items-center justify-center font-bold">
-                                        {sIdx + 1}
+                              .map((st) => {
+                                const stepNumber =
+                                  st.sort_order && st.sort_order > 0
+                                    ? st.sort_order
+                                    : subtasks.findIndex((s) => s.id === st.id) + 1
+                                return (
+                                  <div key={st.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5 min-w-0">
+                                        <span className="size-5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[10px] flex items-center justify-center font-bold shrink-0">
+                                          {stepNumber}
+                                        </span>
+                                        <span className="truncate">Tahap {stepNumber}: {st.title}</span>
                                       </span>
-                                      {st.title}
-                                    </span>
-                                    <span className="text-[10px] font-semibold text-muted-foreground">
-                                      {(st.attachments || []).length} berkas
-                                    </span>
-                                  </div>
+                                      <span className="text-[10px] font-semibold text-muted-foreground shrink-0">
+                                        {(st.attachments || []).length} berkas
+                                      </span>
+                                    </div>
 
                                   <div className="space-y-1.5">
                                     {(st.attachments || []).map((att) => (
@@ -2406,7 +2524,8 @@ export function TaskDetailSheet({
                                     ))}
                                   </div>
                                 </div>
-                              ))}
+                              )
+                            })}
                           </div>
                         ) : (
                           <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-6 rounded-lg border border-dashed text-center space-y-1">

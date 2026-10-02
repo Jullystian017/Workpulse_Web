@@ -86,7 +86,7 @@ function KaryawanTasksContent() {
       const activeUser = getActiveUserFromStorage()
       setCurrentUser(activeUser)
       const [fetchedTasks, fetchedChannels, fetchedUsers] = await Promise.all([
-        getTasks(),
+        getTasks(undefined, true),
         getChannels(),
         getAllUsers(),
       ])
@@ -122,6 +122,13 @@ function KaryawanTasksContent() {
       setTasks(userTasks)
       setChannels(fetchedChannels)
       setUsers(fetchedUsers)
+
+      // Synchronize selectedTask so open TaskDetailSheet updates immediately with fresh status
+      setSelectedTask((prev) => {
+        if (!prev) return null
+        const fresh = userTasks.find((t) => t.id === prev.id)
+        return fresh ? { ...prev, ...fresh } : prev
+      })
     } catch (e) {
       console.error(e)
     } finally {
@@ -663,6 +670,34 @@ function KaryawanTasksContent() {
                 onOpenDelegate={handleOpenDelegate}
                 onOpenCreate={handleOpenCreate}
                 onUpdateStatus={async (taskId, status) => {
+                  const nowIso = new Date().toISOString()
+                  // 1. Instant optimistic update on tasks list
+                  setTasks((prev) =>
+                    prev.map((t) =>
+                      t.id === taskId
+                        ? {
+                            ...t,
+                            status,
+                            assigned_to: status === "in_progress" && !t.assigned_to && currentUser ? currentUser.id : t.assigned_to,
+                            assignee: status === "in_progress" && !t.assigned_to && currentUser ? currentUser : t.assignee,
+                            completed_at: status === "done" ? nowIso : t.completed_at,
+                          }
+                        : t
+                    )
+                  )
+                  // 2. Also immediately update selectedTask if open
+                  setSelectedTask((prev) =>
+                    prev && prev.id === taskId
+                      ? {
+                          ...prev,
+                          status,
+                          assigned_to: status === "in_progress" && !prev.assigned_to && currentUser ? currentUser.id : prev.assigned_to,
+                          assignee: status === "in_progress" && !prev.assigned_to && currentUser ? currentUser : prev.assignee,
+                          completed_at: status === "done" ? nowIso : prev.completed_at,
+                        }
+                      : prev
+                  )
+
                   const movingTask = tasks.find((t) => t.id === taskId)
                   if (status === "in_progress" && movingTask && !movingTask.assigned_to && currentUser) {
                     await claimTask(taskId, currentUser.id)
