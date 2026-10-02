@@ -105,10 +105,13 @@ import {
   claimTask,
   updateTask,
   updateTaskStatus,
+  updateTaskDeadline,
+  updateTaskAssignees,
   deleteTask,
   getChannels,
   getAllUsers,
 } from "@/lib/api"
+import { TaskDeadlinePicker } from "@/components/dashboard/tasks/task-deadline-picker"
 
 export type { Task as TaskItem } from "@/types/database"
 
@@ -141,6 +144,8 @@ export function TaskDetailSheet({
   const [editChannelId, setEditChannelId] = React.useState("")
   const [editPriority, setEditPriority] = React.useState<TaskPriority>("high")
   const [editAssignedTo, setEditAssignedTo] = React.useState("")
+  const [editSecondaryAssignedTo, setEditSecondaryAssignedTo] = React.useState("")
+  const [editDeadline, setEditDeadline] = React.useState<Date>(() => new Date())
   const [availableChannels, setAvailableChannels] = React.useState<Channel[]>([])
   const [availableUsers, setAvailableUsers] = React.useState<User[]>([])
   const [isSavingEdit, setIsSavingEdit] = React.useState(false)
@@ -164,10 +169,10 @@ export function TaskDetailSheet({
   const [rejectionNote, setRejectionNote] = React.useState("")
   const [isSubtaskActionLoading, setIsSubtaskActionLoading] = React.useState(false)
 
-  // Per-subtask file upload state
+  // Per-subtask file upload state (Supports multiple files/photos)
   const subtaskFileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [uploadTargetSubtaskId, setUploadTargetSubtaskId] = React.useState<string | null>(null)
-  const [subtaskSelectedFile, setSubtaskSelectedFile] = React.useState<File | null>(null)
+  const [subtaskSelectedFiles, setSubtaskSelectedFiles] = React.useState<File[]>([])
   const [isSubtaskUploadOpen, setIsSubtaskUploadOpen] = React.useState(false)
   const [isSubtaskUploading, setIsSubtaskUploading] = React.useState(false)
 
@@ -262,6 +267,8 @@ export function TaskDetailSheet({
     setEditChannelId(task.channel_id || "")
     setEditPriority(task.priority)
     setEditAssignedTo(task.assigned_to || "")
+    setEditSecondaryAssignedTo(task.secondary_assigned_to || "")
+    setEditDeadline(task.deadline_at ? new Date(task.deadline_at) : new Date())
 
     try {
       const [chs, usrs] = await Promise.all([getChannels(), getAllUsers()])
@@ -303,6 +310,8 @@ export function TaskDetailSheet({
           channel_id: editChannelId || undefined,
           priority: editPriority,
           assigned_to: editAssignedTo || null,
+          secondary_assigned_to: editSecondaryAssignedTo || null,
+          deadline_at: editDeadline.toISOString(),
         },
         currentUser?.id
       )
@@ -318,6 +327,29 @@ export function TaskDetailSheet({
       toast.error("Gagal memperbarui penugasan.")
     } finally {
       setIsSavingEdit(false)
+    }
+  }
+
+  // Quick Deadline Changer (Instant Optimistic Update)
+  const handleQuickDeadlineChange = async (newDate: Date) => {
+    if (!task) return
+    const prevDeadline = task.deadline_at
+    const newIso = newDate.toISOString()
+    // Optimistic
+    setTask((prev) => (prev ? { ...prev, deadline_at: newIso } : null))
+    try {
+      const ok = await updateTaskDeadline(task.id, newIso, currentUser?.id)
+      if (ok) {
+        toast.success("Target batas selesai berhasil diperbarui!")
+        onTaskUpdated?.()
+        loadTaskData(true)
+      } else {
+        setTask((prev) => (prev ? { ...prev, deadline_at: prevDeadline } : null))
+        toast.error("Gagal memperbarui batas waktu.")
+      }
+    } catch {
+      setTask((prev) => (prev ? { ...prev, deadline_at: prevDeadline } : null))
+      toast.error("Terjadi kendala saat memperbarui deadline.")
     }
   }
 
@@ -403,6 +435,7 @@ export function TaskDetailSheet({
     if (!currentUser || !task) return false
     // Pelaksana dilarang approve tugasnya sendiri
     if (task.assigned_to && currentUser.id === task.assigned_to) return false
+    if (task.secondary_assigned_to && currentUser.id === task.secondary_assigned_to) return false
 
     // 1. Admin & SGM selalu memiliki wewenang override
     if (currentUser.role === "admin" || currentUser.role === "sgm") return true
@@ -674,90 +707,75 @@ export function TaskDetailSheet({
     }
   }
 
-  // ── Upload file bukti per subtask (karyawan) ──
+  // ── Upload file bukti per subtask (karyawan) (Mendukung upload banyak foto/berkas) ──
   const handleSubtaskFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSubtaskSelectedFile(file)
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      setSubtaskSelectedFiles(files)
       setIsSubtaskUploadOpen(true)
     }
   }
 
   const handleSubtaskUploadConfirm = async () => {
-    if (!subtaskSelectedFile || !uploadTargetSubtaskId || !task || !currentUser) return
+    if (subtaskSelectedFiles.length === 0 || !uploadTargetSubtaskId || !task || !currentUser) return
     setIsSubtaskUploading(true)
     try {
       const { supabase } = await import("@/lib/api").then(m => ({ supabase: m.supabase }))
-      // Use a signed storage path
-      const ext = subtaskSelectedFile.name.split(".").pop() || "bin"
-      const path = `subtask-attachments/${uploadTargetSubtaskId}/${Date.now()}.${ext}`
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("task-attachments")
-        .upload(path, subtaskSelectedFile, { upsert: false })
+      const uploadedAttachments: SubtaskAttachment[] = []
 
-      if (uploadError) {
-        // Fallback: Store the object URL so files can still be previewed locally
-        const localUrl = URL.createObjectURL(subtaskSelectedFile)
+      for (const file of subtaskSelectedFiles) {
+        const ext = file.name.split(".").pop() || "bin"
+        const path = `subtask-attachments/${uploadTargetSubtaskId}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from("task-attachments")
+          .upload(path, file, { upsert: false })
+
+        let fileUrl = ""
+        if (uploadError) {
+          fileUrl = URL.createObjectURL(file)
+        } else {
+          fileUrl = supabase.storage.from("task-attachments").getPublicUrl(path).data.publicUrl
+        }
+
         const created = await addSubtaskAttachment({
           task_id: task.id,
           subtask_id: uploadTargetSubtaskId,
           uploaded_by: currentUser.id,
-          file_name: subtaskSelectedFile.name,
-          file_url: localUrl,
-          file_type: subtaskSelectedFile.type,
-          file_size_bytes: subtaskSelectedFile.size,
+          file_name: file.name,
+          file_url: fileUrl,
+          file_type: file.type,
+          file_size_bytes: file.size,
         })
         if (created) {
-          setTask((prev) => {
-            if (!prev) return null
-            return {
-              ...prev,
-              subtasks: (prev.subtasks || []).map((st) =>
-                st.id === uploadTargetSubtaskId
-                  ? { ...st, attachments: [...(st.attachments || []), created] }
-                  : st
-              ),
-            }
-          })
-          toast.success("Bukti tahapan berhasil diunggah!")
-        } else {
-          toast.error("Gagal mengunggah bukti tahapan.")
+          uploadedAttachments.push(created)
         }
+      }
+
+      if (uploadedAttachments.length > 0) {
+        setTask((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            subtasks: (prev.subtasks || []).map((st) =>
+              st.id === uploadTargetSubtaskId
+                ? { ...st, attachments: [...(st.attachments || []), ...uploadedAttachments] }
+                : st
+            ),
+          }
+        })
+        toast.success(`${uploadedAttachments.length} berkas bukti tahapan berhasil diunggah!`)
+        onTaskUpdated?.()
+        loadTaskData(true)
       } else {
-        const { data: { publicUrl } } = supabase.storage.from("task-attachments").getPublicUrl(path)
-        const created = await addSubtaskAttachment({
-          task_id: task.id,
-          subtask_id: uploadTargetSubtaskId,
-          uploaded_by: currentUser.id,
-          file_name: subtaskSelectedFile.name,
-          file_url: publicUrl,
-          file_type: subtaskSelectedFile.type,
-          file_size_bytes: subtaskSelectedFile.size,
-        })
-        if (created) {
-          setTask((prev) => {
-            if (!prev) return null
-            return {
-              ...prev,
-              subtasks: (prev.subtasks || []).map((st) =>
-                st.id === uploadTargetSubtaskId
-                  ? { ...st, attachments: [...(st.attachments || []), created] }
-                  : st
-              ),
-            }
-          })
-          toast.success("Bukti tahapan berhasil diunggah!")
-        } else {
-          toast.error("Gagal menyimpan metadata bukti.")
-        }
+        toast.error("Gagal mengunggah berkas bukti.")
       }
     } catch (err) {
       console.error(err)
-      toast.error("Gagal mengunggah file.")
+      toast.error("Gagal mengunggah berkas.")
     } finally {
       setIsSubtaskUploading(false)
       setIsSubtaskUploadOpen(false)
-      setSubtaskSelectedFile(null)
+      setSubtaskSelectedFiles([])
       setUploadTargetSubtaskId(null)
       if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = ""
     }
@@ -1277,38 +1295,86 @@ export function TaskDetailSheet({
                     />
                   </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                        Pelaksana Utama (PIC 1)
+                      </label>
+                      <Select
+                        value={editAssignedTo || "unassigned"}
+                        onValueChange={(val) => setEditAssignedTo(val === "unassigned" ? "" : (val || ""))}
+                      >
+                        <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2.5 text-xs font-medium">
+                          <span className="truncate font-semibold text-foreground">
+                            {availableUsers.find((u) => u.id === editAssignedTo)?.nama || "Belum Ditugaskan"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent className="w-full max-h-52">
+                          <SelectItem value="unassigned">
+                            <span className="text-muted-foreground font-medium">Belum Ditugaskan</span>
+                          </SelectItem>
+                          {availableUsers.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                                  alt={u.nama}
+                                  className="size-4.5 rounded-full object-cover shrink-0"
+                                />
+                                <span className="font-medium text-foreground">{u.nama}</span>
+                                <span className="text-[10px] text-muted-foreground">({ROLE_LABELS[u.role]?.badge || u.role})</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                        Pelaksana Rekan (PIC 2 - Opsional)
+                      </label>
+                      <Select
+                        value={editSecondaryAssignedTo || "none"}
+                        onValueChange={(val) => setEditSecondaryAssignedTo(val === "none" ? "" : (val || ""))}
+                      >
+                        <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2.5 text-xs font-medium">
+                          <span className="truncate font-semibold text-foreground">
+                            {availableUsers.find((u) => u.id === editSecondaryAssignedTo)?.nama || "Tidak Ada (Hanya 1 PIC)"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent className="w-full max-h-52">
+                          <SelectItem value="none">
+                            <span className="text-muted-foreground font-medium">Tidak Ada (Hanya 1 PIC)</span>
+                          </SelectItem>
+                          {availableUsers
+                            .filter((u) => u.id !== editAssignedTo)
+                            .map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                                    alt={u.nama}
+                                    className="size-4.5 rounded-full object-cover shrink-0"
+                                  />
+                                  <span className="font-medium text-foreground">{u.nama}</span>
+                                  <span className="text-[10px] text-muted-foreground">({ROLE_LABELS[u.role]?.badge || u.role})</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-[11px] font-bold text-muted-foreground block mb-1">
-                      Pelaksana Tugas (PIC)
+                      Target Batas Waktu Selesai (Deadline)
                     </label>
-                    <Select
-                      value={editAssignedTo || "unassigned"}
-                      onValueChange={(val) => setEditAssignedTo(val === "unassigned" ? "" : (val || ""))}
-                    >
-                      <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2.5 text-xs font-medium">
-                        <span className="truncate font-semibold text-foreground">
-                          {availableUsers.find((u) => u.id === editAssignedTo)?.nama || "Belum Ditugaskan"}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent className="w-full max-h-52">
-                        <SelectItem value="unassigned">
-                          <span className="text-muted-foreground font-medium">Belum Ditugaskan</span>
-                        </SelectItem>
-                        {availableUsers.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
-                                alt={u.nama}
-                                className="size-4.5 rounded-full object-cover shrink-0"
-                              />
-                              <span className="font-medium text-foreground">{u.nama}</span>
-                              <span className="text-[10px] text-muted-foreground">({ROLE_LABELS[u.role]?.badge || u.role})</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <TaskDeadlinePicker
+                      value={editDeadline}
+                      onChange={setEditDeadline}
+                    />
                   </div>
                 </div>
 
@@ -1471,30 +1537,67 @@ export function TaskDetailSheet({
                   </div>
 
                   {/* Pelaksana (PIC) */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                  <div className="flex items-start justify-between py-1.5 gap-2">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5 shrink-0 pt-0.5">
                       <UserCheckIcon className="size-3.5 text-muted-foreground/70" />
                       Pelaksana (PIC)
                     </span>
-                    {task.assignee ? (
-                      <div className="flex items-center gap-1.5">
-                        <img
-                          src={
-                            task.assignee.avatar_url ||
-                            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                          }
-                          alt={task.assignee.nama}
-                          className="size-4.5 rounded-full object-cover"
-                        />
-                        <span className="font-bold text-foreground">
-                          {task.assignee.nama}
-                        </span>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {task.assignee ? (
+                          <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+                            <img
+                              src={
+                                task.assignee.avatar_url ||
+                                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                              }
+                              alt={task.assignee.nama}
+                              className="size-4 rounded-full object-cover shrink-0"
+                            />
+                            <span className="font-bold text-foreground text-xs">
+                              {task.assignee.nama}
+                            </span>
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 font-bold border border-blue-500/20">
+                              Utama
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="font-semibold text-amber-600 text-[11px]">
+                            Belum Ditugaskan
+                          </span>
+                        )}
+
+                        {task.secondary_assignee && (
+                          <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+                            <img
+                              src={
+                                task.secondary_assignee.avatar_url ||
+                                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                              }
+                              alt={task.secondary_assignee.nama}
+                              className="size-4 rounded-full object-cover shrink-0"
+                            />
+                            <span className="font-bold text-foreground text-xs">
+                              {task.secondary_assignee.nama}
+                            </span>
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/10 text-purple-600 font-bold border border-purple-500/20">
+                              Rekan
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <span className="font-semibold text-amber-600 text-[11px]">
-                        Belum Ditugaskan
-                      </span>
-                    )}
+
+                      {!isStaff && task.status !== "done" && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenDelegate?.(task)}
+                          className="text-[11px] text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold flex items-center gap-1 hover:underline cursor-pointer pt-0.5"
+                        >
+                          <CornerDownRightIcon className="size-3" />
+                          Ubah / Delegasikan Pelaksana
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Pemberi Delegasi */}
@@ -1509,21 +1612,29 @@ export function TaskDetailSheet({
                   </div>
 
                   {/* Deadline SLA */}
-                  <div className="flex items-center justify-between py-1.5 last:pb-0">
-                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                  <div className="flex items-center justify-between py-1.5 last:pb-0 gap-2">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5 shrink-0">
                       <CalendarIcon className="size-3.5 text-muted-foreground/70" />
                       Target Selesai
                     </span>
-                    <span className="font-bold text-red-600 dark:text-red-400 font-mono">
-                      {task.deadline_at
-                        ? new Date(task.deadline_at).toLocaleString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "Tidak ditentukan"}
-                    </span>
+                    {!isStaff && task.status !== "done" ? (
+                      <TaskDeadlinePicker
+                        value={task.deadline_at ? new Date(task.deadline_at) : new Date()}
+                        onChange={handleQuickDeadlineChange}
+                        className="h-7 text-xs font-bold border-dashed border-red-300 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 max-w-[210px]"
+                      />
+                    ) : (
+                      <span className="font-bold text-red-600 dark:text-red-400 font-mono">
+                        {task.deadline_at
+                          ? new Date(task.deadline_at).toLocaleString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "Tidak ditentukan"}
+                      </span>
+                    )}
                   </div>
 
                   {/* Waktu Pengumpulan / Penyelesaian */}
@@ -1785,10 +1896,11 @@ export function TaskDetailSheet({
                         )}
                       </div>
 
-                      {/* Hidden file input for subtask evidence attachment */}
+                      {/* Hidden file input for subtask evidence attachment (supports multiple files/photos) */}
                       <input
                         ref={subtaskFileInputRef}
                         type="file"
+                        multiple
                         className="hidden"
                         onChange={handleSubtaskFileChange}
                         accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip"
@@ -1806,7 +1918,9 @@ export function TaskDetailSheet({
                           const isRejected = st.approval_status === "rejected"
                           const isPending = st.approval_status === "pending"
                           const prevStep = idx > 0 ? subtasks[idx - 1] : null
-                          const isPIC = currentUser?.id === task.assigned_to
+                          const isPIC =
+                            currentUser?.id === task.assigned_to ||
+                            currentUser?.id === task.secondary_assigned_to
                           const canActAsPIC = isPIC || isStaff || currentUser?.role === "admin"
 
                           // 1. LOCKED STAGE (Tahap Sebelumnya Belum Disetujui)
@@ -2645,48 +2759,110 @@ export function TaskDetailSheet({
               </DialogContent>
             </Dialog>
 
-            {/* DIALOG: SUBTASK FILE UPLOAD CONFIRMATION */}
-            <Dialog open={isSubtaskUploadOpen} onOpenChange={(o) => { if (!o) { setIsSubtaskUploadOpen(false); setSubtaskSelectedFile(null); if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = "" } }}>
-              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
-                <DialogHeader>
-                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <UploadIcon className="size-4 text-blue-600" />
-                    Unggah Bukti Tahapan
+            {/* DIALOG: SUBTASK FILE UPLOAD CONFIRMATION (Supports Multiple Photos/Files) */}
+            <Dialog
+              open={isSubtaskUploadOpen}
+              onOpenChange={(o) => {
+                if (!o) {
+                  setIsSubtaskUploadOpen(false)
+                  setSubtaskSelectedFiles([])
+                  if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = ""
+                }
+              }}
+            >
+              <DialogContent className="max-w-md rounded-2xl p-5 font-sans border-border shadow-xl">
+                <DialogHeader className="space-y-1">
+                  <DialogTitle className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <div className="size-7 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+                      <UploadIcon className="size-4" />
+                    </div>
+                    <span>Unggah Berkas Bukti Tahapan</span>
                   </DialogTitle>
                   <DialogDescription className="text-xs text-muted-foreground">
-                    File ini akan dilampirkan ke tahap yang sedang dikerjakan.
+                    Unggah satu atau banyak foto / berkas dokumen untuk melengkapi bukti tahap ini.
                   </DialogDescription>
                 </DialogHeader>
 
-                {subtaskSelectedFile && (
-                  <div className="mt-2 p-2.5 rounded-lg bg-muted/40 border border-border text-xs space-y-1">
-                    <p className="font-semibold text-foreground truncate">{subtaskSelectedFile.name}</p>
-                    <p className="text-muted-foreground">
-                      {(subtaskSelectedFile.size / 1024).toFixed(1)} KB — {subtaskSelectedFile.type || "File"}
-                    </p>
+                {subtaskSelectedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold px-0.5 text-muted-foreground">
+                      <span>Daftar Berkas Terpilih ({subtaskSelectedFiles.length})</span>
+                      <span>
+                        Total: {(subtaskSelectedFiles.reduce((acc, f) => acc + f.size, 0) / 1024).toFixed(1)} KB
+                      </span>
+                    </div>
+                    <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                      {subtaskSelectedFiles.map((file, idx) => {
+                        const isImg = file.type.startsWith("image/")
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/40 border border-border/70 text-xs hover:bg-muted/70 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="size-6 rounded bg-background flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0 border border-border">
+                                {idx + 1}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground truncate max-w-[220px]">
+                                  {file.name}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {(file.size / 1024).toFixed(1)} KB • {isImg ? "Foto / Gambar" : file.type || "Dokumen"}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSubtaskSelectedFiles((prev) => prev.filter((_, i) => i !== idx))
+                              }}
+                              className="size-6 text-muted-foreground hover:text-red-600 rounded-md cursor-pointer shrink-0"
+                              title="Hapus berkas ini"
+                            >
+                              <XIcon className="size-3.5" />
+                            </Button>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
 
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-2.5 mt-4 pt-2 border-t border-border">
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     className="flex-1 rounded-lg text-xs font-semibold cursor-pointer"
-                    onClick={() => { setIsSubtaskUploadOpen(false); setSubtaskSelectedFile(null); if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = "" }}
+                    onClick={() => {
+                      setIsSubtaskUploadOpen(false)
+                      setSubtaskSelectedFiles([])
+                      if (subtaskFileInputRef.current) subtaskFileInputRef.current.value = ""
+                    }}
                     disabled={isSubtaskUploading}
                   >
                     Batal
                   </Button>
                   <Button
+                    type="button"
                     size="sm"
-                    className="flex-1 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                    className="flex-1 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-sm gap-1.5"
                     onClick={handleSubtaskUploadConfirm}
-                    disabled={isSubtaskUploading}
+                    disabled={isSubtaskUploading || subtaskSelectedFiles.length === 0}
                   >
                     {isSubtaskUploading ? (
-                      <><Loader2Icon className="size-3 animate-spin" /> Mengunggah...</>
+                      <>
+                        <Loader2Icon className="size-3.5 animate-spin" />
+                        <span>Mengunggah ({subtaskSelectedFiles.length})...</span>
+                      </>
                     ) : (
-                      <><UploadIcon className="size-3" /> Unggah</>
+                      <>
+                        <UploadIcon className="size-3.5" />
+                        <span>Unggah {subtaskSelectedFiles.length} Berkas</span>
+                      </>
                     )}
                   </Button>
                 </div>

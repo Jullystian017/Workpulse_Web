@@ -728,6 +728,7 @@ export async function getTasks(filters?: TaskFilters, forceRefresh = false): Pro
           ...t,
           creator: t.created_by ? userMap.get(t.created_by) : undefined,
           assignee: t.assigned_to ? userMap.get(t.assigned_to) : undefined,
+          secondary_assignee: t.secondary_assigned_to ? userMap.get(t.secondary_assigned_to) : undefined,
           delegator: t.delegated_by ? userMap.get(t.delegated_by) : undefined,
         })) as Task[];
 
@@ -789,6 +790,7 @@ export async function getTaskById(taskId: string, forceRefresh = false): Promise
           ...task,
           creator: task.created_by ? userMap.get(task.created_by) : undefined,
           assignee: task.assigned_to ? userMap.get(task.assigned_to) : undefined,
+          secondary_assignee: task.secondary_assigned_to ? userMap.get(task.secondary_assigned_to) : undefined,
           delegator: task.delegated_by ? userMap.get(task.delegated_by) : undefined,
           subtasks: (task.subtasks || [])
             .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
@@ -948,6 +950,7 @@ export interface UpdateTaskInput {
   department_id?: string;
   priority?: TaskPriority;
   assigned_to?: string | null;
+  secondary_assigned_to?: string | null;
   deadline_at?: string;
   estimated_hours?: number;
   location_name?: string;
@@ -980,18 +983,64 @@ export async function updateTask(taskId: string, input: UpdateTaskInput, userId?
   return getTaskById(taskId);
 }
 
-// Hierarchical Delegation Action
+export async function updateTaskDeadline(taskId: string, deadlineAt: string, userId?: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({ deadline_at: deadlineAt, updated_at: new Date().toISOString() })
+    .eq('id', taskId);
+  if (!error) {
+    invalidateTaskCache(taskId);
+    if (userId) {
+      const activeUser = getActiveUserFromStorage();
+      recordActivity({
+        user: activeUser ? `${activeUser.nama} (${activeUser.nik})` : 'User',
+        user_id: userId,
+        action: 'UPDATE_TASK_DEADLINE',
+        module: 'Task Management',
+        level: 'AUDIT',
+        detail: `Target tenggat waktu penugasan diperbarui menjadi ${new Date(deadlineAt).toLocaleString('id-ID')}.`,
+      });
+    }
+    return true;
+  }
+  return false;
+}
+
+export async function updateTaskAssignees(
+  taskId: string,
+  primaryId: string | null,
+  secondaryId?: string | null,
+  userId?: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({
+      assigned_to: primaryId,
+      secondary_assigned_to: secondaryId || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', taskId);
+  if (!error) {
+    invalidateTaskCache(taskId);
+    return true;
+  }
+  return false;
+}
+
+// Hierarchical Delegation Action (Supports 1 or 2 assignees)
 export async function delegateTask(
   taskId: string,
   toUserId: string,
   delegatorId: string,
   reason?: string,
-  matchScore?: number
+  matchScore?: number,
+  secondaryToUserId?: string | null
 ): Promise<boolean> {
   const { error } = await supabase
     .from('tasks')
     .update({
       assigned_to: toUserId,
+      secondary_assigned_to: secondaryToUserId || null,
       delegated_by: delegatorId,
       delegated_at: new Date().toISOString(),
       status: 'todo',
@@ -1010,6 +1059,7 @@ export async function delegateTask(
       task_id: taskId,
       from_user_id: delegatorId,
       to_user_id: toUserId,
+      secondary_to_user_id: secondaryToUserId || null,
       reason: reason || 'Pendelegasian tugas ke bawahan sesuai keahlian.',
       match_score: matchScore || 90,
     },

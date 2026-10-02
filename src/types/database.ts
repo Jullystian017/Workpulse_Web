@@ -147,6 +147,7 @@ export interface Task {
   status: TaskStatus;
   created_by?: string | null;
   assigned_to?: string | null;
+  secondary_assigned_to?: string | null;
   delegated_by?: string | null;
   delegated_at?: string | null;
   deadline_at?: string | null;
@@ -162,6 +163,7 @@ export interface Task {
   department?: Department;
   creator?: User;
   assignee?: User;
+  secondary_assignee?: User;
   delegator?: User;
   subtasks?: Subtask[];
   attachments?: TaskAttachment[];
