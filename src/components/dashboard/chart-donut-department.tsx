@@ -54,11 +54,14 @@ export function ChartDonutDepartment({ initialTasks }: { initialTasks?: Task[] }
     const pending = tasks.filter((t) => t.status === "review" || t.status === "unassigned").length
     const total = tasks.length || (done + inProg + pending) || 1
 
-    const data = [
-      { status: "selesai", name: "Selesai", count: done || 2, color: "#dc2626" },
-      { status: "proses", name: "Dalam Proses", count: inProg || 3, color: "#f87171" },
-      { status: "pending", name: "Tertunda", count: pending || 2, color: "#fecaca" },
-    ]
+    const isEmptyData = done + inProg + pending === 0
+    const data = isEmptyData
+      ? [{ status: "kosong", name: "Belum ada task", count: 1, color: "#e5e7eb" }]
+      : [
+          { status: "selesai", name: "Selesai", count: done, color: "#dc2626" },
+          { status: "proses", name: "Dalam Proses", count: inProg, color: "#f87171" },
+          { status: "pending", name: "Tertunda", count: pending, color: "#fecaca" },
+        ]
 
     const rate = Math.round((done / total) * 100)
     return {
@@ -89,7 +92,7 @@ export function ChartDonutDepartment({ initialTasks }: { initialTasks?: Task[] }
           <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={tasks.length === 0 ? () => null : <ChartTooltipContent hideLabel />}
             />
             <Pie
               data={chartData}
@@ -125,7 +128,7 @@ export function ChartDonutDepartment({ initialTasks }: { initialTasks?: Task[] }
                           y={(viewBox.cy || 0) + 20}
                           className="fill-muted-foreground text-xs font-medium"
                         >
-                          Task Selesai
+                          {tasks.length === 0 ? "Belum ada task" : "Task Selesai"}
                         </tspan>
                       </text>
                     )

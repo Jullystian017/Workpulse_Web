@@ -186,6 +186,10 @@ export function TaskDetailSheet({
   const [isSubtaskUploadOpen, setIsSubtaskUploadOpen] = React.useState(false)
   const [isSubtaskUploading, setIsSubtaskUploading] = React.useState(false)
 
+  // Attachment preview modal
+  const [previewAttachment, setPreviewAttachment] = React.useState<{ url: string; name: string } | null>(null)
+
+
   // Tab Navigation State: subtasks | comments | attachments
   const [activeDetailTab, setActiveDetailTab] = React.useState<"subtasks" | "comments" | "attachments">("subtasks")
 
@@ -2199,11 +2203,10 @@ export function TaskDetailSheet({
                                         key={att.id}
                                         className="flex items-center justify-between p-2 rounded-lg border border-border/70 bg-background hover:bg-muted/30 text-xs group transition-colors"
                                       >
-                                        <a
-                                          href={att.file_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
+                                        <button
+                                          type="button"
+                                          onClick={() => setPreviewAttachment({ url: att.file_url, name: att.file_name })}
+                                          className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer hover:text-blue-600 transition-colors"
                                           title={att.file_name}
                                         >
                                           {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
@@ -2220,7 +2223,7 @@ export function TaskDetailSheet({
                                             </span>
                                           )}
                                           <ExternalLinkIcon className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                                        </a>
+                                        </button>
                                         {!isApproved && (
                                           <button
                                             type="button"
@@ -2679,11 +2682,10 @@ export function TaskDetailSheet({
                                         key={att.id}
                                         className="p-2 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between text-xs group hover:border-blue-300 transition-colors"
                                       >
-                                        <a
-                                          href={att.file_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-2 min-w-0 flex-1 hover:text-blue-600 transition-colors"
+                                        <button
+                                          type="button"
+                                          onClick={() => setPreviewAttachment({ url: att.file_url, name: att.file_name })}
+                                          className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer hover:text-blue-600 transition-colors"
                                         >
                                           {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
                                             <ImageIcon className="size-3.5 text-emerald-600 shrink-0" />
@@ -2699,7 +2701,7 @@ export function TaskDetailSheet({
                                             </span>
                                           )}
                                           <ExternalLinkIcon className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                                        </a>
+                                        </button>
                                       </div>
                                     ))}
                                   </div>
@@ -2722,6 +2724,39 @@ export function TaskDetailSheet({
                 </div>
               </div>
             )}
+
+            {/* DIALOG: PREVIEW LAMPIRAN */}
+            <Dialog open={!!previewAttachment} onOpenChange={(o) => { if (!o) setPreviewAttachment(null) }}>
+              <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-6xl p-4 font-sans">
+                <DialogHeader>
+                  <DialogTitle className="text-sm font-bold truncate pr-6">{previewAttachment?.name}</DialogTitle>
+                  <DialogDescription className="sr-only">Pratinjau lampiran</DialogDescription>
+                </DialogHeader>
+                {previewAttachment && (() => {
+                  const isImg = /\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?.*)?$/i.test(previewAttachment.url) || /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(previewAttachment.name)
+                  const isPdf = /\.pdf(\?.*)?$/i.test(previewAttachment.url) || /\.pdf$/i.test(previewAttachment.name)
+                  const isOffice = /\.(docx?|xlsx?|pptx?)$/i.test(previewAttachment.name) && /^https?:/i.test(previewAttachment.url)
+                  return (
+                    <div className="flex items-center justify-center rounded-lg bg-muted/30 overflow-auto max-h-[85vh]">
+                      {isImg ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={previewAttachment.url} alt={previewAttachment.name} className="max-w-full max-h-[85vh] object-contain rounded-md" />
+                      ) : isPdf ? (
+                        <iframe src={previewAttachment.url} title={previewAttachment.name} className="w-full h-[85vh] rounded-md" />
+                      ) : isOffice ? (
+                        <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewAttachment.url)}`} title={previewAttachment.name} className="w-full h-[85vh] rounded-md" />
+                      ) : (
+                        <div className="p-8 text-center text-xs text-muted-foreground space-y-3">
+                          <FileTextIcon className="size-8 mx-auto text-muted-foreground/50" />
+                          <p>Pratinjau tidak tersedia untuk jenis berkas ini.</p>
+                          <a href={previewAttachment.url} download={previewAttachment.name} className="text-blue-600 font-semibold underline">Unduh berkas</a>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </DialogContent>
+            </Dialog>
 
             {/* DIALOG: APPROVE SUBTASK (Atasan) */}
             <Dialog open={isApprovalDialogOpen} onOpenChange={(o) => { setIsApprovalDialogOpen(o); if (!o) setApprovalTargetSubtask(null) }}>

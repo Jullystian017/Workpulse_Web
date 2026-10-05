@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { ActivityIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import {
@@ -92,17 +93,6 @@ function getRealChartData(view: TimeView, tasks: Task[]) {
       const isFuture = targetDate.getTime() > now.getTime() && !isToday
       const dateFormatted = `${targetDate.getDate()} ${MONTH_SHORT_ID[targetDate.getMonth()]}`
 
-      if (isFuture) {
-        return {
-          label: dayName,
-          dateFormatted,
-          selesai: 0,
-          dalamProses: 0,
-          tertunda: 0,
-          total: 0,
-          isFuture: true,
-        }
-      }
 
       let selesai = 0
       let dalamProses = 0
@@ -128,7 +118,7 @@ function getRealChartData(view: TimeView, tasks: Task[]) {
         dalamProses,
         tertunda,
         total: selesai + dalamProses + tertunda,
-        isFuture: false,
+        isFuture,
       }
     })
   }
@@ -156,17 +146,6 @@ function getRealChartData(view: TimeView, tasks: Task[]) {
       const isFuture = w.start > todayDateNum
       const dateFormatted = `${w.start}-${w.end} ${MONTH_SHORT_ID[currentMonth]}`
 
-      if (isFuture) {
-        return {
-          label: w.label,
-          dateFormatted,
-          selesai: 0,
-          dalamProses: 0,
-          tertunda: 0,
-          total: 0,
-          isFuture: true,
-        }
-      }
 
       let selesai = 0
       let dalamProses = 0
@@ -190,7 +169,7 @@ function getRealChartData(view: TimeView, tasks: Task[]) {
         dalamProses,
         tertunda,
         total: selesai + dalamProses + tertunda,
-        isFuture: false,
+        isFuture,
       }
     })
   }
@@ -208,17 +187,6 @@ function getRealChartData(view: TimeView, tasks: Task[]) {
       const isFuture = mIdx > currentMonth
       const dateFormatted = `${MONTH_NAMES_ID[mIdx]} ${currentYear}`
 
-      if (isFuture) {
-        return {
-          label: mShort,
-          dateFormatted,
-          selesai: 0,
-          dalamProses: 0,
-          tertunda: 0,
-          total: 0,
-          isFuture: true,
-        }
-      }
 
       let selesai = 0
       let dalamProses = 0
@@ -241,7 +209,7 @@ function getRealChartData(view: TimeView, tasks: Task[]) {
         dalamProses,
         tertunda,
         total: selesai + dalamProses + tertunda,
-        isFuture: false,
+        isFuture,
       }
     })
   }
@@ -307,6 +275,12 @@ export function ChartAreaInteractive({ initialTasks }: { initialTasks?: Task[] }
 
   // Max value to determine YAxis domain
   const maxVal = Math.max(...chartData.map((d) => d.selesai + d.dalamProses + d.tertunda), 4)
+  const isEmpty = totals.totalSelesai + totals.totalProses + totals.totalTertunda === 0
+  const emptyHints: Record<TimeView, string> = {
+    mingguan: "Tidak ada tugas pada minggu ini.",
+    bulanan: "Tidak ada tugas pada bulan ini.",
+    tahunan: "Tidak ada tugas pada tahun ini.",
+  }
 
   return (
     <Card className="rounded-[8px] border-border bg-card shadow-xs pt-0">
@@ -362,9 +336,24 @@ export function ChartAreaInteractive({ initialTasks }: { initialTasks?: Task[] }
       </CardHeader>
 
       <CardContent className="px-2 pt-2 sm:px-6 sm:pt-4">
+        <div className="relative">
+        {isEmpty && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 bottom-8 z-10 flex flex-col items-center justify-center gap-2 text-center">
+            <div className="relative">
+              <span className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
+              <div className="relative flex size-11 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/60">
+                <ActivityIcon className="size-5" />
+              </div>
+            </div>
+            <p className="text-sm font-bold text-foreground">Belum ada aktivitas</p>
+            <p className="max-w-xs text-[11px] leading-relaxed text-muted-foreground">
+              {emptyHints[timeView]} Grafik akan terisi otomatis saat ada tugas yang dijadwalkan.
+            </p>
+          </div>
+        )}
         <ChartContainer
           config={chartConfig}
-          className="aspect-auto h-[260px] w-full"
+          className={cn("aspect-auto h-[260px] w-full", isEmpty && "opacity-60")}
         >
           <AreaChart data={chartData} margin={{ left: -15, right: 10, top: 10, bottom: 0 }}>
             <defs>
@@ -408,7 +397,7 @@ export function ChartAreaInteractive({ initialTasks }: { initialTasks?: Task[] }
                       <p className="font-bold text-foreground">{dataPoint.label}</p>
                       <p className="text-[10px] text-muted-foreground">{dataPoint.dateFormatted}</p>
                     </div>
-                    {dataPoint.isFuture ? (
+                    {dataPoint.isFuture && dataPoint.total === 0 ? (
                       <p className="text-[11px] text-muted-foreground italic">
                         Belum ada aktivitas (Periode mendatang)
                       </p>
@@ -471,6 +460,7 @@ export function ChartAreaInteractive({ initialTasks }: { initialTasks?: Task[] }
             />
           </AreaChart>
         </ChartContainer>
+        </div>
       </CardContent>
     </Card>
   )
