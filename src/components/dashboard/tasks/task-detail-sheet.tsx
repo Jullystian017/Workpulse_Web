@@ -748,22 +748,11 @@ export function TaskDetailSheet({
     if (subtaskSelectedFiles.length === 0 || !uploadTargetSubtaskId || !task || !currentUser) return
     setIsSubtaskUploading(true)
     try {
-      const { supabase } = await import("@/lib/api").then(m => ({ supabase: m.supabase }))
+      const { uploadFileToStorage } = await import("@/lib/api")
       const uploadedAttachments: SubtaskAttachment[] = []
 
       for (const file of subtaskSelectedFiles) {
-        const ext = file.name.split(".").pop() || "bin"
-        const path = `subtask-attachments/${uploadTargetSubtaskId}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`
-        const { error: uploadError } = await supabase.storage
-          .from("task-attachments")
-          .upload(path, file, { upsert: false })
-
-        let fileUrl = ""
-        if (uploadError) {
-          fileUrl = URL.createObjectURL(file)
-        } else {
-          fileUrl = supabase.storage.from("task-attachments").getPublicUrl(path).data.publicUrl
-        }
+        const fileUrl = await uploadFileToStorage(file, `subtask-attachments/${uploadTargetSubtaskId}`)
 
         const created = await addSubtaskAttachment({
           task_id: task.id,
@@ -1077,7 +1066,8 @@ export function TaskDetailSheet({
       let fileUrl = "https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop&q=80"
 
       if (selectedFile) {
-        fileUrl = URL.createObjectURL(selectedFile)
+        const { uploadFileToStorage } = await import("@/lib/api")
+        fileUrl = await uploadFileToStorage(selectedFile, `task-attachments/${task.id}`)
       }
 
       const att = await addAttachment({

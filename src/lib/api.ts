@@ -1405,6 +1405,20 @@ export async function submitSubtaskForApproval(
   return !error;
 }
 
+// ── Upload file ke Supabase Storage, return public URL permanen ──
+export async function uploadFileToStorage(file: File, folder: string): Promise<string> {
+  const ext = file.name.split('.').pop() || 'bin';
+  const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+  const { error } = await supabase.storage
+    .from('task-attachments')
+    .upload(path, file, { upsert: false, contentType: file.type || undefined });
+  if (error) {
+    console.error('Storage upload error:', error);
+    throw error;
+  }
+  return supabase.storage.from('task-attachments').getPublicUrl(path).data.publicUrl;
+}
+
 // ── Upload lampiran per subtask step ──
 export async function addSubtaskAttachment(attachment: {
   task_id: string;
