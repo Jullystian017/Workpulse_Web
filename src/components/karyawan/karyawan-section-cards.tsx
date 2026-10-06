@@ -10,13 +10,13 @@ import {
   StarIcon,
 } from "lucide-react"
 import { Task } from "@/types/database"
-import { calculatePerformance, getActiveUserFromStorage } from "@/lib/api"
+import { calculatePerformance, getActiveUserFromStorage, getTaskAssigneeIds } from "@/lib/api"
 
 export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
   const cards = React.useMemo(() => {
     const activeUser = getActiveUserFromStorage()
     const myTasks = activeUser && tasks
-      ? tasks.filter((t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id)
+      ? tasks.filter((t) => getTaskAssigneeIds(t).includes(activeUser.id) || t.created_by === activeUser.id)
       : (tasks || [])
 
     // Jika pengguna baru atau belum memiliki penugasan

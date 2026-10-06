@@ -51,6 +51,7 @@ export interface User {
   avatar_url?: string | null;
   phone?: string | null;
   position_title?: string | null;
+  sub_unit?: string | null;
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -59,7 +60,8 @@ export interface User {
   subordinates?: User[];
 }
 
-export type SubtaskApprovalStatus = 'pending' | 'approved' | 'rejected';
+// draft = belum diajukan karyawan; pending = sudah diajukan & menunggu review atasan
+export type SubtaskApprovalStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 
 export interface SubtaskAttachment {
   id: string;
@@ -85,6 +87,7 @@ export interface Subtask {
   created_at?: string;
   // Sequential approval fields
   approval_status?: SubtaskApprovalStatus | null;
+  submitted_at?: string | null;
   approved_by?: string | null;
   approved_at?: string | null;
   rejection_note?: string | null;
@@ -148,6 +151,10 @@ export interface Task {
   created_by?: string | null;
   assigned_to?: string | null;
   secondary_assigned_to?: string | null;
+  /** Semua PIC (multi-PIC). Elemen pertama = assigned_to, kedua = secondary_assigned_to. */
+  assignee_ids?: string[] | null;
+  /** PIC review (atasan) yang menyetujui tahapan & tugas ini. */
+  reviewer_id?: string | null;
   delegated_by?: string | null;
   delegated_at?: string | null;
   deadline_at?: string | null;
@@ -164,6 +171,8 @@ export interface Task {
   creator?: User;
   assignee?: User;
   secondary_assignee?: User;
+  assignees?: User[];
+  reviewer?: User;
   delegator?: User;
   subtasks?: Subtask[];
   attachments?: TaskAttachment[];

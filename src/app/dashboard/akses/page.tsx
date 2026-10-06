@@ -19,6 +19,8 @@ import {
   SparklesIcon,
   ChevronRightIcon,
   SlidersHorizontalIcon,
+  ChevronDownIcon,
+  CheckIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -32,6 +34,13 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 const roleData = [
   {
@@ -333,18 +342,57 @@ export default function AccessControlPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <select
-                          value={selectedRoleFilter}
-                          onChange={(e) => setSelectedRoleFilter(e.target.value)}
-                          className="h-9 px-3 rounded-[8px] border bg-background text-xs text-foreground outline-none cursor-pointer"
-                        >
-                          <option value="all">Semua Role ({usersList.length})</option>
-                          <option value="Super Admin">Super Admin</option>
-                          <option value="Supervisor Wilayah (Ops Lead)">Supervisor Wilayah</option>
-                          <option value="Dispatcher & Helpdesk Lapangan">Dispatcher Lapangan</option>
-                          <option value="Auditor HR & Compliance">Auditor HR</option>
-                          <option value="Teknisi Lapangan / Mitra">Teknisi Lapangan</option>
-                        </select>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="outline"
+                                className="h-9 px-3.5 rounded-xl border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800/60 shadow-2xs transition-all flex items-center gap-2 cursor-pointer"
+                              >
+                                <FilterIcon className="size-3.5 text-muted-foreground" />
+                                <span>
+                                  {selectedRoleFilter === "all"
+                                    ? `Semua Role (${usersList.length})`
+                                    : selectedRoleFilter === "Supervisor Wilayah (Ops Lead)"
+                                    ? "Supervisor Wilayah"
+                                    : selectedRoleFilter === "Dispatcher & Helpdesk Lapangan"
+                                    ? "Dispatcher Lapangan"
+                                    : selectedRoleFilter === "Auditor HR & Compliance"
+                                    ? "Auditor HR"
+                                    : selectedRoleFilter === "Teknisi Lapangan / Mitra"
+                                    ? "Teknisi Lapangan"
+                                    : selectedRoleFilter}
+                                </span>
+                                <ChevronDownIcon className="size-3.5 text-muted-foreground opacity-60 ml-1" />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-xl shadow-xl border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md">
+                            {[
+                              { value: "all", label: `Semua Role (${usersList.length})` },
+                              { value: "Super Admin", label: "Super Admin" },
+                              { value: "Supervisor Wilayah (Ops Lead)", label: "Supervisor Wilayah" },
+                              { value: "Dispatcher & Helpdesk Lapangan", label: "Dispatcher Lapangan" },
+                              { value: "Auditor HR & Compliance", label: "Auditor HR" },
+                              { value: "Teknisi Lapangan / Mitra", label: "Teknisi Lapangan" },
+                            ].map((item) => (
+                              <DropdownMenuItem
+                                key={item.value}
+                                onClick={() => setSelectedRoleFilter(item.value)}
+                                className={`flex items-center justify-between px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors ${
+                                  selectedRoleFilter === item.value
+                                    ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-semibold"
+                                    : "text-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+                                }`}
+                              >
+                                <span>{item.label}</span>
+                                {selectedRoleFilter === item.value && (
+                                  <CheckIcon className="size-3.5 text-red-600 dark:text-red-400 ml-2" />
+                                )}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 

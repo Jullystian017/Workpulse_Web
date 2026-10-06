@@ -535,14 +535,14 @@ function AdminTasksContent() {
             {dailyDate ? (
               /* DAILY WORKSPACE DRILL-DOWN HEADER */
               <div className="px-4 lg:px-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-card border border-border shadow-xs">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-[8px] bg-card border border-border shadow-2xs">
                   {/* Left: Back to Calendar Button & Active Day Info */}
                   <div className="flex items-center gap-3 min-w-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setDailyDate(null)}
-                      className="h-9 px-3 rounded-xl gap-2 font-bold hover:bg-red-50 dark:hover:bg-red-950/40 text-foreground border-border cursor-pointer shadow-2xs shrink-0"
+                      className="h-9 px-3 rounded-[8px] gap-2 font-bold hover:bg-red-50 dark:hover:bg-red-950/40 text-foreground border-border cursor-pointer shadow-2xs shrink-0 text-xs"
                     >
                       <ArrowLeftIcon className="size-4 text-red-600" />
                       <span>Kembali ke Kalender</span>
@@ -556,15 +556,15 @@ function AdminTasksContent() {
                           {formattedDailyDateTitle}
                         </h3>
                         {isDailyDateToday && (
-                          <Badge className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                          <Badge className="bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold px-2 py-0.5 rounded-[6px]">
                             Hari Ini
                           </Badge>
                         )}
-                        <span className="text-[11px] font-bold text-muted-foreground bg-muted/70 px-2 py-0.5 rounded-md border border-border/70">
+                        <span className="text-xs font-bold text-muted-foreground bg-muted/70 px-2 py-0.5 rounded-[6px] border border-border/70">
                           {dailyFilteredTasks.length} Tugas
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 hidden sm:block">
+                      <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
                         Workspace operasional harian Telkom Akses (Kanban workflow & Jadwal per jam)
                       </p>
                     </div>
@@ -573,11 +573,11 @@ function AdminTasksContent() {
                   {/* Right: Prev/Next Day + Kanban/Timeline Mode Switcher + Add Task */}
                   <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
                     {/* Sub-mode Switcher: Kanban vs Timeline */}
-                    <div className="flex items-center rounded-xl bg-muted/60 p-1 border border-border/70">
+                    <div className="flex items-center rounded-[8px] bg-muted/60 p-1 border border-border/70">
                       <button
                         type="button"
                         onClick={() => setDailyMode("kanban")}
-                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[6px] transition-all cursor-pointer ${
                           dailyMode === "kanban"
                             ? "bg-card text-red-600 dark:text-red-400 shadow-xs"
                             : "text-muted-foreground hover:text-foreground"
@@ -589,7 +589,7 @@ function AdminTasksContent() {
                       <button
                         type="button"
                         onClick={() => setDailyMode("timeline")}
-                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[6px] transition-all cursor-pointer ${
                           dailyMode === "timeline"
                             ? "bg-card text-red-600 dark:text-red-400 shadow-xs"
                             : "text-muted-foreground hover:text-foreground"
@@ -608,7 +608,7 @@ function AdminTasksContent() {
                         variant="outline"
                         size="icon"
                         onClick={handlePrevDailyDate}
-                        className="size-8 rounded-xl border-border hover:bg-muted cursor-pointer shadow-2xs"
+                        className="size-8 rounded-[8px] border-border hover:bg-muted cursor-pointer shadow-2xs"
                         title="Hari Sebelumnya"
                       >
                         <ChevronLeftIcon className="size-4" />
@@ -617,7 +617,7 @@ function AdminTasksContent() {
                         variant="outline"
                         size="icon"
                         onClick={handleNextDailyDate}
-                        className="size-8 rounded-xl border-border hover:bg-muted cursor-pointer shadow-2xs"
+                        className="size-8 rounded-[8px] border-border hover:bg-muted cursor-pointer shadow-2xs"
                         title="Hari Berikutnya"
                       >
                         <ChevronRightIcon className="size-4" />

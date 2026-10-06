@@ -24,6 +24,10 @@ import {
   TagIcon,
   UserIcon,
   Settings2Icon,
+  XIcon,
+  UserPlusIcon,
+  ShieldCheckIcon,
+  ChevronDownIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Task, TaskPriority, TaskStatus, Channel, User, ROLE_LABELS, ROLE_HIERARCHY_LEVEL } from "@/types/database"
@@ -70,7 +74,8 @@ export function CreateTaskModal({
   const [description, setDescription] = React.useState("")
   const [channelId, setChannelId] = React.useState("")
   const [priority, setPriority] = React.useState<TaskPriority>("high")
-  const [assignedTo, setAssignedTo] = React.useState("")
+  const [assigneeIds, setAssigneeIds] = React.useState<string[]>([])
+  const [reviewerId, setReviewerId] = React.useState<string>("")
   const [deadlineDate, setDeadlineDate] = React.useState<Date>(() => {
     const today = new Date()
     today.setHours(18, 0, 0, 0)
@@ -95,11 +100,42 @@ export function CreateTaskModal({
   React.useEffect(() => {
     if (!open) return
     loadData()
+  }, [open, loadData])
+
+  // Scroll Detection untuk memberi hint visual bahwa form bisa di-scroll
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+  const [canScrollDown, setCanScrollDown] = React.useState(false)
+
+  const handleScroll = React.useCallback(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const hasMore = el.scrollHeight - el.scrollTop - el.clientHeight > 24
+    setCanScrollDown(hasMore)
+  }, [])
+
+  React.useEffect(() => {
+    if (!open) return
+    const timer = setTimeout(() => {
+      handleScroll()
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [open, subtaskInputs.length, handleScroll])
+
+  const scrollToBottom = () => {
+    scrollContainerRef.current?.scrollTo({
+      top: scrollContainerRef.current.scrollHeight,
+      behavior: "smooth",
+    })
+  }
+
+  // Prefill PIC dengan diri sendiri (non-admin) sekali setiap modal dibuka
+  React.useEffect(() => {
+    if (!open) return
     const currentUser = getActiveUserFromStorage()
-    if (currentUser && currentUser.role !== "admin" && !assignedTo) {
-      setAssignedTo(currentUser.id)
+    if (currentUser && currentUser.role !== "admin") {
+      setAssigneeIds((prev) => (prev.length === 0 ? [currentUser.id] : prev))
     }
-  }, [open, loadData, assignedTo])
+  }, [open])
 
   const handleAddSubtask = () => {
     if (!newSubtaskText.trim()) return
@@ -138,7 +174,9 @@ export function CreateTaskModal({
         department_id: departmentId,
         priority,
         created_by: createdBy,
-        assigned_to: assignedTo || null,
+        assigned_to: assigneeIds[0] || null,
+        assignee_ids: assigneeIds,
+        reviewer_id: reviewerId || null,
         deadline_at: deadline,
         estimated_hours: estimatedHours,
         subtask_titles: subtaskInputs.filter((s) => s.trim().length > 0),
@@ -150,7 +188,8 @@ export function CreateTaskModal({
         })
         setTitle("")
         setDescription("")
-        setAssignedTo("")
+        setAssigneeIds([])
+        setReviewerId("")
         const resetDate = new Date()
         resetDate.setHours(18, 0, 0, 0)
         setDeadlineDate(resetDate)
@@ -168,7 +207,16 @@ export function CreateTaskModal({
   }
 
   const selectedChannelObj = channels.find((c) => c.id === channelId)
-  const selectedUserObj = users.find((u) => u.id === assignedTo)
+  const selectedUsers = assigneeIds
+    .map((id) => users.find((u) => u.id === id))
+    .filter((u): u is User => Boolean(u))
+
+  const handleAddAssignee = (id: string) => {
+    setAssigneeIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
+  }
+  const handleRemoveAssignee = (id: string) => {
+    setAssigneeIds((prev) => prev.filter((x) => x !== id))
+  }
 
   // Filter assignable users based on Chain of Command:
   // - Admin (Level 99): can assign to anyone
@@ -191,10 +239,87 @@ export function CreateTaskModal({
     })
   }, [users, activeUser])
 
+  const availableToAdd = React.useMemo(
+    () => assignableUsers.filter((u) => !assigneeIds.includes(u.id)),
+    [assignableUsers, assigneeIds]
+  )
+
+  // Atasan Penilai (PIC Review) yang memenuhi syarat:
+  // - Jika ADA pelaksana: Level reviewer harus LEBIH TINGGI dari pelaksana tugas tertinggi yang ditugaskan.
+  // - Jika pelaksana KOSONG (Unassigned Pool): SEMUA jenjang pengawas/atasan (Officer 1, 2, 3, Manager, SGM, Admin)
+  //   berhak dipilih sebagai PIC Review pengawas tiket tersebut (bukan hanya Super Admin).
+  // - Pelaksana dilarang mereview tugasnya sendiri.
+  const eligibleReviewers = React.useMemo(() => {
+    if (users.length === 0) return []
+
+    const selectedAssignees = assigneeIds
+      .map((id) => users.find((u) => u.id === id))
+      .filter((u): u is User => Boolean(u))
+
+    let requiredLevel = 1
+
+    if (selectedAssignees.length > 0) {
+      // Ada pelaksana: Level reviewer harus lebih tinggi dari pelaksana tertinggi
+      const maxAssigneeLevel = Math.max(
+        ...selectedAssignees.map((u) => ROLE_HIERARCHY_LEVEL[u.role] ?? 1)
+      )
+      requiredLevel = maxAssigneeLevel
+    } else {
+      // Pelaksana kosong (Unassigned Pool):
+      // Semua jenjang Officer (level 2, 3, 4), Manager (level 5), SGM (level 6), dan Admin (level 99) bisa menjadi reviewer!
+      requiredLevel = 1
+    }
+
+    const candidates = users.filter((u) => {
+      // Pelaksana tidak boleh mereview tugasnya sendiri
+      if (assigneeIds.includes(u.id)) return false
+      // Admin selalu berwenang mereview
+      if (u.role === "admin") return true
+      // Level reviewer harus lebih tinggi dari pelaksana (atau level >= 2 jika pelaksana kosong)
+      const uLevel = ROLE_HIERARCHY_LEVEL[u.role] ?? 1
+      return uLevel > requiredLevel
+    })
+
+    // Fallback jika tidak ada, ambil Admin dan Manager
+    const result =
+      candidates.length > 0
+        ? candidates
+        : users.filter((u) => (u.role === "admin" || u.role === "manager") && !assigneeIds.includes(u.id))
+
+    // Urutkan dari hierarki terdekat ke tertinggi
+    return result.sort((a, b) => {
+      const lvlA = ROLE_HIERARCHY_LEVEL[a.role] ?? 1
+      const lvlB = ROLE_HIERARCHY_LEVEL[b.role] ?? 1
+      if (lvlA !== lvlB) return lvlA - lvlB
+      return a.nama.localeCompare(b.nama)
+    })
+  }, [users, assigneeIds])
+
+  // Auto-default reviewer:
+  // Jika pembuat tiket (activeUser) adalah atasan yang valid (Officer/Manager/Admin) dan bukan pelaksana,
+  // jadikan pembuat tiket sebagai default reviewer. Jika tidak, pilih atasan pertama yang valid.
+  React.useEffect(() => {
+    if (!open) return
+    if (eligibleReviewers.length === 0) return
+
+    const isCurrentValid = eligibleReviewers.some((u) => u.id === reviewerId)
+
+    if (!isCurrentValid) {
+      // Prioritaskan pembuat tugas jika dia eligible (misal Officer/Manager yang membuat tugas unassigned)
+      const isMeEligible = eligibleReviewers.find((u) => u.id === activeUser?.id)
+      if (isMeEligible) {
+        setReviewerId(isMeEligible.id)
+      } else {
+        // Ambil atasan pertama yang memenuhi syarat
+        setReviewerId(eligibleReviewers[0].id)
+      }
+    }
+  }, [open, eligibleReviewers, reviewerId, activeUser])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl md:max-w-3xl rounded-2xl p-6 md:p-7 font-sans max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="space-y-1.5 border-b border-border pb-4">
+      <DialogContent className="max-w-2xl md:max-w-3xl rounded-2xl p-0 font-sans max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="space-y-1.5 border-b border-border p-6 pb-4 shrink-0">
           <DialogTitle className="text-lg md:text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
             Buat Penugasan Baru
           </DialogTitle>
@@ -203,7 +328,12 @@ export function CreateTaskModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-3">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0 relative">
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"
+          >
           {/* Section 1: Judul Tugas */}
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
@@ -296,69 +426,89 @@ export function CreateTaskModal({
           {/* Section 3: Pelaksana & Target Deadline */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
-                Pelaksana Tugas (PIC)
-              </label>
-              <Select
-                value={assignedTo || "unassigned"}
-                onValueChange={(val) => setAssignedTo(val === "unassigned" ? "" : (val || ""))}
-              >
-                <SelectTrigger className="w-full h-10 rounded-xl bg-background border-border text-xs md:text-sm font-medium">
-                  {selectedUserObj ? (
-                    <div className="flex items-center gap-2 truncate">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Pelaksana Tugas (PIC)
+                </label>
+                <span className="text-[10px] font-semibold text-muted-foreground">
+                  {assigneeIds.length > 0 ? `${assigneeIds.length} PIC dipilih` : "Belum ada PIC"}
+                </span>
+              </div>
+
+              {selectedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {selectedUsers.map((u, idx) => (
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-1.5 rounded-full border border-border bg-muted/40 pl-1 pr-1.5 py-0.5 text-xs"
+                    >
                       <img
-                        src={
-                          selectedUserObj.avatar_url ||
-                          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"
-                        }
-                        alt={selectedUserObj.nama}
+                        src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                        alt={u.nama}
                         className="size-5 rounded-full object-cover shrink-0"
                       />
-                      <span className="font-semibold text-foreground truncate">{selectedUserObj.nama}</span>
-                      <span className="text-[10px] text-muted-foreground truncate">
-                        ({ROLE_LABELS[selectedUserObj.role]?.badge || selectedUserObj.role})
+                      <span className="font-semibold text-foreground max-w-[110px] truncate">
+                        {u.nama}{u.id === activeUser?.id ? " (Saya)" : ""}
                       </span>
+                      {idx === 0 && selectedUsers.length > 1 && (
+                        <span className="text-[9px] font-bold uppercase text-red-600 dark:text-red-400">Utama</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAssignee(u.id)}
+                        className="text-muted-foreground hover:text-red-600 cursor-pointer"
+                        title="Hapus PIC"
+                      >
+                        <XIcon className="size-3" />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 truncate text-muted-foreground font-medium">
-                      <div className="size-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold shrink-0">
-                        ?
-                      </div>
-                      <span className="truncate">Belum Ditentukan (Unassigned Pool)</span>
-                    </div>
-                  )}
+                  ))}
+                </div>
+              )}
+
+              <Select
+                value="__add__"
+                onValueChange={(val) => {
+                  if (val && val !== "__add__") handleAddAssignee(val)
+                }}
+              >
+                <SelectTrigger className="w-full h-10 rounded-xl bg-background border-border text-xs md:text-sm font-medium">
+                  <div className="flex items-center gap-2 truncate text-muted-foreground font-medium">
+                    <UserPlusIcon className="size-4 shrink-0" />
+                    <span className="truncate">
+                      {selectedUsers.length === 0
+                        ? "Tambah PIC (kosong = Unassigned Pool)"
+                        : "Tambah PIC lainnya"}
+                    </span>
+                  </div>
                 </SelectTrigger>
                 <SelectContent className="w-full max-h-60">
-                  <SelectItem value="unassigned">
-                    <div className="flex items-center gap-2">
-                      <div className="size-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
-                        ?
-                      </div>
-                      <span className="font-semibold text-muted-foreground">Belum Ditentukan (Unassigned)</span>
-                    </div>
-                  </SelectItem>
-                  {assignableUsers.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={
-                            u.avatar_url ||
-                            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"
-                          }
-                          alt={u.nama}
-                          className="size-5 rounded-full object-cover shrink-0"
-                        />
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="font-semibold text-foreground truncate">
-                            {u.nama} {u.id === activeUser?.id ? "(Saya Sendiri)" : ""}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground truncate">
-                            ({ROLE_LABELS[u.role]?.badge || u.role})
-                          </span>
+                  {availableToAdd.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">Semua personil sudah dipilih.</div>
+                  ) : (
+                    availableToAdd.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={
+                              u.avatar_url ||
+                              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"
+                            }
+                            alt={u.nama}
+                            className="size-5 rounded-full object-cover shrink-0"
+                          />
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-semibold text-foreground truncate">
+                              {u.nama} {u.id === activeUser?.id ? "(Saya Sendiri)" : ""}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground truncate">
+                              ({ROLE_LABELS[u.role]?.badge || u.role})
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -372,6 +522,77 @@ export function CreateTaskModal({
                 onChange={setDeadlineDate}
               />
             </div>
+          </div>
+
+          {/* Section: PIC Review (Atasan Penilai) */}
+          <div className="space-y-1.5 p-3 rounded-xl border border-border/80 bg-muted/20">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <ShieldCheckIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+                PIC Review (Atasan Penilai) *
+              </label>
+              <span className="text-[10px] text-muted-foreground">
+                Menerima notifikasi langsung saat tugas diajukan untuk disetujui
+              </span>
+            </div>
+
+            <Select value={reviewerId} onValueChange={(val) => setReviewerId(val || "")}>
+              <SelectTrigger className="w-full h-10 rounded-xl bg-background border-border text-xs md:text-sm font-medium">
+                <div className="flex items-center gap-2 truncate">
+                  {(() => {
+                    const selected = users.find((u) => u.id === reviewerId)
+                    if (!selected) {
+                      return <span className="text-muted-foreground font-normal">Pilih atasan yang berwenang menilai...</span>
+                    }
+                    return (
+                      <>
+                        <img
+                          src={
+                            selected.avatar_url ||
+                            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"
+                          }
+                          alt={selected.nama}
+                          className="size-5 rounded-full object-cover shrink-0"
+                        />
+                        <span className="font-semibold text-foreground truncate">
+                          {selected.nama}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          ({ROLE_LABELS[selected.role]?.badge || selected.role})
+                        </span>
+                      </>
+                    )
+                  })()}
+                </div>
+              </SelectTrigger>
+              <SelectContent className="w-full max-h-60">
+                {eligibleReviewers.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={
+                          u.avatar_url ||
+                          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"
+                        }
+                        alt={u.nama}
+                        className="size-5 rounded-full object-cover shrink-0"
+                      />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-semibold text-foreground truncate">
+                          {u.nama}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          ({ROLE_LABELS[u.role]?.badge || u.role})
+                        </span>
+                        {assigneeIds.includes(u.id) && (
+                          <span className="text-[9px] text-amber-600 font-semibold">(Juga Pelaksana)</span>
+                        )}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Section 4: Deskripsi & Instruksi */}
@@ -452,23 +673,45 @@ export function CreateTaskModal({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="h-9.5 px-4 text-xs font-semibold rounded-xl cursor-pointer"
-            >
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-9.5 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
-            >
-              {isSubmitting ? "Mendaftarkan Tugas..." : "Terbitkan Penugasan"}
-            </Button>
+          </div>
+
+          {/* Floating Minimal Scroll Indicator */}
+          {canScrollDown && (
+            <div className="pointer-events-none absolute bottom-[61px] left-0 right-0 h-10 bg-gradient-to-t from-background/90 to-transparent flex items-end justify-center pb-1.5 z-10 transition-opacity duration-200">
+              <button
+                type="button"
+                onClick={scrollToBottom}
+                className="pointer-events-auto inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-background/95 hover:bg-muted border border-border shadow-sm text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer backdrop-blur-md group"
+                title="Gulir ke bawah"
+              >
+                <span>Scroll</span>
+                <ChevronDownIcon className="size-3 text-red-600 animate-bounce group-hover:translate-y-0.5 transition-transform" />
+              </button>
+            </div>
+          )}
+
+          {/* Sticky Footer Action Buttons (Selalu Terlihat di Bawah Tanpa Perlu Scroll) */}
+          <div className="shrink-0 flex items-center justify-between gap-3 px-6 py-3.5 border-t border-border bg-background/95 backdrop-blur-md">
+            <span className="text-[11px] text-muted-foreground hidden sm:inline">
+              Pastikan detail & PIC penugasan sudah sesuai sebelum diterbitkan.
+            </span>
+            <div className="flex items-center gap-2.5 ml-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="h-9.5 px-4 text-xs font-semibold rounded-xl cursor-pointer"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-9.5 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs cursor-pointer"
+              >
+                {isSubmitting ? "Mendaftarkan Tugas..." : "Terbitkan Penugasan"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

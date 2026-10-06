@@ -19,6 +19,8 @@ import {
   SparklesIcon,
   ChevronRightIcon,
   SlidersHorizontalIcon,
+  ChevronDownIcon,
+  CheckIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -31,6 +33,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 const roleData = [
   {
@@ -331,18 +340,58 @@ export default function AccessControlPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <select
-                          value={selectedRoleFilter}
-                          onChange={(e) => setSelectedRoleFilter(e.target.value)}
-                          className="h-9 px-3 rounded-[8px] border bg-background text-xs text-foreground outline-none cursor-pointer"
-                        >
-                          <option value="all">Semua Role ({usersList.length})</option>
-                          <option value="Super Admin">Super Admin</option>
-                          <option value="Supervisor Wilayah (Ops Lead)">Supervisor Wilayah</option>
-                          <option value="Dispatcher & Helpdesk Lapangan">Dispatcher Lapangan</option>
-                          <option value="Auditor HR & Compliance">Auditor HR</option>
-                          <option value="Teknisi Lapangan / Mitra">Teknisi Lapangan</option>
-                        </select>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 px-3 rounded-[8px] text-xs font-semibold bg-background border gap-2 shadow-2xs cursor-pointer"
+                              >
+                                <span className="text-muted-foreground font-normal">Role:</span>
+                                <span className="font-bold text-foreground">
+                                  {selectedRoleFilter === "all"
+                                    ? `Semua Role (${usersList.length})`
+                                    : selectedRoleFilter}
+                                </span>
+                                <ChevronDownIcon className="size-3.5 text-muted-foreground opacity-70" />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-[8px] shadow-xl border-border bg-card">
+                            <div className="px-2 py-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              Filter Role
+                            </div>
+                            <DropdownMenuItem
+                              onClick={() => setSelectedRoleFilter("all")}
+                              className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                                selectedRoleFilter === "all" ? "bg-muted font-bold" : ""
+                              }`}
+                            >
+                              <span>Semua Role ({usersList.length})</span>
+                              {selectedRoleFilter === "all" && <CheckIcon className="size-3.5 text-red-600" />}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="my-1" />
+                            {[
+                              "Super Admin",
+                              "Supervisor Wilayah (Ops Lead)",
+                              "Dispatcher & Helpdesk Lapangan",
+                              "Auditor HR & Compliance",
+                              "Teknisi Lapangan / Mitra",
+                            ].map((roleName) => (
+                              <DropdownMenuItem
+                                key={roleName}
+                                onClick={() => setSelectedRoleFilter(roleName)}
+                                className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                                  selectedRoleFilter === roleName ? "bg-muted font-bold" : ""
+                                }`}
+                              >
+                                <span>{roleName}</span>
+                                {selectedRoleFilter === roleName && <CheckIcon className="size-3.5 text-red-600" />}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
 

@@ -143,7 +143,7 @@ export default function AdminNotifikasiPage() {
 
     if (list.length === 0) {
       return (
-        <Card className="rounded-2xl border-dashed">
+        <Card className="rounded-[8px] border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <BellIcon className="size-10 text-muted-foreground/40 mb-3" />
             <h3 className="text-sm font-bold text-foreground">Tidak Ada Notifikasi</h3>
@@ -160,7 +160,7 @@ export default function AdminNotifikasiPage() {
         {list.map((notif) => (
           <Card
             key={notif.id}
-            className={`rounded-xl border transition-all hover:border-red-500/40 shadow-xs ${
+            className={`rounded-[8px] border transition-all hover:border-red-500/40 shadow-xs ${
               !notif.is_read
                 ? "bg-red-500/[0.03] dark:bg-red-500/[0.05] border-red-200/80 dark:border-red-950/80"
                 : "bg-card"
@@ -171,7 +171,7 @@ export default function AdminNotifikasiPage() {
                 onClick={() => handleItemClick(notif)}
                 className="flex items-start gap-3.5 flex-1 cursor-pointer"
               >
-                <div className="size-9 rounded-xl bg-muted/80 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="size-9 rounded-[8px] bg-muted/80 flex items-center justify-center shrink-0 mt-0.5">
                   {getNotifIcon(notif.type)}
                 </div>
                 <div className="space-y-1 min-w-0">
@@ -184,11 +184,11 @@ export default function AdminNotifikasiPage() {
                       {notif.title}
                     </h4>
                     {!notif.is_read && (
-                      <Badge className="bg-red-600 text-white text-[9px] px-1.5 py-0.2">
+                      <Badge className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-[6px]">
                         Baru
                       </Badge>
                     )}
-                    <span className="text-[10px] text-muted-foreground font-medium">
+                    <span className="text-xs text-muted-foreground font-medium">
                       • {formatRelativeTime(notif.created_at)}
                     </span>
                   </div>
@@ -204,7 +204,7 @@ export default function AdminNotifikasiPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => handleItemClick(notif)}
-                    className="h-8 px-2.5 text-[11px] gap-1.5 font-bold rounded-lg cursor-pointer"
+                    className="h-8 px-2.5 text-xs gap-1.5 font-bold rounded-[8px] cursor-pointer"
                   >
                     <span>Buka Rincian</span>
                     <ExternalLinkIcon className="size-3" />
@@ -215,7 +215,7 @@ export default function AdminNotifikasiPage() {
                     size="sm"
                     variant="ghost"
                     onClick={() => handleMarkAsRead(notif.id)}
-                    className="h-8 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer rounded-[8px]"
                   >
                     Tandai Dibaca
                   </Button>
@@ -224,7 +224,7 @@ export default function AdminNotifikasiPage() {
                   size="icon"
                   variant="ghost"
                   onClick={() => handleDeleteNotif(notif.id)}
-                  className="size-8 text-muted-foreground hover:text-red-600 cursor-pointer"
+                  className="size-8 text-muted-foreground hover:text-red-600 cursor-pointer rounded-[8px]"
                   title="Hapus"
                 >
                   <Trash2Icon className="size-3.5" />
@@ -257,7 +257,7 @@ export default function AdminNotifikasiPage() {
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   Pusat Notifikasi Admin
                 </h1>
-                <Badge className="bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 border text-[10px] font-bold">
+                <Badge className="bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 border text-xs font-bold rounded-[6px]">
                   Superadmin Operasional
                 </Badge>
                 {unreadCount > 0 && (

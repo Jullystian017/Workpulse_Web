@@ -20,6 +20,8 @@ import {
   InfoIcon,
   HelpCircleIcon,
   SparklesIcon,
+  ChevronDownIcon,
+  CheckIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -51,6 +53,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import {
   getEmployeePerformanceReport,
   EmployeePerformanceReport,
@@ -211,53 +220,53 @@ export default function LaporanKinerjaPage() {
 
           {/* Quick Metrics */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
               <CheckCircle2Icon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <span className="text-xs font-bold text-muted-foreground">Total Tugas Selesai</span>
                 <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums text-foreground">
                   {totalDone}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Dari {totalTasks} seluruh penugasan</p>
+                <p className="mt-1 text-xs text-muted-foreground">Dari {totalTasks} seluruh penugasan</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
               <TrendingUpIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <span className="text-xs font-bold text-muted-foreground">Rata-rata SLA On-Time</span>
                 <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums text-emerald-600">
                   {avgSla}%
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Kepatuhan standar operasional</p>
+                <p className="mt-1 text-xs text-muted-foreground">Kepatuhan standar operasional</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
               <ClockIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <span className="text-xs font-bold text-muted-foreground">Menunggu Validasi</span>
                 <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums text-amber-600">
                   {totalReview}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Dalam antrean verifikasi atasan</p>
+                <p className="mt-1 text-xs text-muted-foreground">Dalam antrean verifikasi atasan</p>
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs">
               <StarIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
               <div className="relative">
                 <span className="text-xs font-bold text-muted-foreground">Total Personil Terdaftar</span>
                 <p className="mt-2 text-3xl font-extrabold tracking-tight tabular-nums text-foreground">
                   {data.length}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Seluruh jajaran hierarki aktif</p>
+                <p className="mt-1 text-xs text-muted-foreground">Seluruh jajaran hierarki aktif</p>
               </div>
             </div>
           </div>
 
           {/* Filter & Search Bar */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3.5 bg-card rounded-2xl border border-border">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3.5 bg-card rounded-[8px] border border-border">
             <div className="flex flex-col sm:flex-row items-center gap-3 flex-1">
               <div className="relative w-full sm:w-72">
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
@@ -265,23 +274,73 @@ export default function LaporanKinerjaPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari NIK / Nama / Posisi..."
-                  className="h-9 w-full pl-8 rounded-xl text-xs bg-muted/40"
+                  className="h-9 w-full pl-8 rounded-[8px] text-xs bg-muted/40"
                 />
               </div>
 
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="h-9 px-3 rounded-xl text-xs font-semibold bg-background border border-border text-foreground"
-              >
-                <option value="Semua">Semua Jabatan</option>
-                <option value="staff">Staff Teknisi</option>
-                <option value="officer_1">Officer 1</option>
-                <option value="officer_2">Officer 2</option>
-                <option value="officer_3">Officer 3</option>
-                <option value="manager">Manager Divisi</option>
-                <option value="sgm">SGM</option>
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 px-3 rounded-[8px] text-xs font-semibold bg-background border border-border hover:bg-muted/40 gap-2 cursor-pointer shadow-2xs"
+                    >
+                      <span className="text-muted-foreground font-normal">Jabatan:</span>
+                      <span className="font-bold text-foreground">
+                        {selectedRole === "Semua"
+                          ? "Semua Jabatan"
+                          : selectedRole === "sgm"
+                          ? "Senior General Manager (SGM)"
+                          : selectedRole === "manager"
+                          ? "Manager"
+                          : selectedRole === "officer_3"
+                          ? "Officer 3"
+                          : selectedRole === "officer_2"
+                          ? "Officer 2"
+                          : selectedRole === "officer_1"
+                          ? "Officer 1"
+                          : "Staff"}
+                      </span>
+                      <ChevronDownIcon className="size-3.5 text-muted-foreground opacity-70" />
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="start" className="w-56 p-1.5 rounded-[8px] shadow-xl border-border bg-card">
+                  <div className="px-2 py-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Filter Jabatan
+                  </div>
+                  <DropdownMenuItem
+                    onClick={() => setSelectedRole("Semua")}
+                    className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                      selectedRole === "Semua" ? "bg-muted font-bold" : ""
+                    }`}
+                  >
+                    <span>Semua Jabatan</span>
+                    {selectedRole === "Semua" && <CheckIcon className="size-3.5 text-red-600" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-1" />
+                  {[
+                    { key: "sgm", label: "Senior General Manager (SGM)" },
+                    { key: "manager", label: "Manager" },
+                    { key: "officer_3", label: "Officer 3" },
+                    { key: "officer_2", label: "Officer 2" },
+                    { key: "officer_1", label: "Officer 1" },
+                    { key: "staff", label: "Staff" },
+                  ].map((item) => (
+                    <DropdownMenuItem
+                      key={item.key}
+                      onClick={() => setSelectedRole(item.key)}
+                      className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                        selectedRole === item.key ? "bg-muted font-bold" : ""
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {selectedRole === item.key && <CheckIcon className="size-3.5 text-red-600" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <span className="text-xs text-muted-foreground font-semibold">
               Menampilkan {filteredData.length} data karyawan
@@ -289,7 +348,7 @@ export default function LaporanKinerjaPage() {
           </div>
 
           {/* Performance Table */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="rounded-[8px] border border-border bg-card overflow-hidden">
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow>
@@ -397,7 +456,7 @@ export default function LaporanKinerjaPage() {
 
           {/* Modal Dialog Detail & Riwayat Penilaian Kinerja */}
           <Dialog open={Boolean(selectedReport)} onOpenChange={(open) => !open && setSelectedReport(null)}>
-            <DialogContent className="w-[95vw] sm:max-w-5xl md:max-w-5xl lg:max-w-6xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 sm:rounded-3xl shadow-2xl">
+            <DialogContent className="w-[95vw] sm:max-w-5xl md:max-w-5xl lg:max-w-6xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-[8px] shadow-2xl">
               {selectedReport && (
                 <div className="space-y-6">
                   {/* Header Dialog */}
@@ -409,7 +468,7 @@ export default function LaporanKinerjaPage() {
                           "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
                         }
                         alt={selectedReport.user.nama}
-                        className="size-14 rounded-2xl object-cover border border-border shadow-xs shrink-0"
+                        className="size-14 rounded-[8px] object-cover border border-border shadow-xs shrink-0"
                       />
                       <div>
                         <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 flex-wrap">
@@ -420,7 +479,7 @@ export default function LaporanKinerjaPage() {
                         </DialogTitle>
                         <DialogDescription className="text-xs text-muted-foreground mt-0.5">
                           {selectedReport.user.position_title || "Karyawan"} •{" "}
-                          <span className="font-bold text-foreground uppercase text-[10px] tracking-wider">
+                          <span className="font-bold text-foreground uppercase text-xs tracking-wider">
                             {selectedReport.user.role}
                           </span>
                         </DialogDescription>
@@ -428,7 +487,7 @@ export default function LaporanKinerjaPage() {
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-[8px] bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400">
                         <StarIcon className="size-4.5 fill-amber-500 text-amber-500" />
                         <span className="text-base font-extrabold">{selectedReport.stars}</span>
                         <span className="text-xs text-muted-foreground">/ 5.0</span>
@@ -529,9 +588,9 @@ export default function LaporanKinerjaPage() {
                       </h4>
                     </div>
 
-                    <div className="rounded-2xl border border-border overflow-x-auto bg-card">
+                    <div className="rounded-[8px] border border-border overflow-x-auto bg-card">
                       <Table>
-                        <TableHeader className="bg-muted/50 text-[11px]">
+                        <TableHeader className="bg-muted/50 text-xs">
                           <TableRow>
                             <TableHead className="py-2.5 px-3 min-w-[180px]">Tugas & Tiket</TableHead>
                             <TableHead className="py-2.5 px-3 min-w-[90px]">Prioritas</TableHead>
@@ -549,16 +608,16 @@ export default function LaporanKinerjaPage() {
                                 <TableRow key={h.taskId} className="hover:bg-muted/20">
                                   <TableCell className="py-2.5 px-3">
                                     <span className="font-bold text-foreground block line-clamp-1">{h.title}</span>
-                                    <span className="font-mono text-[10px] text-muted-foreground">{h.ticketCode}</span>
+                                    <span className="font-mono text-xs text-muted-foreground">{h.ticketCode}</span>
                                   </TableCell>
 
                                   <TableCell className="py-2.5 px-3">
-                                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border border-border bg-muted/60">
+                                    <span className="inline-block px-2 py-0.5 rounded-[6px] text-xs font-bold border border-border bg-muted/60">
                                       {pMeta.label}
                                     </span>
                                   </TableCell>
 
-                                  <TableCell className="py-2.5 px-3 font-mono text-[11px]">
+                                  <TableCell className="py-2.5 px-3 font-mono text-xs">
                                     <div className="text-muted-foreground">
                                       Batas:{" "}
                                       {h.deadlineAt

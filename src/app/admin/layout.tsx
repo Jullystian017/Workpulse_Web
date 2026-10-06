@@ -33,13 +33,13 @@ export default function AdminProtectedLayout({
   if (isChecking) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-zinc-50 dark:bg-zinc-950 font-sans">
-        <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-border shadow-xs">
-          <div className="size-10 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center animate-pulse">
+        <div className="flex flex-col items-center gap-3 p-6 rounded-[8px] bg-white dark:bg-zinc-900 border border-border shadow-2xs">
+          <div className="size-10 rounded-[8px] bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center animate-pulse">
             <LockIcon className="size-5" />
           </div>
           <div className="text-center">
             <h4 className="text-xs font-bold text-foreground">Memverifikasi Sesi Akses...</h4>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Memeriksa hak otorisasi akun Telkom Akses</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Memeriksa hak otorisasi akun Telkom Akses</p>
           </div>
         </div>
       </div>

@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useAiPanel } from "@/components/dashboard/ai-panel-context"
 import { Task } from "@/types/database"
-import { calculatePerformance, getActiveUserFromStorage } from "@/lib/api"
+import { calculatePerformance, getActiveUserFromStorage, getTaskAssigneeIds } from "@/lib/api"
 
 interface KaryawanAiInsightProps {
   tasks?: Task[]
@@ -24,7 +24,7 @@ export function KaryawanAiInsight({ tasks = [] }: KaryawanAiInsightProps) {
   // Calculate synchronized performance metrics identical to admin dashboard
   const myTasks = React.useMemo(() => {
     if (!activeUser) return tasks
-    return tasks.filter((t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id)
+    return tasks.filter((t) => getTaskAssigneeIds(t).includes(activeUser.id) || t.created_by === activeUser.id)
   }, [tasks, activeUser])
 
   const perf = React.useMemo(() => {

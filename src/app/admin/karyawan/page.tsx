@@ -31,6 +31,12 @@ import {
   ToggleRightIcon,
   UploadIcon,
   UserIcon,
+  ChevronDownIcon,
+  PackageIcon,
+  FileTextIcon,
+  LayersIcon,
+  CrownIcon,
+  AlertCircleIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -66,13 +72,64 @@ import {
 } from "@/lib/api"
 import { User, Department, UserRole, ROLE_LABELS, ROLE_HIERARCHY_LEVEL } from "@/types/database"
 
+export const SUB_UNITS = [
+  {
+    id: "Procurement",
+    name: "Procurement",
+    shortName: "PROC",
+    desc: "Pengadaan barang & jasa, perangkat jaringan, dan logistik operasional Telkom Akses.",
+    badgeClass: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+    borderClass: "border-blue-200/90 dark:border-blue-900/60",
+    headerBg: "bg-gradient-to-r from-blue-50/80 via-blue-50/30 to-transparent dark:from-blue-950/40 dark:via-blue-950/10",
+    accentColor: "text-blue-600 dark:text-blue-400",
+    icon: PackageIcon,
+  },
+  {
+    id: "Vendor Management",
+    name: "Vendor Management",
+    shortName: "VND",
+    desc: "Pengelolaan mitra kerja penyedia, evaluasi performa vendor rekanan, dan kemitraan.",
+    badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+    borderClass: "border-amber-200/90 dark:border-amber-900/60",
+    headerBg: "bg-gradient-to-r from-amber-50/80 via-amber-50/30 to-transparent dark:from-amber-950/40 dark:via-amber-950/10",
+    accentColor: "text-amber-600 dark:text-amber-400",
+    icon: Building2Icon,
+  },
+  {
+    id: "Contract Transaction",
+    name: "Contract Transaction",
+    shortName: "CTR",
+    desc: "Transaksi kontrak, legalitas kerja sama, dan verifikasi administrasi SPK operasional.",
+    badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+    borderClass: "border-emerald-200/90 dark:border-emerald-900/60",
+    headerBg: "bg-gradient-to-r from-emerald-50/80 via-emerald-50/30 to-transparent dark:from-emerald-950/40 dark:via-emerald-950/10",
+    accentColor: "text-emerald-600 dark:text-emerald-400",
+    icon: FileTextIcon,
+  },
+] as const
+
+const getSubUnitBadgeClass = (subUnit?: string | null) => {
+  switch (subUnit) {
+    case "Procurement":
+      return "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+    case "Vendor Management":
+      return "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+    case "Contract Transaction":
+      return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+    default:
+      return "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700"
+  }
+}
+
 export default function AdminKaryawanPage() {
   const [users, setUsers] = React.useState<User[]>([])
   const [departments, setDepartments] = React.useState<Department[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [selectedRole, setSelectedRole] = React.useState<string>("all")
+  const [selectedSubUnitFilter, setSelectedSubUnitFilter] = React.useState<string>("all")
   const [viewMode, setViewMode] = React.useState<"grid" | "list" | "organogram">("grid")
+  const [selectedOrganogramSubUnit, setSelectedOrganogramSubUnit] = React.useState<string>("all")
 
   // Active logged-in user (for access control)
   const activeUser = React.useMemo(() => getActiveUserFromStorage(), [])
@@ -85,6 +142,7 @@ export default function AdminKaryawanPage() {
   const [newPassword, setNewPassword] = React.useState("")
   const [newPhone, setNewPhone] = React.useState("0812-3456-7890")
   const [newRole, setNewRole] = React.useState<UserRole>("staff")
+  const [newSubUnit, setNewSubUnit] = React.useState<string>("")
   const [newDeptId, setNewDeptId] = React.useState("")
   const [newSupervisorId, setNewSupervisorId] = React.useState("")
   const [newPositionTitle, setNewPositionTitle] = React.useState("")
@@ -97,6 +155,7 @@ export default function AdminKaryawanPage() {
   const [editEmail, setEditEmail] = React.useState("")
   const [editPhone, setEditPhone] = React.useState("")
   const [editRole, setEditRole] = React.useState<UserRole>("staff")
+  const [editSubUnit, setEditSubUnit] = React.useState<string>("Procurement")
   const [editDeptId, setEditDeptId] = React.useState("")
   const [editSupervisorId, setEditSupervisorId] = React.useState("")
   const [editPositionTitle, setEditPositionTitle] = React.useState("")
@@ -136,6 +195,58 @@ export default function AdminKaryawanPage() {
       avatarFileInputRef.current.value = ""
     }
     toast.info("Foto profil dikosongkan.")
+  }
+
+  // Scroll Detection untuk Modal Tambah Karyawan
+  const addScrollRef = React.useRef<HTMLDivElement | null>(null)
+  const [canScrollAddDown, setCanScrollAddDown] = React.useState(false)
+
+  const handleAddScroll = React.useCallback(() => {
+    const el = addScrollRef.current
+    if (!el) return
+    const hasMore = el.scrollHeight - el.scrollTop - el.clientHeight > 20
+    setCanScrollAddDown(hasMore)
+  }, [])
+
+  React.useEffect(() => {
+    if (!isAddOpen) return
+    const timer = setTimeout(() => {
+      handleAddScroll()
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [isAddOpen, handleAddScroll])
+
+  const scrollToAddBottom = () => {
+    addScrollRef.current?.scrollTo({
+      top: addScrollRef.current.scrollHeight,
+      behavior: "smooth",
+    })
+  }
+
+  // Scroll Detection untuk Modal Edit Karyawan
+  const editScrollRef = React.useRef<HTMLDivElement | null>(null)
+  const [canScrollEditDown, setCanScrollEditDown] = React.useState(false)
+
+  const handleEditScroll = React.useCallback(() => {
+    const el = editScrollRef.current
+    if (!el) return
+    const hasMore = el.scrollHeight - el.scrollTop - el.clientHeight > 20
+    setCanScrollEditDown(hasMore)
+  }, [])
+
+  React.useEffect(() => {
+    if (!isEditOpen) return
+    const timer = setTimeout(() => {
+      handleEditScroll()
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [isEditOpen, handleEditScroll])
+
+  const scrollToEditBottom = () => {
+    editScrollRef.current?.scrollTo({
+      top: editScrollRef.current.scrollHeight,
+      behavior: "smooth",
+    })
   }
 
   // Delete Confirm Modal State
@@ -211,6 +322,7 @@ export default function AdminKaryawanPage() {
     setNewNama("")
     setNewEmail("")
     setNewRole("staff")
+    setNewSubUnit("")
     setNewPositionTitle(ROLE_LABELS["staff"].label)
     setNewSupervisorId("")
     setIsAddOpen(true)
@@ -219,8 +331,6 @@ export default function AdminKaryawanPage() {
   const handleNamaChange = (val: string) => {
     setNewNama(val)
   }
-
-
 
   // Copy Generated Password
   const handleCopyPassword = (pass: string) => {
@@ -246,6 +356,7 @@ export default function AdminKaryawanPage() {
         email: newEmail.trim(),
         password: newPassword || "karyawan123",
         role: newRole,
+        sub_unit: newSubUnit.trim() || null,
         department_id: newDeptId || null,
         supervisor_id: newSupervisorId || null,
         position_title: ROLE_LABELS[newRole]?.label || newPositionTitle,
@@ -254,7 +365,7 @@ export default function AdminKaryawanPage() {
 
       if (created) {
         toast.success(`Akun karyawan ${created.nama} berhasil dibuat!`, {
-          description: `NIK ${created.nik} â€¢ Password: ${newPassword}`,
+          description: `NIK ${created.nik} • Sub Unit: ${newSubUnit || "Belum Ditentukan"}`,
         })
         setIsAddOpen(false)
         loadData()
@@ -282,6 +393,7 @@ export default function AdminKaryawanPage() {
     setEditEmail(user.email)
     setEditPhone(user.phone || "")
     setEditRole(user.role)
+    setEditSubUnit(user.sub_unit || "")
     setEditDeptId(user.department_id || (departments[0]?.id || ""))
     setEditSupervisorId(user.supervisor_id || "")
     setEditPositionTitle(user.position_title || "")
@@ -312,6 +424,7 @@ export default function AdminKaryawanPage() {
         email: editEmail.trim(),
         phone: editPhone.trim() || null,
         role: editRole,
+        sub_unit: editSubUnit.trim() || null,
         department_id: editDeptId || null,
         supervisor_id: editingUser.supervisor_id || null,
         position_title: ROLE_LABELS[editRole]?.label,
@@ -332,6 +445,31 @@ export default function AdminKaryawanPage() {
       toast.error("Gagal memperbarui data karyawan.")
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // Quick Inline Change Sub Unit
+  const handleQuickUpdateSubUnit = async (user: User, targetSubUnit: string) => {
+    if (!canEditUser(user)) {
+      toast.error("Anda tidak memiliki wewenang untuk mengubah data akun ini.")
+      return
+    }
+    const finalVal = targetSubUnit.trim() || null
+    try {
+      const updated = await updateUser(user.id, { sub_unit: finalVal })
+      if (updated) {
+        toast.success(
+          finalVal
+            ? `Sub Unit ${user.nama} diubah ke: ${finalVal}`
+            : `Sub Unit ${user.nama} di-reset (Belum Ditentukan)`
+        )
+        setUsers((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, sub_unit: finalVal } : u))
+        )
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal mengubah sub unit.")
     }
   }
 
@@ -381,14 +519,19 @@ export default function AdminKaryawanPage() {
   const filteredUsers = React.useMemo(() => {
     return users.filter((u) => {
       const matchRole = selectedRole === "all" || u.role === selectedRole
+      const matchSubUnit =
+        selectedSubUnitFilter === "all" ||
+        (selectedSubUnitFilter === "unassigned"
+          ? !u.sub_unit || u.sub_unit === "Belum Ditentukan"
+          : u.sub_unit === selectedSubUnitFilter)
       const matchSearch =
         !searchQuery ||
         u.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.nik.includes(searchQuery) ||
         (u.position_title && u.position_title.toLowerCase().includes(searchQuery.toLowerCase()))
-      return matchRole && matchSearch
+      return matchRole && matchSubUnit && matchSearch
     })
-  }, [users, selectedRole, searchQuery])
+  }, [users, selectedRole, selectedSubUnitFilter, searchQuery])
 
   // Potential supervisors dropdown for Create
   const potentialSupervisorsForNew = users.filter((u) => {
@@ -469,7 +612,7 @@ export default function AdminKaryawanPage() {
                 <Button
                   size="sm"
                   onClick={handleOpenAddModal}
-                  className="h-9 px-4 rounded-[6px] text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5"
+                  className="h-9 px-4 rounded-[8px] text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs gap-1.5 cursor-pointer"
                 >
                   <PlusIcon className="size-4" />
                   Tambah Karyawan Baru
@@ -480,11 +623,11 @@ export default function AdminKaryawanPage() {
             {/* View Switcher & Filters */}
             <div className="px-4 lg:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-3">
               <div className="flex items-center gap-2">
-                <div className="flex p-1 bg-muted/60 rounded-[6px] border border-border">
+                <div className="flex p-1 bg-muted/60 rounded-[8px] border border-border">
                   <button
                     type="button"
                     onClick={() => setViewMode("grid")}
-                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[3px] transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[6px] transition-all cursor-pointer ${
                       viewMode === "grid" ? "bg-white dark:bg-zinc-800 text-foreground shadow-xs" : "text-muted-foreground"
                     }`}
                   >
@@ -494,7 +637,7 @@ export default function AdminKaryawanPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode("list")}
-                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[6px] transition-all cursor-pointer ${
                       viewMode === "list" ? "bg-white dark:bg-zinc-800 text-foreground shadow-xs" : "text-muted-foreground"
                     }`}
                   >
@@ -504,7 +647,7 @@ export default function AdminKaryawanPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode("organogram")}
-                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-[6px] transition-all cursor-pointer ${
                       viewMode === "organogram" ? "bg-white dark:bg-zinc-800 text-red-600 dark:text-red-400 shadow-xs" : "text-muted-foreground"
                     }`}
                   >
@@ -514,31 +657,175 @@ export default function AdminKaryawanPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
                 <div className="relative">
                   <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cari NIK atau Nama Karyawan..."
-                    className="h-8.5 w-48 lg:w-64 pl-8 rounded-[6px] text-xs bg-muted/30"
+                    className="h-9 w-48 lg:w-64 pl-8.5 rounded-[8px] text-xs bg-muted/30"
                   />
                 </div>
 
-                <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  className="h-8.5 px-3 rounded-[5px] text-xs font-semibold bg-card border border-border text-foreground"
-                >
-                  <option value="all">Semua Jabatan</option>
-                  <option value="sgm">Senior General Manager (SGM)</option>
-                  <option value="manager">Manager Divisi</option>
-                  <option value="officer_3">Officer 3 (Project Lead)</option>
-                  <option value="officer_2">Officer 2 (Specialist)</option>
-                  <option value="officer_1">Officer 1 (Shift Lead)</option>
-                  <option value="staff">Staff Lapangan / Teknisi</option>
-                  <option value="admin">Superadmin</option>
-                </select>
+                {/* Custom Styled Dropdown: Jabatan */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-3 rounded-[8px] text-xs font-semibold bg-card border-border hover:bg-muted/50 gap-2 shadow-2xs cursor-pointer"
+                      >
+                        <span className="text-muted-foreground font-normal">Jabatan:</span>
+                        <span className="font-bold text-foreground">
+                          {selectedRole === "all"
+                            ? "Semua Jabatan"
+                            : selectedRole === "sgm"
+                            ? "Senior General Manager (SGM)"
+                            : selectedRole === "manager"
+                            ? "Manager"
+                            : selectedRole === "officer_3"
+                            ? "Officer 3"
+                            : selectedRole === "officer_2"
+                            ? "Officer 2"
+                            : selectedRole === "officer_1"
+                            ? "Officer 1"
+                            : selectedRole === "staff"
+                            ? "Staff"
+                            : "Superadmin"}
+                        </span>
+                        <ChevronDownIcon className="size-3.5 text-muted-foreground ml-0.5" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-[8px] shadow-xl border-border bg-card">
+                    <div className="px-2 py-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Filter Jabatan
+                    </div>
+                    <DropdownMenuItem
+                      onClick={() => setSelectedRole("all")}
+                      className={`cursor-pointer text-xs py-2 px-2.5 rounded-lg flex items-center justify-between font-medium ${
+                        selectedRole === "all" ? "bg-muted font-bold text-foreground" : ""
+                      }`}
+                    >
+                      <span>Semua Jabatan</span>
+                      {selectedRole === "all" && <CheckIcon className="size-3.5 text-red-600" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                    {[
+                      { key: "sgm", label: "Senior General Manager (SGM)" },
+                      { key: "manager", label: "Manager" },
+                      { key: "officer_3", label: "Officer 3" },
+                      { key: "officer_2", label: "Officer 2" },
+                      { key: "officer_1", label: "Officer 1" },
+                      { key: "staff", label: "Staff" },
+                      { key: "admin", label: "Superadmin" },
+                    ].map((item) => (
+                      <DropdownMenuItem
+                        key={item.key}
+                        onClick={() => setSelectedRole(item.key)}
+                        className={`cursor-pointer text-xs py-2 px-2.5 rounded-lg flex items-center justify-between font-medium ${
+                          selectedRole === item.key ? "bg-muted font-bold text-foreground" : ""
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {selectedRole === item.key && <CheckIcon className="size-3.5 text-red-600" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Custom Styled Dropdown: Sub Unit */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-3 rounded-[8px] text-xs font-semibold bg-card border-border hover:bg-muted/50 gap-2 shadow-2xs cursor-pointer"
+                      >
+                        <span className="text-muted-foreground font-normal">Sub Unit:</span>
+                        <span className="font-bold text-foreground">
+                          {selectedSubUnitFilter === "all"
+                            ? "Semua Sub Unit"
+                            : selectedSubUnitFilter === "Procurement"
+                            ? "Procurement"
+                            : selectedSubUnitFilter === "Vendor Management"
+                            ? "Vendor Management"
+                            : selectedSubUnitFilter === "Contract Transaction"
+                            ? "Contract Transaction"
+                            : "Belum Ditentukan"}
+                        </span>
+                        <ChevronDownIcon className="size-3.5 text-muted-foreground ml-0.5" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-[8px] shadow-xl border-border bg-card">
+                    <div className="px-2 py-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Filter Sub Unit
+                    </div>
+                    <DropdownMenuItem
+                      onClick={() => setSelectedSubUnitFilter("all")}
+                      className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between font-medium ${
+                        selectedSubUnitFilter === "all" ? "bg-muted font-bold text-foreground" : ""
+                      }`}
+                    >
+                      <span>Semua Sub Unit</span>
+                      {selectedSubUnitFilter === "all" && <CheckIcon className="size-3.5 text-red-600" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem
+                      onClick={() => setSelectedSubUnitFilter("Procurement")}
+                      className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between font-medium ${
+                        selectedSubUnitFilter === "Procurement" ? "bg-muted font-bold text-foreground" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <PackageIcon className="size-3.5 text-blue-500" />
+                        <span>Procurement</span>
+                      </div>
+                      {selectedSubUnitFilter === "Procurement" && <CheckIcon className="size-3.5 text-blue-600" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSelectedSubUnitFilter("Vendor Management")}
+                      className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between font-medium ${
+                        selectedSubUnitFilter === "Vendor Management" ? "bg-muted font-bold text-foreground" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Building2Icon className="size-3.5 text-amber-500" />
+                        <span>Vendor Management</span>
+                      </div>
+                      {selectedSubUnitFilter === "Vendor Management" && <CheckIcon className="size-3.5 text-amber-600" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSelectedSubUnitFilter("Contract Transaction")}
+                      className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between font-medium ${
+                        selectedSubUnitFilter === "Contract Transaction" ? "bg-muted font-bold text-foreground" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileTextIcon className="size-3.5 text-emerald-500" />
+                        <span>Contract Transaction</span>
+                      </div>
+                      {selectedSubUnitFilter === "Contract Transaction" && <CheckIcon className="size-3.5 text-emerald-600" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem
+                      onClick={() => setSelectedSubUnitFilter("unassigned")}
+                      className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between font-medium text-amber-700 dark:text-amber-400 ${
+                        selectedSubUnitFilter === "unassigned" ? "bg-amber-50 dark:bg-amber-950/40 font-bold" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <AlertCircleIcon className="size-3.5" />
+                        <span>Belum Ditentukan</span>
+                      </div>
+                      {selectedSubUnitFilter === "unassigned" && <CheckIcon className="size-3.5 text-amber-600" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -551,7 +838,7 @@ export default function AdminKaryawanPage() {
                     return (
                       <div
                         key={u.id}
-                        className="p-4 rounded-xl border border-border bg-card shadow-xs hover:shadow-md hover:border-border/80 transition-all flex flex-col justify-between gap-3 relative group"
+                        className="p-4 rounded-[8px] border border-border bg-card shadow-xs hover:shadow-md hover:border-border/80 transition-all flex flex-col justify-between gap-3 relative group"
                       >
                         {/* Top Profile */}
                         <div className="flex items-start justify-between gap-2">
@@ -560,7 +847,7 @@ export default function AdminKaryawanPage() {
                               <img
                                 src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"}
                                 alt={u.nama}
-                                className="size-12 rounded-xl object-cover border border-border"
+                                className="size-12 rounded-[8px] object-cover border border-border"
                               />
                               <span
                                 className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-card ${
@@ -573,9 +860,9 @@ export default function AdminKaryawanPage() {
                               <h3 className="text-sm font-bold text-foreground truncate" title={u.nama}>
                                 {u.nama}
                               </h3>
-                              <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-[6px] text-xs font-bold ${
                                     u.role === "admin"
                                       ? "bg-zinc-100 text-zinc-800 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700"
                                       : roleMeta.color
@@ -583,6 +870,58 @@ export default function AdminKaryawanPage() {
                                 >
                                   {u.role === "admin" ? "Superadmin" : roleMeta.badge}
                                 </span>
+                                {u.role !== "admin" && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger
+                                      render={
+                                        <button
+                                          type="button"
+                                          disabled={getEditBlockReason(u) !== null}
+                                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-xs font-semibold border transition-all hover:opacity-80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                                            u.sub_unit
+                                              ? getSubUnitBadgeClass(u.sub_unit)
+                                              : "border-dashed border-zinc-300 dark:border-zinc-700 text-muted-foreground bg-muted/40"
+                                          }`}
+                                          title="Klik untuk mengatur Sub Unit"
+                                        >
+                                          <span>{u.sub_unit || "Belum Ditentukan"}</span>
+                                          <ChevronDownIcon className="size-3 opacity-60" />
+                                        </button>
+                                      }
+                                    />
+                                    <DropdownMenuContent align="start" className="w-48 p-1 rounded-[8px] shadow-lg">
+                                      <DropdownMenuItem
+                                        onClick={() => handleQuickUpdateSubUnit(u, "Procurement")}
+                                        className="cursor-pointer text-xs gap-2 rounded-[6px]"
+                                      >
+                                        <PackageIcon className="size-3.5 text-blue-500" /> Procurement
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleQuickUpdateSubUnit(u, "Vendor Management")}
+                                        className="cursor-pointer text-xs gap-2 rounded-[6px]"
+                                      >
+                                        <Building2Icon className="size-3.5 text-amber-500" /> Vendor Management
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleQuickUpdateSubUnit(u, "Contract Transaction")}
+                                        className="cursor-pointer text-xs gap-2 rounded-[6px]"
+                                      >
+                                        <FileTextIcon className="size-3.5 text-emerald-500" /> Contract Transaction
+                                      </DropdownMenuItem>
+                                      {u.sub_unit && (
+                                        <>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={() => handleQuickUpdateSubUnit(u, "")}
+                                            className="cursor-pointer text-muted-foreground text-xs rounded-[6px]"
+                                          >
+                                            ⚠️ Kosongkan Sub Unit
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -594,13 +933,13 @@ export default function AdminKaryawanPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="size-7 text-muted-foreground hover:text-foreground rounded-lg"
+                                  className="size-7 text-muted-foreground hover:text-foreground rounded-[8px]"
                                 />
                               }
                             >
                               <MoreVerticalIcon className="size-4" />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44 rounded-xl p-1 shadow-lg">
+                            <DropdownMenuContent align="end" className="w-48 rounded-[8px] p-1 shadow-lg">
                               {(() => {
                                 const blockReason = getEditBlockReason(u)
                                 const blocked = blockReason !== null
@@ -610,7 +949,7 @@ export default function AdminKaryawanPage() {
                                       onClick={() => !blocked && handleOpenEdit(u)}
                                       disabled={blocked}
                                       title={blockReason ?? undefined}
-                                      className={`text-xs gap-2 py-1.5 rounded-lg ${
+                                      className={`text-xs gap-2 py-1.5 rounded-[6px] ${
                                         blocked
                                           ? "opacity-50 cursor-not-allowed"
                                           : "cursor-pointer"
@@ -620,7 +959,7 @@ export default function AdminKaryawanPage() {
                                       <div className="flex flex-col flex-1 min-w-0">
                                         <span>Edit Karyawan</span>
                                         {blocked && (
-                                          <span className="text-[9px] text-muted-foreground leading-tight truncate">
+                                          <span className="text-[10px] text-muted-foreground leading-tight truncate">
                                             {blockReason}
                                           </span>
                                         )}
@@ -631,7 +970,7 @@ export default function AdminKaryawanPage() {
                                       onClick={() => !blocked && handleOpenDelete(u)}
                                       disabled={blocked}
                                       title={blocked ? blockReason ?? undefined : undefined}
-                                      className={`text-xs gap-2 py-1.5 rounded-lg font-semibold ${
+                                      className={`text-xs gap-2 py-1.5 rounded-[6px] font-semibold ${
                                         blocked
                                           ? "opacity-50 cursor-not-allowed"
                                           : "text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/40 cursor-pointer"
@@ -650,14 +989,14 @@ export default function AdminKaryawanPage() {
                         {/* Details */}
                         <div className="pt-3 border-t border-border/60 space-y-1.5 text-xs text-muted-foreground">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-muted-foreground">NIK</span>
-                            <span className="text-foreground font-mono font-bold text-[11px] bg-muted/60 px-1.5 py-0.5 rounded">
+                            <span className="text-xs text-muted-foreground">NIK</span>
+                            <span className="text-foreground font-mono font-bold text-xs bg-muted/60 px-2 py-0.5 rounded-[6px]">
                               {u.nik}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-muted-foreground">Email</span>
-                            <span className="text-foreground/80 text-[11px] truncate max-w-[170px]" title={u.email}>
+                            <span className="text-xs text-muted-foreground">Email</span>
+                            <span className="text-foreground font-medium text-xs truncate max-w-[170px]" title={u.email}>
                               {u.email}
                             </span>
                           </div>
@@ -669,13 +1008,14 @@ export default function AdminKaryawanPage() {
               )}
 
               {viewMode === "list" && (
-                <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className="rounded-[8px] border border-border bg-card overflow-hidden">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold border-b border-border">
+                    <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-bold border-b border-border">
                       <tr>
                         <th className="py-3 px-4">Karyawan</th>
                         <th className="py-3 px-4">NIK</th>
                         <th className="py-3 px-4">Jabatan</th>
+                        <th className="py-3 px-4">Sub Unit</th>
                         <th className="py-3 px-4">Email</th>
                         <th className="py-3 px-4">Status</th>
                         <th className="py-3 px-4 text-right">Aksi</th>
@@ -689,15 +1029,15 @@ export default function AdminKaryawanPage() {
                               <img
                                 src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"}
                                 alt={u.nama}
-                                className="size-8 rounded-full object-cover border"
+                                className="size-8 rounded-[6px] object-cover border"
                               />
-                              <span className="font-bold text-foreground">{u.nama}</span>
+                              <span className="font-bold text-foreground text-xs">{u.nama}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-4 font-mono font-bold text-red-600">{u.nik}</td>
+                          <td className="py-3 px-4 font-mono font-bold text-red-600 text-xs">{u.nik}</td>
                           <td className="py-3 px-4">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              className={`px-2 py-0.5 rounded-[6px] text-xs font-bold ${
                                 u.role === "admin"
                                   ? "bg-zinc-100 text-zinc-800 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700"
                                   : ROLE_LABELS[u.role]?.color
@@ -705,6 +1045,55 @@ export default function AdminKaryawanPage() {
                             >
                               {u.role === "admin" ? "Superadmin" : ROLE_LABELS[u.role]?.badge}
                             </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {u.role === "admin" ? (
+                              <span className="text-[10px] text-muted-foreground font-medium">Administrator Kantor</span>
+                            ) : (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger
+                                  render={
+                                    <button
+                                      type="button"
+                                      disabled={getEditBlockReason(u) !== null}
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors hover:opacity-85 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${getSubUnitBadgeClass(
+                                        u.sub_unit
+                                      )}`}
+                                    >
+                                      <span>{u.sub_unit || "Belum Ditentukan"}</span>
+                                      <ChevronDownIcon className="size-3 opacity-60 ml-0.5" />
+                                    </button>
+                                  }
+                                />
+                                <DropdownMenuContent align="start" className="w-48 p-1 rounded-xl shadow-lg">
+                                  <DropdownMenuItem
+                                    onClick={() => handleQuickUpdateSubUnit(u, "Procurement")}
+                                    className="cursor-pointer text-xs gap-2"
+                                  >
+                                    <PackageIcon className="size-3.5 text-blue-500" /> Procurement
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleQuickUpdateSubUnit(u, "Vendor Management")}
+                                    className="cursor-pointer text-xs gap-2"
+                                  >
+                                    <Building2Icon className="size-3.5 text-amber-500" /> Vendor Management
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleQuickUpdateSubUnit(u, "Contract Transaction")}
+                                    className="cursor-pointer text-xs gap-2"
+                                  >
+                                    <FileTextIcon className="size-3.5 text-emerald-500" /> Contract Transaction
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleQuickUpdateSubUnit(u, "")}
+                                    className="cursor-pointer text-muted-foreground text-[11px]"
+                                  >
+                                    ⚠️ Belum Ditentukan (Kosongkan)
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-muted-foreground">{u.email}</td>
                           <td className="py-3 px-4">
@@ -767,96 +1156,454 @@ export default function AdminKaryawanPage() {
               )}
 
               {viewMode === "organogram" && (
-                <div className="p-6 rounded-2xl border border-border bg-card space-y-6">
-                  <div className="flex items-center gap-2 pb-3 border-b border-border">
-                    <GitForkIcon className="size-5 text-red-600" />
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground">Struktur Rantai Komando Organisasi</h3>
-                      <p className="text-[11px] text-muted-foreground">Pohon hierarki pelimpahan dan delegasi wewenang operasional.</p>
+                <div className="space-y-6">
+                  {/* Organogram Header & Sub Unit Selector */}
+                  <div className="p-4 sm:p-5 rounded-[8px] border border-border bg-card flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-[8px] bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 flex items-center justify-center shrink-0">
+                        <GitForkIcon className="size-5 text-red-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm md:text-base font-extrabold text-foreground flex items-center gap-2">
+                          Struktur Pohon Organogram per Sub Unit
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Hierarki rantai komando operasional terbagi per sub unit kerja (Procurement, Vendor Management, Contract Transaction).
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Filter Switcher Sub Unit */}
+                    <div className="flex items-center gap-1.5 p-1 rounded-[8px] bg-muted/60 border border-border/80 self-start md:self-auto overflow-x-auto max-w-full">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrganogramSubUnit("all")}
+                        className={`px-3 py-1.5 rounded-[6px] text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                          selectedOrganogramSubUnit === "all"
+                            ? "bg-background text-foreground shadow-xs border border-border/60"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        Semua Sub Unit (3)
+                      </button>
+                      {SUB_UNITS.map((su) => {
+                        const Icon = su.icon
+                        const isSelected = selectedOrganogramSubUnit === su.id
+                        const count = users.filter((u) => u.sub_unit === su.id).length
+                        return (
+                          <button
+                            key={su.id}
+                            type="button"
+                            onClick={() => setSelectedOrganogramSubUnit(su.id)}
+                            className={`px-3 py-1.5 rounded-[6px] text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                              isSelected
+                                ? "bg-background text-foreground shadow-xs border border-border/60"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            }`}
+                          >
+                            <Icon className={`size-3.5 ${su.accentColor}`} />
+                            <span>{su.name}</span>
+                            <span className="text-xs opacity-75">({count})</span>
+                          </button>
+                        )
+                      })}
+                      {(() => {
+                        const unassignedCount = users.filter(
+                          (u) => u.role !== "admin" && u.role !== "sgm" && (!u.sub_unit || u.sub_unit === "Belum Ditentukan")
+                        ).length
+                        if (unassignedCount === 0) return null
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrganogramSubUnit("unassigned")}
+                            className={`px-3 py-1.5 rounded-[6px] text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                              selectedOrganogramSubUnit === "unassigned"
+                                ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 shadow-xs border border-amber-300"
+                                : "text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                            }`}
+                          >
+                            <AlertCircleIcon className="size-3.5" />
+                            <span>Belum Ditentukan</span>
+                            <span className="text-xs font-bold">({unassignedCount})</span>
+                          </button>
+                        )
+                      })()}
                     </div>
                   </div>
 
-                  {/* SGM Level */}
-                  <div className="space-y-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-red-600 flex items-center gap-1.5">
-                      <span>ðŸ‘‘ Level 6: Senior General Manager (SGM)</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-4 border-l-2 border-red-500">
-                      {users.filter((u) => u.role === "sgm").map((u) => (
-                        <div key={u.id} className="p-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 flex items-center gap-3">
-                          <img
-                            src={u.avatar_url || "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80"}
-                            alt={u.nama}
-                            className="size-10 rounded-lg object-cover"
-                          />
+                  {/* 1. PUCUK HIERARKI: LEVEL 6 (SGM) & SYSTEM GOVERNANCE (SUPERADMIN) */}
+                  {(selectedOrganogramSubUnit === "all" || selectedOrganogramSubUnit === "sgm") && (
+                    <div className="p-4 sm:p-5 rounded-[8px] border border-red-200/90 dark:border-red-900/60 bg-gradient-to-b from-red-50/40 via-card to-card space-y-4 shadow-xs">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="size-9 rounded-[8px] bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 flex items-center justify-center shrink-0 border border-red-200 dark:border-red-800">
+                            <CrownIcon className="size-5 text-red-600" />
+                          </div>
                           <div>
-                            <h4 className="text-xs font-bold text-foreground">{u.nama}</h4>
-                            <p className="text-[10px] text-muted-foreground">{u.position_title}</p>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-red-600 dark:text-red-400">
+                              Level 6: Senior General Manager (SGM) — Pucuk Pimpinan Divisi
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Puncak rantai komando operasional divisi yang membawahi 3 Sub Unit (Procurement, Vendor Management, Contract Transaction).
+                            </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
 
-                    {/* Manager Level */}
-                    <div className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5 mt-4">
-                      <span>ðŸ‘” Level 5: Manager Divisi</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-4 border-l-2 border-amber-500">
-                      {users.filter((u) => u.role === "manager").map((u) => (
-                        <div key={u.id} className="p-3 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20 flex items-center gap-3">
-                          <img
-                            src={u.avatar_url || "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80"}
-                            alt={u.nama}
-                            className="size-9 rounded-lg object-cover"
-                          />
-                          <div>
-                            <h4 className="text-xs font-bold text-foreground">{u.nama}</h4>
-                            <p className="text-[10px] text-muted-foreground">{u.position_title}</p>
-                          </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                        {/* SGM Card (2 cols) */}
+                        <div className="md:col-span-2">
+                          {(() => {
+                            const sgms = users.filter((u) => u.role === "sgm")
+                            if (sgms.length > 0) {
+                              return (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {sgms.map((u) => (
+                                    <div
+                                      key={u.id}
+                                      className="p-3.5 rounded-[8px] border border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/30 flex items-center justify-between gap-3 shadow-2xs"
+                                    >
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <img
+                                          src={u.avatar_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"}
+                                          alt={u.nama}
+                                          className="size-11 rounded-[8px] object-cover shrink-0 border-2 border-red-400"
+                                        />
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                            <h5 className="text-sm font-extrabold text-foreground truncate">{u.nama}</h5>
+                                            <CrownIcon className="size-3.5 text-amber-500 shrink-0" />
+                                          </div>
+                                          <p className="text-xs text-muted-foreground font-mono mt-0.5">NIK: {u.nik}</p>
+                                          <span className="text-xs font-bold text-red-600 dark:text-red-400">
+                                            Senior General Manager (SGM)
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )
+                            }
+                            return (
+                              <div className="p-4 rounded-[8px] border border-dashed border-red-300 dark:border-red-900/60 bg-red-50/20 text-xs text-red-700 dark:text-red-300 flex items-center gap-3">
+                                <CrownIcon className="size-5 text-red-400 shrink-0" />
+                                <div>
+                                  <p className="font-bold">Posisi Pucuk Pimpinan: Senior General Manager (SGM) — Belum Terisi</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    SGM adalah pimpinan struktural tertinggi membawahi ke-3 Sub Unit. Anda dapat menetapkan pejabat SGM melalui Edit Karyawan (ubah Role ke Level 6: SGM).
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </div>
-                      ))}
-                    </div>
 
-                    {/* Officer Level */}
-                    <div className="text-xs font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5 mt-4">
-                      <span>Level 2-4: Officer 1 / 2 / 3 (Project & Coordination Leads)</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pl-4 border-l-2 border-blue-500">
-                      {users.filter((u) => u.role.startsWith("officer")).map((u) => (
-                        <div key={u.id} className="p-3 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 flex items-center gap-2.5">
-                          <img
-                            src={u.avatar_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"}
-                            alt={u.nama}
-                            className="size-8 rounded-lg object-cover"
-                          />
-                          <div className="overflow-hidden">
-                            <h4 className="text-xs font-bold text-foreground truncate">{u.nama}</h4>
-                            <span className="text-[10px] text-muted-foreground truncate block">{ROLE_LABELS[u.role]?.badge}</span>
+                        {/* Platform & IT Governance / Superadmin (1 col) */}
+                        <div className="p-3.5 rounded-[8px] border border-dashed border-border bg-muted/40 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheckIcon className="size-4 text-muted-foreground" />
+                            <div>
+                              <h5 className="text-xs font-bold text-foreground">Tata Kelola & Administrator Sistem</h5>
+                              <span className="text-xs text-muted-foreground">Hak Akses IT & Software (Di luar rantai komando)</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5 pt-1">
+                            {users.filter((u) => u.role === "admin").map((u) => (
+                              <div key={u.id} className="flex items-center gap-2 p-2 rounded-[6px] bg-card border border-border text-xs">
+                                <img
+                                  src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80"}
+                                  alt={u.nama}
+                                  className="size-7 rounded-full object-cover shrink-0"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-foreground truncate">{u.nama}</p>
+                                  <span className="text-xs font-mono text-muted-foreground">Superadmin • {u.nik}</span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
+                  )}
 
-                    {/* Staff Level */}
-                    <div className="text-xs font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-1.5 mt-4">
-                      <span>Level 1: Staff Administrasi & Operasional Kantor</span>
+                  {/* Visual Hierarchical Connector */}
+                  {selectedOrganogramSubUnit === "all" && (
+                    <div className="flex items-center justify-center -my-2">
+                      <div className="flex flex-col items-center">
+                        <div className="w-0.5 h-4 bg-border" />
+                        <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground bg-card border border-border px-3 py-0.5 rounded-full shadow-2xs">
+                          Membawahi 3 Sub Unit Operasional
+                        </span>
+                        <div className="w-0.5 h-4 bg-border" />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pl-4 border-l-2 border-zinc-400">
-                      {users.filter((u) => u.role === "staff").map((u) => (
-                        <div key={u.id} className="p-2.5 rounded-xl border border-border bg-card flex items-center gap-2">
-                          <img
-                            src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"}
-                            alt={u.nama}
-                            className="size-7 rounded-full object-cover"
-                          />
-                          <div className="overflow-hidden">
-                            <h4 className="text-[11px] font-bold text-foreground truncate">{u.nama}</h4>
-                            <span className="text-[9px] text-muted-foreground truncate block">{u.position_title || "Staff Kantor"}</span>
+                  )}
+
+                  {/* Rendering Sub Unit Trees */}
+                  {selectedOrganogramSubUnit !== "unassigned" && (
+                    <div className="grid grid-cols-1 gap-6">
+                      {SUB_UNITS.filter(
+                        (su) => selectedOrganogramSubUnit === "all" || selectedOrganogramSubUnit === su.id
+                      ).map((su) => {
+                        const Icon = su.icon
+                        const subUnitUsers = users.filter((u) => u.sub_unit === su.id)
+                      const managers = subUnitUsers.filter((u) => u.role === "manager")
+                      const officers = subUnitUsers.filter((u) => u.role.startsWith("officer"))
+                      const staff = subUnitUsers.filter((u) => u.role === "staff")
+
+                      return (
+                        <div
+                          key={su.id}
+                          className={`rounded-[8px] border ${su.borderClass} bg-card overflow-hidden shadow-xs`}
+                        >
+                          {/* Banner Header Sub Unit */}
+                          <div className={`p-4 sm:p-5 border-b ${su.borderClass} ${su.headerBg} flex items-center justify-between gap-3 flex-wrap`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`size-10 rounded-[8px] bg-background border ${su.borderClass} shadow-xs flex items-center justify-center shrink-0`}>
+                                <Icon className={`size-5 ${su.accentColor}`} />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-base font-extrabold text-foreground tracking-tight">
+                                    Sub Unit {su.name}
+                                  </h4>
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-[6px] border ${su.badgeClass}`}>
+                                    {subUnitUsers.length} Personil
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {su.desc}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Hierarchy Nodes */}
+                          <div className="p-4 sm:p-6 space-y-6">
+                            {/* Level 5: Pimpinan / Manager Sub Unit */}
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                                  <span>👔 Pimpinan Sub Unit (Level 5: Manager)</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground font-semibold">
+                                  {managers.length} Manager
+                                </span>
+                              </div>
+
+                              <div className="pl-3 sm:pl-4 border-l-2 border-amber-500 space-y-2">
+                                {managers.length > 0 ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {managers.map((u) => (
+                                      <div
+                                        key={u.id}
+                                        className="p-3 rounded-[8px] border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow"
+                                      >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <img
+                                            src={u.avatar_url || "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150"}
+                                            alt={u.nama}
+                                            className="size-10 rounded-[8px] object-cover shrink-0 border border-amber-300 dark:border-amber-800"
+                                          />
+                                          <div className="min-w-0">
+                                            <h5 className="text-xs font-bold text-foreground truncate">{u.nama}</h5>
+                                            <p className="text-xs text-muted-foreground font-mono mt-0.5">NIK: {u.nik}</p>
+                                            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                              Manager {su.name}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="p-3 rounded-[8px] border border-dashed border-amber-300/80 bg-amber-50/20 text-xs text-amber-700 italic">
+                                    Belum ada Manager yang ditempatkan pada sub unit ini.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Level 2-4: Officer */}
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                                  <span>👥 Level 2-4: Officer</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground font-semibold">
+                                  {officers.length} Officer
+                                </span>
+                              </div>
+
+                              <div className="pl-3 sm:pl-4 border-l-2 border-blue-500 space-y-2">
+                                {officers.length > 0 ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {officers
+                                      .sort((a, b) => (ROLE_HIERARCHY_LEVEL[b.role] ?? 1) - (ROLE_HIERARCHY_LEVEL[a.role] ?? 1))
+                                      .map((u) => (
+                                        <div
+                                          key={u.id}
+                                          className="p-3 rounded-[8px] border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow"
+                                        >
+                                          <div className="flex items-center gap-3 min-w-0">
+                                            <img
+                                              src={u.avatar_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"}
+                                              alt={u.nama}
+                                              className="size-9 rounded-[6px] object-cover shrink-0 border border-blue-300 dark:border-blue-800"
+                                            />
+                                            <div className="min-w-0">
+                                              <h5 className="text-xs font-bold text-foreground truncate">{u.nama}</h5>
+                                              <div className="flex items-center gap-1.5 mt-0.5">
+                                                <span className={`px-2 py-0.2 rounded-[6px] text-xs font-bold ${ROLE_LABELS[u.role]?.color}`}>
+                                                  {ROLE_LABELS[u.role]?.badge}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground font-mono">
+                                                  {u.nik}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                  </div>
+                                ) : (
+                                  <div className="p-3 rounded-[8px] border border-dashed border-blue-300/80 bg-blue-50/20 text-xs text-blue-700 italic">
+                                    Belum ada Officer pada sub unit ini.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Level 1: Staff */}
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                                  <span>⚡ Level 1: Staff</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground font-semibold">
+                                  {staff.length} Staff
+                                </span>
+                              </div>
+
+                              <div className="pl-3 sm:pl-4 border-l-2 border-zinc-400 dark:border-zinc-700 space-y-2">
+                                {staff.length > 0 ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {staff.map((u) => (
+                                      <div
+                                        key={u.id}
+                                        className="p-2.5 rounded-[8px] border border-border bg-muted/30 flex items-center gap-3 shadow-2xs hover:bg-muted/50 transition-colors"
+                                      >
+                                        <img
+                                          src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"}
+                                          alt={u.nama}
+                                          className="size-8 rounded-full object-cover shrink-0 border border-border"
+                                        />
+                                        <div className="min-w-0">
+                                          <h5 className="text-xs font-bold text-foreground truncate">{u.nama}</h5>
+                                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <span>Staff</span>
+                                            <span>•</span>
+                                            <span className="font-mono">{u.nik}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="p-2.5 rounded-[8px] border border-dashed border-border bg-muted/10 text-xs text-muted-foreground italic">
+                                    Belum ada staff yang ditempatkan pada sub unit ini.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      )
+                    })}
                   </div>
+                )}
+
+                  {/* 3. SECTION: KARYAWAN BELUM DITETAPKAN KE SUB UNIT */}
+                  {(() => {
+                    const unassigned = users.filter(
+                      (u) => u.role !== "admin" && u.role !== "sgm" && (!u.sub_unit || u.sub_unit === "Belum Ditentukan")
+                    )
+                    if (unassigned.length === 0) return null
+                    return (
+                      <div className="p-4 sm:p-5 rounded-[8px] border-2 border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 space-y-4">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-2.5">
+                            <div className="size-9 rounded-[8px] bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800">
+                              <AlertCircleIcon className="size-5 text-amber-600" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                                Karyawan Belum Ditetapkan ke Sub Unit ({unassigned.length} Akun)
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Personil di bawah ini belum dialokasikan ke salah satu Sub Unit. Klik tombol pilihan untuk langsung menempatkan mereka:
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {unassigned.map((u) => (
+                            <div
+                              key={u.id}
+                              className="p-3 rounded-[8px] border border-amber-200 dark:border-amber-900/70 bg-card flex items-center justify-between gap-2 shadow-2xs"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <img
+                                  src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120"}
+                                  alt={u.nama}
+                                  className="size-9 rounded-[8px] object-cover shrink-0 border"
+                                />
+                                <div className="min-w-0">
+                                  <h5 className="text-xs font-bold text-foreground truncate">{u.nama}</h5>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                    <span className={`px-1.5 py-0.2 rounded-[6px] font-bold ${ROLE_LABELS[u.role]?.color}`}>
+                                      {ROLE_LABELS[u.role]?.badge}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="font-mono">{u.nik}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger
+                                  render={
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 text-xs font-bold rounded-[8px] border-amber-300 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 shrink-0 gap-1.5 cursor-pointer"
+                                    >
+                                      <span>Pilih Sub Unit</span>
+                                      <ChevronDownIcon className="size-3.5" />
+                                    </Button>
+                                  }
+                                />
+                                <DropdownMenuContent align="end" className="w-52 p-1 rounded-[8px] shadow-lg">
+                                  <DropdownMenuItem onClick={() => handleQuickUpdateSubUnit(u, "Procurement")} className="cursor-pointer text-xs gap-2 rounded-[6px]">
+                                    <PackageIcon className="size-3.5 text-blue-500" /> Procurement
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleQuickUpdateSubUnit(u, "Vendor Management")} className="cursor-pointer text-xs gap-2 rounded-[6px]">
+                                    <Building2Icon className="size-3.5 text-amber-500" /> Vendor Management
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleQuickUpdateSubUnit(u, "Contract Transaction")} className="cursor-pointer text-xs gap-2 rounded-[6px]">
+                                    <FileTextIcon className="size-3.5 text-emerald-500" /> Contract Transaction
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
             </div>
@@ -867,7 +1614,7 @@ export default function AdminKaryawanPage() {
         {/* MODAL 1: TAMBAH KARYAWAN BARU (WITH AUTO-GENERATOR)       */}
         {/* ======================================================== */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[88vh] flex flex-col rounded-2xl p-0 font-sans overflow-hidden shadow-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[88vh] flex flex-col rounded-[8px] p-0 font-sans overflow-hidden shadow-2xl">
             {/* Modal Header (Sticky Top) */}
             <div className="px-6 pt-5 pb-4 border-b border-border bg-muted/40 shrink-0 pr-14">
               <DialogHeader className="space-y-1">
@@ -881,9 +1628,13 @@ export default function AdminKaryawanPage() {
               </DialogHeader>
             </div>
 
-            <form onSubmit={handleCreateUser} className="flex flex-col flex-1 overflow-hidden">
+            <form onSubmit={handleCreateUser} className="flex flex-col flex-1 overflow-hidden relative">
               {/* Scrollable Form Body */}
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div
+                ref={addScrollRef}
+                onScroll={handleAddScroll}
+                className="flex-1 overflow-y-auto px-6 py-5 space-y-4 custom-scrollbar"
+              >
                 {/* Nama Lengkap & NIK */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -895,7 +1646,7 @@ export default function AdminKaryawanPage() {
                     onChange={(e) => handleNamaChange(e.target.value)}
                     placeholder="Contoh: Rian Hidayat, S.T."
                     required
-                    className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                    className="mt-1 h-10 rounded-[8px] text-xs font-semibold"
                   />
                 </div>
 
@@ -907,9 +1658,9 @@ export default function AdminKaryawanPage() {
                     <button
                       type="button"
                       onClick={() => setNewNik(generateAutoNik(users))}
-                      className="text-[11px] font-bold text-red-600 hover:text-red-700 flex items-center gap-1"
+                      className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer"
                     >
-                      <DicesIcon className="size-3" /> Re-roll
+                      <DicesIcon className="size-3.5" /> Re-roll
                     </button>
                   </div>
                   <Input
@@ -917,7 +1668,7 @@ export default function AdminKaryawanPage() {
                     onChange={(e) => setNewNik(e.target.value)}
                     placeholder="Contoh: 10293880"
                     required
-                    className="mt-1 h-10 rounded-xl text-xs font-mono font-bold tracking-wider text-red-600"
+                    className="mt-1 h-10 rounded-[8px] text-xs font-mono font-bold tracking-wider text-red-600"
                   />
                 </div>
               </div>
@@ -935,7 +1686,7 @@ export default function AdminKaryawanPage() {
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="nama@email.com"
                     required
-                    className="mt-1 h-10 rounded-xl text-xs font-semibold"
+                    className="mt-1 h-10 rounded-[8px] text-xs font-semibold"
                   />
                 </div>
 
@@ -944,45 +1695,192 @@ export default function AdminKaryawanPage() {
                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       Password Akun *
                     </label>
-                    <span className="text-[10px] text-muted-foreground">Default: <strong className="font-mono text-foreground">karyawan123</strong></span>
+                    <span className="text-xs text-muted-foreground">Default: <strong className="font-mono text-foreground">karyawan123</strong></span>
                   </div>
                   <Input
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="karyawan123"
                     required
-                    className="mt-1 h-10 rounded-xl text-xs font-mono font-bold text-foreground"
+                    className="mt-1 h-10 rounded-[8px] text-xs font-mono font-bold text-foreground"
                   />
                 </div>
               </div>
 
-              {/* Tingkat Jabatan & Atasan Langsung */}
+              {/* Tingkat Jabatan & Sub Unit Organisasi */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">
                     Tingkat Jabatan (Role) *
                   </label>
-                  <select
-                    value={newRole}
-                    onChange={(e) => {
-                      const r = e.target.value as UserRole
-                      setNewRole(r)
-                      setNewPositionTitle(ROLE_LABELS[r]?.label)
-                    }}
-                    className="w-full mt-1 h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground"
-                  >
-                    <option value="staff">Level 1: Staff Lapangan / Teknisi</option>
-                    <option value="officer_1">Level 2: Officer 1 (Shift Lead)</option>
-                    <option value="officer_2">Level 3: Officer 2 (Specialist)</option>
-                    <option value="officer_3">Level 4: Officer 3 (Project Lead)</option>
-                    <option value="manager">Level 5: Manager Divisi</option>
-                    <option value="sgm">Level 6: Senior General Manager (SGM)</option>
-                    <option value="admin">Superadmin</option>
-                  </select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="w-full h-10 rounded-[8px] border border-border bg-background px-3 text-xs font-semibold text-foreground flex items-center justify-between shadow-2xs hover:border-border/80 transition-all cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className={`px-2 py-0.5 rounded-[6px] text-xs font-bold ${ROLE_LABELS[newRole]?.color}`}>
+                              {ROLE_LABELS[newRole]?.badge}
+                            </span>
+                            <span>{ROLE_LABELS[newRole]?.label}</span>
+                          </div>
+                          <ChevronDownIcon className="size-4 text-muted-foreground shrink-0 ml-2 opacity-70" />
+                        </button>
+                      }
+                    />
+                    <DropdownMenuContent align="start" className="w-64 p-1.5 rounded-[8px] shadow-xl border-border bg-card">
+                      <div className="px-2 py-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Pilih Tingkat Jabatan
+                      </div>
+                      {[
+                        { key: "staff", label: "Staff", level: "Level 1" },
+                        { key: "officer_1", label: "Officer 1", level: "Level 2" },
+                        { key: "officer_2", label: "Officer 2", level: "Level 3" },
+                        { key: "officer_3", label: "Officer 3", level: "Level 4" },
+                        { key: "manager", label: "Manager", level: "Level 5" },
+                        { key: "sgm", label: "Senior General Manager (SGM)", level: "Level 6" },
+                        { key: "admin", label: "Superadmin", level: "Admin" },
+                      ].map((r) => {
+                        const isSelected = newRole === r.key
+                        const meta = ROLE_LABELS[r.key as UserRole]
+                        return (
+                          <DropdownMenuItem
+                            key={r.key}
+                            onClick={() => {
+                              const roleKey = r.key as UserRole
+                              setNewRole(roleKey)
+                              setNewPositionTitle(meta?.label || r.label)
+                            }}
+                            className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                              isSelected ? "bg-muted font-bold" : ""
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`px-1.5 py-0.5 rounded-[4px] text-[11px] font-extrabold ${meta?.color}`}>
+                                {r.level}
+                              </span>
+                              <span>{r.label}</span>
+                            </div>
+                            {isSelected && <CheckIcon className="size-3.5 text-red-600" />}
+                          </DropdownMenuItem>
+                        )
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
+                    <LayersIcon className="size-3.5 text-blue-600" />
+                    Sub Unit Organisasi *
+                  </label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="w-full h-10 rounded-[8px] border border-border bg-background px-3 text-xs font-semibold text-foreground flex items-center justify-between shadow-2xs hover:border-border/80 transition-all cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            {newSubUnit === "Procurement" ? (
+                              <>
+                                <PackageIcon className="size-3.5 text-blue-500" />
+                                <span>Procurement</span>
+                              </>
+                            ) : newSubUnit === "Vendor Management" ? (
+                              <>
+                                <Building2Icon className="size-3.5 text-amber-500" />
+                                <span>Vendor Management</span>
+                              </>
+                            ) : newSubUnit === "Contract Transaction" ? (
+                              <>
+                                <FileTextIcon className="size-3.5 text-emerald-500" />
+                                <span>Contract Transaction</span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">⚠️ Belum Ditentukan (Kosongkan)</span>
+                            )}
+                          </div>
+                          <ChevronDownIcon className="size-4 text-muted-foreground shrink-0 ml-2 opacity-70" />
+                        </button>
+                      }
+                    />
+                    <DropdownMenuContent align="start" className="w-64 p-1.5 rounded-[8px] shadow-xl border-border bg-card">
+                      <div className="px-2 py-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Pilih Sub Unit
+                      </div>
+                      <DropdownMenuItem
+                        onClick={() => setNewSubUnit("Procurement")}
+                        className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                          newSubUnit === "Procurement" ? "bg-muted font-bold" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <PackageIcon className="size-3.5 text-blue-500" />
+                          <span>Procurement</span>
+                        </div>
+                        {newSubUnit === "Procurement" && <CheckIcon className="size-3.5 text-blue-600" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setNewSubUnit("Vendor Management")}
+                        className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                          newSubUnit === "Vendor Management" ? "bg-muted font-bold" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building2Icon className="size-3.5 text-amber-500" />
+                          <span>Vendor Management</span>
+                        </div>
+                        {newSubUnit === "Vendor Management" && <CheckIcon className="size-3.5 text-amber-600" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setNewSubUnit("Contract Transaction")}
+                        className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                          newSubUnit === "Contract Transaction" ? "bg-muted font-bold" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileTextIcon className="size-3.5 text-emerald-500" />
+                          <span>Contract Transaction</span>
+                        </div>
+                        {newSubUnit === "Contract Transaction" && <CheckIcon className="size-3.5 text-emerald-600" />}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="my-1" />
+                      <DropdownMenuItem
+                        onClick={() => setNewSubUnit("")}
+                        className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between text-muted-foreground ${
+                          !newSubUnit ? "bg-muted font-bold text-foreground" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <AlertCircleIcon className="size-3.5 text-amber-500" />
+                          <span>Belum Ditentukan (Kosongkan)</span>
+                        </div>
+                        {!newSubUnit && <CheckIcon className="size-3.5 text-muted-foreground" />}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
               </div>
+
+              {/* Floating Minimal Scroll Indicator */}
+              {canScrollAddDown && (
+                <div className="pointer-events-none absolute bottom-[61px] left-0 right-0 h-10 bg-gradient-to-t from-background/90 to-transparent flex items-end justify-center pb-1.5 z-10 transition-opacity duration-200">
+                  <button
+                    type="button"
+                    onClick={scrollToAddBottom}
+                    className="pointer-events-auto inline-flex items-center gap-1 px-3 py-1 rounded-[8px] bg-background/95 hover:bg-muted border border-border shadow-xs text-xs font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer backdrop-blur-md group"
+                    title="Gulir ke bawah"
+                  >
+                    <span>Scroll</span>
+                    <ChevronDownIcon className="size-3 text-red-600 animate-bounce group-hover:translate-y-0.5 transition-transform" />
+                  </button>
+                </div>
+              )}
 
               {/* Sticky Footer */}
               <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-border bg-background/95 backdrop-blur-xs shrink-0">
@@ -990,14 +1888,14 @@ export default function AdminKaryawanPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsAddOpen(false)}
-                  className="h-9 px-4 text-xs font-semibold rounded-lg"
+                  className="h-9 px-4 text-xs font-semibold rounded-[8px]"
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-xs"
+                  className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
                 >
                   {isSubmitting ? "Mendaftarkan..." : "Daftarkan Akun Karyawan"}
                 </Button>
@@ -1010,21 +1908,21 @@ export default function AdminKaryawanPage() {
         {/* MODAL 2: EDIT DATA KARYAWAN (UPDATE CRUD)                */}
         {/* ======================================================== */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[88vh] flex flex-col rounded-2xl p-0 font-sans overflow-hidden shadow-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[88vh] flex flex-col rounded-[8px] p-0 font-sans overflow-hidden shadow-2xl">
             {/* Modal Header (Sticky Top) */}
             <div className="px-6 pt-5 pb-4 border-b border-border bg-muted/40 shrink-0 pr-14 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-xl bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 flex items-center justify-center shrink-0">
+                <div className="size-10 rounded-[8px] bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900 flex items-center justify-center shrink-0">
                   <Edit2Icon className="size-5 text-red-600" />
                 </div>
                 <div>
                   <DialogTitle className="text-base font-extrabold tracking-tight text-foreground">
                     Edit Data Karyawan
                   </DialogTitle>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     NIK <span className="font-mono font-bold text-foreground">{editingUser?.nik}</span>
                     {" • "}
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${ROLE_LABELS[editingUser?.role ?? "staff"]?.color}`}>
+                    <span className={`px-2 py-0.5 rounded-[6px] text-xs font-bold ${ROLE_LABELS[editingUser?.role ?? "staff"]?.color}`}>
                       {ROLE_LABELS[editingUser?.role ?? "staff"]?.badge}
                     </span>
                   </p>
@@ -1032,53 +1930,57 @@ export default function AdminKaryawanPage() {
               </div>
             </div>
 
-            <form onSubmit={handleUpdateUser} className="flex flex-col flex-1 overflow-hidden">
+            <form onSubmit={handleUpdateUser} className="flex flex-col flex-1 overflow-hidden relative">
               {/* Scrollable Form Body */}
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div
+                ref={editScrollRef}
+                onScroll={handleEditScroll}
+                className="flex-1 overflow-y-auto px-6 py-5 space-y-4 custom-scrollbar"
+              >
               {/* Section: Identitas */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                  <ShieldCheckIcon className="size-3" /> Identitas Akun
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2.5 flex items-center gap-1.5">
+                  <ShieldCheckIcon className="size-3.5" /> Identitas Akun
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Nama Lengkap *</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nama Lengkap *</label>
                     <Input
                       value={editNama}
                       onChange={(e) => setEditNama(e.target.value)}
                       required
                       placeholder="Nama lengkap karyawan"
-                      className="mt-1 h-9 rounded-lg text-xs font-semibold"
+                      className="mt-1 h-9.5 rounded-[8px] text-xs font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Email Login *</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email Login *</label>
                     <Input
                       type="email"
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
                       placeholder="nama@email.com"
                       required
-                      className="mt-1 h-9 rounded-lg text-xs font-semibold"
+                      className="mt-1 h-9.5 rounded-[8px] text-xs font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Nomor Telepon</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nomor Telepon</label>
                     <Input
                       value={editPhone}
                       onChange={(e) => setEditPhone(e.target.value)}
                       placeholder="0812-3456-7890"
-                      className="mt-1 h-9 rounded-lg text-xs font-semibold"
+                      className="mt-1 h-9.5 rounded-[8px] text-xs font-semibold"
                     />
                   </div>
 
                   {/* Upload Foto Profil Langsung */}
                   <div className="sm:col-span-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
                       Foto Profil Karyawan
                     </label>
-                    <div className="flex items-center gap-3.5 p-3 rounded-xl border border-border bg-muted/20">
-                      <div className="relative size-14 rounded-xl overflow-hidden border border-border shrink-0 bg-muted flex items-center justify-center shadow-xs">
+                    <div className="flex items-center gap-3.5 p-3 rounded-[8px] border border-border bg-muted/20">
+                      <div className="relative size-14 rounded-[8px] overflow-hidden border border-border shrink-0 bg-muted flex items-center justify-center shadow-xs">
                         {editAvatarUrl ? (
                           <img
                             src={editAvatarUrl}
@@ -1104,7 +2006,7 @@ export default function AdminKaryawanPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => avatarFileInputRef.current?.click()}
-                            className="h-8 px-3 text-xs font-semibold rounded-lg gap-1.5 cursor-pointer bg-background hover:bg-muted"
+                            className="h-8 px-3 text-xs font-semibold rounded-[8px] gap-1.5 cursor-pointer bg-background hover:bg-muted"
                           >
                             <UploadIcon className="size-3.5 text-primary" />
                             <span>{editAvatarUrl ? "Ganti Foto" : "Pilih Foto dari Komputer"}</span>
@@ -1116,14 +2018,14 @@ export default function AdminKaryawanPage() {
                               variant="ghost"
                               size="sm"
                               onClick={handleRemoveAvatar}
-                              className="h-8 px-2.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer"
+                              className="h-8 px-2.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-[8px] cursor-pointer"
                             >
                               <Trash2Icon className="size-3.5" />
                               <span>Hapus Foto</span>
                             </Button>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           Upload file foto langsung dari laptop / komputer (JPG, PNG, WebP maks. 2.5MB).
                         </p>
                       </div>
@@ -1134,15 +2036,15 @@ export default function AdminKaryawanPage() {
 
               {/* Section: Jabatan & Struktur */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                  <UsersIcon className="size-3" /> Jabatan & Status Akun
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2.5 flex items-center gap-1.5">
+                  <UsersIcon className="size-3.5" /> Jabatan & Status Akun
                 </p>
                 <div className="space-y-3">
                   {/* Custom Role Picker */}
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tingkat Jabatan (Role) *</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tingkat Jabatan (Role) *</label>
                     {assignableRoles.length === 0 ? (
-                      <div className="mt-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400">
+                      <div className="mt-1 flex items-center gap-2 px-3 py-2.5 rounded-[8px] border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400">
                         <ShieldAlertIcon className="size-3.5 shrink-0" />
                         <span>Anda tidak memiliki wewenang untuk mengubah jabatan akun ini.</span>
                       </div>
@@ -1159,16 +2061,16 @@ export default function AdminKaryawanPage() {
                                 setEditRole(r.key)
                                 setEditPositionTitle(meta.label)
                               }}
-                              className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                              className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-[8px] border text-left transition-all cursor-pointer ${
                                 isSelected
                                   ? "border-red-400 bg-red-50 dark:bg-red-950/30 ring-1 ring-red-400"
                                   : "border-border bg-background hover:bg-muted/60"
                               }`}
                             >
-                              <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${meta.color}`}>
+                              <span className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded-[4px] ${meta.color}`}>
                                 {r.level === 99 ? "Superadmin" : `Lv.${r.level}`}
                               </span>
-                              <span className={`text-[10px] font-bold leading-tight ${
+                              <span className={`text-xs font-bold leading-tight ${
                                 isSelected ? "text-red-700 dark:text-red-400" : "text-foreground"
                               }`}>
                                 {meta.badge}
@@ -1178,20 +2080,114 @@ export default function AdminKaryawanPage() {
                         })}
                       </div>
                     )}
-                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                    <p className="text-xs text-muted-foreground mt-1.5">
                       Jabatan: <span className="font-semibold text-foreground">{ROLE_LABELS[editRole]?.label}</span>
                     </p>
                   </div>
 
+                  {/* Sub Unit Organisasi */}
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
+                      <LayersIcon className="size-3.5 text-blue-600" />
+                      Sub Unit Organisasi *
+                    </label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <button
+                            type="button"
+                            className="w-full h-9.5 rounded-[8px] border border-border bg-background px-3 text-xs font-semibold text-foreground flex items-center justify-between shadow-2xs hover:border-border/80 transition-all cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              {editSubUnit === "Procurement" ? (
+                                <>
+                                  <PackageIcon className="size-3.5 text-blue-500" />
+                                  <span>Procurement</span>
+                                </>
+                              ) : editSubUnit === "Vendor Management" ? (
+                                <>
+                                  <Building2Icon className="size-3.5 text-amber-500" />
+                                  <span>Vendor Management</span>
+                                </>
+                              ) : editSubUnit === "Contract Transaction" ? (
+                                <>
+                                  <FileTextIcon className="size-3.5 text-emerald-500" />
+                                  <span>Contract Transaction</span>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">⚠️ Belum Ditentukan (Kosongkan)</span>
+                              )}
+                            </div>
+                            <ChevronDownIcon className="size-3.5 text-muted-foreground shrink-0 ml-2 opacity-70" />
+                          </button>
+                        }
+                      />
+                      <DropdownMenuContent align="start" className="w-64 p-1.5 rounded-[8px] shadow-xl border-border bg-card">
+                        <div className="px-2 py-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Pilih Sub Unit
+                        </div>
+                        <DropdownMenuItem
+                          onClick={() => setEditSubUnit("Procurement")}
+                          className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                            editSubUnit === "Procurement" ? "bg-muted font-bold" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <PackageIcon className="size-3.5 text-blue-500" />
+                            <span>Procurement</span>
+                          </div>
+                          {editSubUnit === "Procurement" && <CheckIcon className="size-3.5 text-blue-600" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setEditSubUnit("Vendor Management")}
+                          className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                            editSubUnit === "Vendor Management" ? "bg-muted font-bold" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Building2Icon className="size-3.5 text-amber-500" />
+                            <span>Vendor Management</span>
+                          </div>
+                          {editSubUnit === "Vendor Management" && <CheckIcon className="size-3.5 text-amber-600" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setEditSubUnit("Contract Transaction")}
+                          className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between ${
+                            editSubUnit === "Contract Transaction" ? "bg-muted font-bold" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileTextIcon className="size-3.5 text-emerald-500" />
+                            <span>Contract Transaction</span>
+                          </div>
+                          {editSubUnit === "Contract Transaction" && <CheckIcon className="size-3.5 text-emerald-600" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="my-1" />
+                        <DropdownMenuItem
+                          onClick={() => setEditSubUnit("")}
+                          className={`cursor-pointer text-xs py-2 px-2.5 rounded-[6px] flex items-center justify-between text-muted-foreground ${
+                            !editSubUnit ? "bg-muted font-bold text-foreground" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <AlertCircleIcon className="size-3.5 text-amber-500" />
+                            <span>Belum Ditentukan (Kosongkan)</span>
+                          </div>
+                          {!editSubUnit && <CheckIcon className="size-3.5 text-muted-foreground" />}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
                   {/* Status Akun (Tanpa Atasan Langsung) */}
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">
                       Status Akun Karyawan
                     </label>
                     <button
                       type="button"
                       onClick={() => setEditIsActive((v) => !v)}
-                      className={`h-9 w-full sm:w-auto min-w-[220px] flex items-center justify-between gap-3 px-3.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                      className={`h-9.5 w-full sm:w-auto min-w-[220px] flex items-center justify-between gap-3 px-3.5 rounded-[8px] border text-xs font-semibold transition-colors cursor-pointer ${
                         editIsActive
                           ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400"
                           : "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
@@ -1201,7 +2197,7 @@ export default function AdminKaryawanPage() {
                         {editIsActive ? <ToggleRightIcon className="size-4" /> : <ToggleLeftIcon className="size-4" />}
                         <span>{editIsActive ? "Aktif (Dapat Login)" : "Nonaktif (Diblokir)"}</span>
                       </span>
-                      <span className="text-[10px] font-normal opacity-75">Klik untuk ubah</span>
+                      <span className="text-xs font-normal opacity-75">Klik untuk ubah</span>
                     </button>
                   </div>
                 </div>
@@ -1209,16 +2205,16 @@ export default function AdminKaryawanPage() {
 
               {/* Section: Keamanan & Password Akun */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                  <KeyRoundIcon className="size-3" /> Password & Keamanan Akun
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2.5 flex items-center gap-1.5">
+                  <KeyRoundIcon className="size-3.5" /> Password & Keamanan Akun
                 </p>
-                <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-2">
+                <div className="p-3.5 rounded-[8px] border border-border bg-muted/20 space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-foreground block">
+                      <label className="text-xs font-bold uppercase tracking-wider text-foreground block">
                         Password Akun Karyawan
                       </label>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         Admin dapat melihat password akun ini atau menggantinya secara langsung.
                       </span>
                     </div>
@@ -1229,7 +2225,7 @@ export default function AdminKaryawanPage() {
                           setEditPassword("karyawan123")
                           toast.info("Password diubah ke default: karyawan123")
                         }}
-                        className="h-7 px-2 text-[11px] font-bold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                        className="h-7.5 px-2.5 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-[6px] flex items-center gap-1 cursor-pointer transition-colors"
                         title="Reset ke default karyawan123"
                       >
                         <RefreshCwIcon className="size-3" /> Reset Default
@@ -1240,7 +2236,7 @@ export default function AdminKaryawanPage() {
                           navigator.clipboard.writeText(editPassword)
                           toast.success("Password akun berhasil disalin!")
                         }}
-                        className="h-7 px-2 text-[11px] font-bold text-zinc-700 dark:text-zinc-300 hover:bg-muted rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                        className="h-7.5 px-2.5 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-muted rounded-[6px] flex items-center gap-1 cursor-pointer transition-colors"
                         title="Salin password"
                       >
                         <CopyIcon className="size-3" /> Salin
@@ -1255,12 +2251,12 @@ export default function AdminKaryawanPage() {
                       onChange={(e) => setEditPassword(e.target.value)}
                       required
                       placeholder="Masukkan password akun..."
-                      className="h-9.5 rounded-lg text-xs font-mono font-bold tracking-wider pr-20 bg-background text-foreground"
+                      className="h-9.5 rounded-[8px] text-xs font-mono font-bold tracking-wider pr-20 bg-background text-foreground"
                     />
                     <button
                       type="button"
                       onClick={() => setShowEditPassword((v) => !v)}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/80 flex items-center gap-1 cursor-pointer"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground rounded-[6px] hover:bg-muted/80 flex items-center gap-1 cursor-pointer"
                     >
                       {showEditPassword ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
                       <span>{showEditPassword ? "Tutup" : "Lihat"}</span>
@@ -1270,9 +2266,24 @@ export default function AdminKaryawanPage() {
               </div>
               </div>
 
+              {/* Floating Minimal Scroll Indicator */}
+              {canScrollEditDown && (
+                <div className="pointer-events-none absolute bottom-[61px] left-0 right-0 h-10 bg-gradient-to-t from-background/90 to-transparent flex items-end justify-center pb-1.5 z-10 transition-opacity duration-200">
+                  <button
+                    type="button"
+                    onClick={scrollToEditBottom}
+                    className="pointer-events-auto inline-flex items-center gap-1 px-3 py-1 rounded-[8px] bg-background/95 hover:bg-muted border border-border shadow-xs text-xs font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer backdrop-blur-md group"
+                    title="Gulir ke bawah"
+                  >
+                    <span>Scroll</span>
+                    <ChevronDownIcon className="size-3 text-red-600 animate-bounce group-hover:translate-y-0.5 transition-transform" />
+                  </button>
+                </div>
+              )}
+
               {/* Footer Buttons (Sticky Bottom) */}
               <div className="flex items-center justify-between px-6 py-3.5 border-t border-border bg-background/95 backdrop-blur-xs shrink-0">
-                <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
                   <ShieldAlertIcon className="size-3.5 text-amber-500" />
                   <span>Perubahan langsung tersimpan ke database.</span>
                 </div>
@@ -1281,14 +2292,14 @@ export default function AdminKaryawanPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setIsEditOpen(false)}
-                    className="h-9 px-4 text-xs font-semibold rounded-lg"
+                    className="h-9 px-4 text-xs font-semibold rounded-[8px]"
                   >
                     Batal
                   </Button>
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-xs gap-1.5"
+                    className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs gap-1.5"
                   >
                     {isSubmitting ? (
                       <><RefreshCwIcon className="size-3 animate-spin" /> Menyimpan...</>
@@ -1306,7 +2317,7 @@ export default function AdminKaryawanPage() {
         {/* MODAL 3: KONFIRMASI HAPUS AKUN (DELETE CRUD)             */}
         {/* ======================================================== */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent className="max-w-md rounded-2xl p-6 font-sans">
+          <DialogContent className="max-w-md rounded-[8px] p-6 font-sans">
             <DialogHeader className="space-y-1">
               <DialogTitle className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-2">
                 <Trash2Icon className="size-5 text-red-600" />
@@ -1321,14 +2332,14 @@ export default function AdminKaryawanPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsDeleteOpen(false)}
-                className="h-9 px-4 text-xs font-semibold rounded-xl"
+                className="h-9 px-4 text-xs font-semibold rounded-[8px]"
               >
                 Batal
               </Button>
               <Button
                 onClick={handleConfirmDelete}
                 disabled={isSubmitting}
-                className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs"
+                className="h-9 px-5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-[8px] shadow-xs"
               >
                 {isSubmitting ? "Menghapus..." : "Ya, Hapus Akun"}
               </Button>

@@ -110,6 +110,7 @@ import {
   deleteTask,
   getChannels,
   getAllUsers,
+  getTaskAssigneeIds,
 } from "@/lib/api"
 import { TaskDeadlinePicker } from "@/components/dashboard/tasks/task-deadline-picker"
 
@@ -462,39 +463,60 @@ export function TaskDetailSheet({
     setSubtaskExpandedMap(newMap)
   }
 
-  // Hanya atasan (supervisor langsung), delegator, pembuat tugas, atau Admin/SGM yang berhak Approve / Setujui
+  // Hak menyetujui (Approve / Reject):
+  // Diberikan kepada PIC Review (reviewer_id), Delegator, Atasan Langsung, atau Admin/SGM.
+  // Pelaksana tugas MUTLAK dilarang menyetujui tugasnya sendiri.
   const canApprove = React.useMemo(() => {
     if (!currentUser || !task) return false
+    const assigneeIds = getTaskAssigneeIds(task)
     // Pelaksana dilarang approve tugasnya sendiri
-    if (task.assigned_to && currentUser.id === task.assigned_to) return false
-    if (task.secondary_assigned_to && currentUser.id === task.secondary_assigned_to) return false
+    if (assigneeIds.includes(currentUser.id)) return false
 
-    // 1. Admin & SGM selalu memiliki wewenang override
+    // 1. PIC Review resmi yang ditunjuk
+    if (task.reviewer_id && task.reviewer_id === currentUser.id) return true
+    if (task.reviewer && task.reviewer.id === currentUser.id) return true
+
+    // 2. Admin & SGM selalu memiliki wewenang override
     if (currentUser.role === "admin" || currentUser.role === "sgm") return true
 
-    // 2. Delegator tugas
+    // 3. Delegator tugas
     if (task.delegated_by && task.delegated_by === currentUser.id) return true
     if (task.delegator && task.delegator.id === currentUser.id) return true
-
-    // 3. Pembuat tugas (inisiator)
-    if (task.created_by && task.created_by === currentUser.id) return true
-    if (task.creator && task.creator.id === currentUser.id) return true
 
     // 4. Atasan langsung si pelaksana tugas
     if (task.assignee?.supervisor_id && task.assignee.supervisor_id === currentUser.id) return true
 
+    // 5. Pembuat tugas (inisiator) HANYA jika bukan reviewer_id khusus dan bukan salah satu pelaksana
+    if (!task.reviewer_id) {
+      if (task.created_by && task.created_by === currentUser.id) return true
+      if (task.creator && task.creator.id === currentUser.id) return true
+    }
+
     return false
   }, [currentUser, task])
 
-  // Nama atasan / delegator yang berhak me-review
+  // Nama atasan / reviewer yang berhak me-review
   const reviewerName = React.useMemo(() => {
-    if (!task) return "Atasan"
-    return (
-      task.delegator?.nama ||
-      task.creator?.nama ||
-      task.assignee?.supervisor?.nama ||
-      "Atasan / Delegator"
-    )
+    if (!task) return "Atasan Penilai"
+    const assigneeIds = getTaskAssigneeIds(task)
+
+    // 1. PIC Review resmi yang ditunjuk (jika bukan pelaksana)
+    if (task.reviewer?.nama && !assigneeIds.includes(task.reviewer.id)) {
+      return task.reviewer.nama
+    }
+    // 2. Delegator tugas (jika bukan pelaksana)
+    if (task.delegator?.nama && !assigneeIds.includes(task.delegator.id)) {
+      return task.delegator.nama
+    }
+    // 3. Atasan langsung si pelaksana tugas (jika bukan pelaksana)
+    if (task.assignee?.supervisor?.nama && !assigneeIds.includes(task.assignee.supervisor.id)) {
+      return task.assignee.supervisor.nama
+    }
+    // 4. Pembuat tugas (hanya jika pembuat bukan pelaksana)
+    if (task.creator?.nama && !assigneeIds.includes(task.creator.id)) {
+      return task.creator.nama
+    }
+    return "Atasan Penilai"
   }, [task])
   const progressPercent =
     subtasks.length > 0
@@ -1565,46 +1587,40 @@ export function TaskDetailSheet({
                       Pelaksana (PIC)
                     </span>
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                      {task.assignee ? (
-                        <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+                      {(task.assignees && task.assignees.length > 0
+                        ? task.assignees
+                        : task.assignee
+                          ? [task.assignee]
+                          : []
+                      ).map((u, idx) => (
+                        <div
+                          key={u.id}
+                          className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60"
+                        >
                           <img
                             src={
-                              task.assignee.avatar_url ||
+                              u.avatar_url ||
                               "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
                             }
-                            alt={task.assignee.nama}
+                            alt={u.nama}
                             className="size-4 rounded-full object-cover shrink-0"
                           />
-                          <span className="font-bold text-foreground text-xs">
-                            {task.assignee.nama}
-                          </span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 font-bold border border-blue-500/20">
-                            Utama
-                          </span>
+                          <span className="font-bold text-foreground text-xs">{u.nama}</span>
+                          {idx === 0 ? (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 font-bold border border-blue-500/20">
+                              Utama
+                            </span>
+                          ) : (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/10 text-purple-600 font-bold border border-purple-500/20">
+                              Rekan
+                            </span>
+                          )}
                         </div>
-                      ) : (
+                      ))}
+                      {!(task.assignees && task.assignees.length > 0) && !task.assignee && (
                         <span className="font-semibold text-amber-600 text-[11px]">
                           Belum Ditugaskan
                         </span>
-                      )}
-
-                      {task.secondary_assignee && (
-                        <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
-                          <img
-                            src={
-                              task.secondary_assignee.avatar_url ||
-                              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                            }
-                            alt={task.secondary_assignee.nama}
-                            className="size-4 rounded-full object-cover shrink-0"
-                          />
-                          <span className="font-bold text-foreground text-xs">
-                            {task.secondary_assignee.nama}
-                          </span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/10 text-purple-600 font-bold border border-purple-500/20">
-                            Rekan
-                          </span>
-                        </div>
                       )}
                     </div>
                   </div>
@@ -1618,6 +1634,36 @@ export function TaskDetailSheet({
                     <span className="font-medium text-foreground">
                       {task.delegator?.nama || task.creator?.nama || "Atasan"}
                     </span>
+                  </div>
+
+                  {/* PIC Review (Atasan Penilai) */}
+                  <div className="flex items-center justify-between py-1.5 gap-2">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5 shrink-0">
+                      <ShieldCheckIcon className="size-3.5 text-muted-foreground/70" />
+                      PIC Review (Atasan)
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {task.reviewer ? (
+                        <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+                          <img
+                            src={
+                              task.reviewer.avatar_url ||
+                              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                            }
+                            alt={task.reviewer.nama}
+                            className="size-4 rounded-full object-cover shrink-0"
+                          />
+                          <span className="font-bold text-foreground text-xs">{task.reviewer.nama}</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 font-bold border border-amber-500/20">
+                            Penilai
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-medium text-foreground text-xs">
+                          {reviewerName}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Deadline SLA */}
@@ -1942,9 +1988,7 @@ export function TaskDetailSheet({
                           const isRejected = st.approval_status === "rejected"
                           const isPending = st.approval_status === "pending"
                           const prevStep = idx > 0 ? subtasks[idx - 1] : null
-                          const isPIC =
-                            currentUser?.id === task.assigned_to ||
-                            currentUser?.id === task.secondary_assigned_to
+                          const isPIC = currentUser ? getTaskAssigneeIds(task).includes(currentUser.id) : false
                           const canActAsPIC = isPIC || isStaff || currentUser?.role === "admin"
 
                           // 1. LOCKED STAGE (Tahap Sebelumnya Belum Disetujui)

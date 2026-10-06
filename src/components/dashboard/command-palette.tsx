@@ -19,7 +19,7 @@ import {
 } from "lucide-react"
 
 import { useAiPanel } from "@/components/dashboard/ai-panel-context"
-import { getTasks, getChannels, getAllUsers, getActiveUserFromStorage } from "@/lib/api"
+import { getTasks, getChannels, getAllUsers, getActiveUserFromStorage, getTaskAssigneeIds } from "@/lib/api"
 import { Task, Channel, User } from "@/types/database"
 
 interface CommandPaletteProps {
@@ -111,7 +111,7 @@ export function CommandPalette({
     if (activeUser.role === "staff") {
       return tasks.filter(
         (t) =>
-          t.assigned_to === activeUser.id ||
+          getTaskAssigneeIds(t).includes(activeUser.id) ||
           t.created_by === activeUser.id ||
           (t.status === "unassigned" && !t.assigned_to)
       )
@@ -124,10 +124,10 @@ export function CommandPalette({
 
     return tasks.filter(
       (t) =>
-        t.assigned_to === activeUser.id ||
+        getTaskAssigneeIds(t).includes(activeUser.id) ||
         t.created_by === activeUser.id ||
         (t.status === "unassigned" && !t.assigned_to) ||
-        (t.assigned_to && subordinateIds.includes(t.assigned_to))
+        getTaskAssigneeIds(t).some((id) => subordinateIds.includes(id))
     )
   }, [tasks, users, activeUser, isAdmin])
 

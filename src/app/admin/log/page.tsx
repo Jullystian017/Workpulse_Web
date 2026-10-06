@@ -119,8 +119,7 @@ export default function AuditLogPage() {
         item.user.toLowerCase().includes(q) ||
         item.detail.toLowerCase().includes(q) ||
         item.action.toLowerCase().includes(q) ||
-        item.id.toLowerCase().includes(q) ||
-        item.ip.toLowerCase().includes(q)
+        item.id.toLowerCase().includes(q)
 
       const matchLevel = selectedLevel === "Semua" || item.level === selectedLevel
       const matchModule = selectedModule === "Semua" || item.module === selectedModule
@@ -232,7 +231,7 @@ export default function AuditLogPage() {
                 variant="outline"
                 size="sm"
                 disabled={isRefreshing}
-                className="h-8 sm:h-8.5 text-xs gap-1.5 font-medium rounded-lg"
+                className="h-8 sm:h-9 text-xs gap-1.5 font-semibold rounded-[8px]"
               >
                 <RefreshCwIcon className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
                 Segarkan
@@ -241,138 +240,138 @@ export default function AuditLogPage() {
                 onClick={handleExportLog}
                 variant="default"
                 size="sm"
-                className="h-8 sm:h-8.5 text-xs gap-1.5 font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-xs"
+                className="h-8 sm:h-9 text-xs gap-1.5 font-semibold rounded-[8px] bg-red-600 hover:bg-red-700 text-white shadow-2xs"
               >
                 <DownloadIcon className="size-3.5" /> Export CSV
               </Button>
             </div>
           </div>
 
-          {/* Stats Summary - Compact & Balanced */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+          {/* Stats Summary - Compact & Balanced (Overview Style) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Total Event Log */}
-            <div className="group relative overflow-hidden rounded-xl border border-border/80 bg-card p-3 sm:p-4 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="size-7 sm:size-8 rounded-lg flex items-center justify-center bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400 shrink-0">
-                    <ActivityIcon className="size-3.5 sm:size-4" />
+                  <div className="size-8 rounded-[8px] flex items-center justify-center bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400 shrink-0">
+                    <ActivityIcon className="size-4" />
                   </div>
-                  <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                  <span className="text-xs font-semibold text-muted-foreground truncate">
                     Total Event
                   </span>
                 </div>
-                <span className="hidden sm:inline-flex items-center rounded-md bg-red-50 dark:bg-red-950/60 px-1.5 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-400 border border-red-200/80 dark:border-red-900/60">
+                <span className="hidden sm:inline-flex items-center rounded-md bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-xs font-bold text-red-700 dark:text-red-400 border border-red-200/80 dark:border-red-900/60">
                   Aktif
                 </span>
               </div>
-              <p className="mt-2 text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground">
+              <p className="mt-2.5 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-foreground">
                 {isLoading ? "..." : stats.totalEvents}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
+              <p className="text-xs text-muted-foreground truncate mt-1">
                 Semua log tercatat
               </p>
             </div>
 
             {/* Card 2: User Aktif */}
-            <div className="group relative overflow-hidden rounded-xl border border-border/80 bg-card p-3 sm:p-4 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="size-7 sm:size-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 shrink-0">
-                    <UserCheckIcon className="size-3.5 sm:size-4" />
+                  <div className="size-8 rounded-[8px] flex items-center justify-center bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 shrink-0">
+                    <UserCheckIcon className="size-4" />
                   </div>
-                  <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                  <span className="text-xs font-semibold text-muted-foreground truncate">
                     User Aktif
                   </span>
                 </div>
-                <span className="hidden sm:inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/60">
+                <span className="hidden sm:inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/60">
                   Akun
                 </span>
               </div>
-              <p className="mt-2 text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground">
+              <p className="mt-2.5 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-foreground">
                 {isLoading ? "..." : stats.uniqueUsers}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
+              <p className="text-xs text-muted-foreground truncate mt-1">
                 Akun beraktivitas
               </p>
             </div>
 
             {/* Card 3: Perubahan Data */}
-            <div className="group relative overflow-hidden rounded-xl border border-border/80 bg-card p-3 sm:p-4 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="size-7 sm:size-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 shrink-0">
-                    <DatabaseIcon className="size-3.5 sm:size-4" />
+                  <div className="size-8 rounded-[8px] flex items-center justify-center bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 shrink-0">
+                    <DatabaseIcon className="size-4" />
                   </div>
-                  <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                  <span className="text-xs font-semibold text-muted-foreground truncate">
                     Mutasi Data
                   </span>
                 </div>
-                <span className="hidden sm:inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-900/60">
+                <span className="hidden sm:inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-900/60">
                   Audit
                 </span>
               </div>
-              <p className="mt-2 text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground">
+              <p className="mt-2.5 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-foreground">
                 {isLoading ? "..." : stats.dataChanges}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
+              <p className="text-xs text-muted-foreground truncate mt-1">
                 Perubahan data sistem
               </p>
             </div>
 
             {/* Card 4: Peringatan Keamanan */}
-            <div className="group relative overflow-hidden rounded-xl border border-border/80 bg-card p-3 sm:p-4 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
+            <div className="group relative overflow-hidden rounded-[8px] border border-border bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:border-border hover:shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="size-7 sm:size-8 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400 shrink-0">
-                    <ShieldAlertIcon className="size-3.5 sm:size-4" />
+                  <div className="size-8 rounded-[8px] flex items-center justify-center bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400 shrink-0">
+                    <ShieldAlertIcon className="size-4" />
                   </div>
-                  <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                  <span className="text-xs font-semibold text-muted-foreground truncate">
                     Peringatan
                   </span>
                 </div>
-                <span className="hidden sm:inline-flex items-center rounded-md bg-red-50 dark:bg-red-950/60 px-1.5 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-400 border border-red-200/80 dark:border-red-900/60">
+                <span className="hidden sm:inline-flex items-center rounded-md bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-xs font-bold text-red-700 dark:text-red-400 border border-red-200/80 dark:border-red-900/60">
                   Alert
                 </span>
               </div>
-              <p className="mt-2 text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground">
+              <p className="mt-2.5 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-foreground">
                 {isLoading ? "..." : stats.securityAlerts}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
+              <p className="text-xs text-muted-foreground truncate mt-1">
                 Warning & insiden login
               </p>
             </div>
           </div>
 
-          {/* Filter Bar - Responsive & Compact */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 bg-card p-2.5 sm:p-3 rounded-xl border border-border/80 shadow-2xs">
+          {/* Filter Bar - Responsive & Compact (Overview Style) */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-card p-3 rounded-[8px] border border-border shadow-2xs">
             <div className="relative flex-1 min-w-[200px] max-w-full md:max-w-xs">
-              <SearchIcon className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+              <SearchIcon className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
-                placeholder="Cari user, action, detail, IP..."
+                placeholder="Cari user, aksi, detail aktivitas..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-8 h-8 sm:h-8.5 text-xs rounded-lg bg-background"
+                className="pl-8.5 h-9 text-xs rounded-[8px] bg-background"
               />
               {searchQuery && (
                 <button
                   onClick={() => handleSearchChange("")}
-                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <XIcon className="size-3.5" />
                 </button>
               )}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
               <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-                <span className="text-[11px] font-medium text-muted-foreground shrink-0 hidden sm:inline">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 hidden sm:inline">
                   Level:
                 </span>
                 <Select value={selectedLevel} onValueChange={handleLevelChange}>
-                  <SelectTrigger className="h-8 sm:h-8.5 text-xs w-full sm:w-32 rounded-lg bg-background">
+                  <SelectTrigger className="h-9 text-xs w-full sm:w-32 rounded-[8px] bg-background">
                     <SelectValue placeholder="Semua Level" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-[8px]">
                     <SelectItem value="Semua">Semua Level</SelectItem>
                     <SelectItem value="INFO">INFO</SelectItem>
                     <SelectItem value="AUDIT">AUDIT</SelectItem>
@@ -383,14 +382,14 @@ export default function AuditLogPage() {
               </div>
 
               <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-                <span className="text-[11px] font-medium text-muted-foreground shrink-0 hidden sm:inline">
+                <span className="text-xs font-medium text-muted-foreground shrink-0 hidden sm:inline">
                   Modul:
                 </span>
                 <Select value={selectedModule} onValueChange={handleModuleChange}>
-                  <SelectTrigger className="h-8 sm:h-8.5 text-xs w-full sm:w-44 rounded-lg bg-background">
+                  <SelectTrigger className="h-9 text-xs w-full sm:w-44 rounded-[8px] bg-background">
                     <SelectValue placeholder="Semua Modul" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-[8px]">
                     <SelectItem value="Semua">Semua Modul</SelectItem>
                     <SelectItem value="Authentication">Authentication</SelectItem>
                     <SelectItem value="Task Management">Task Management</SelectItem>
@@ -407,7 +406,7 @@ export default function AuditLogPage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleResetFilters}
-                  className="h-8 sm:h-8.5 text-xs px-2.5 font-medium text-muted-foreground hover:text-foreground shrink-0 rounded-lg"
+                  className="h-9 text-xs px-3 font-semibold text-muted-foreground hover:text-foreground shrink-0 rounded-[8px]"
                 >
                   Reset
                 </Button>
@@ -416,29 +415,29 @@ export default function AuditLogPage() {
           </div>
 
           {/* Audit Trail Table Card */}
-          <Card className="overflow-hidden border border-border/80 shadow-2xs rounded-xl">
-            <CardHeader className="py-2.5 px-3.5 sm:px-4 border-b bg-muted/20">
+          <Card className="overflow-hidden border border-border shadow-2xs rounded-[8px]">
+            <CardHeader className="py-3 px-4 border-b bg-muted/20">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <CardTitle className="text-sm sm:text-base font-semibold">
+                  <CardTitle className="text-sm sm:text-base font-bold">
                     Rincian Audit Trail Event Real-Time
                   </CardTitle>
-                  <CardDescription className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                  <CardDescription className="text-xs text-muted-foreground mt-0.5">
                     Catatan peristiwa sistem dari database Supabase dan sesi pengguna aktif WorkPulse.
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="outline" className="font-mono text-[11px] px-2 py-0.5">
+                  <Badge variant="outline" className="font-mono text-xs px-2.5 py-0.5 rounded-[8px]">
                     {filteredLogs.length} Records
                   </Badge>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleClearLogs}
-                    className="h-7 text-[11px] text-muted-foreground hover:text-red-600 gap-1 px-2"
+                    className="h-8 text-xs text-muted-foreground hover:text-red-600 gap-1.5 px-2.5 rounded-[8px]"
                     title="Setel ulang log lokal"
                   >
-                    <Trash2Icon className="size-3" />
+                    <Trash2Icon className="size-3.5" />
                     <span className="hidden sm:inline">Reset Cache</span>
                   </Button>
                 </div>
@@ -447,34 +446,31 @@ export default function AuditLogPage() {
 
             {/* Responsive Table with Horizontal Scroll */}
             <div className="overflow-x-auto w-full">
-              <Table className="w-full min-w-[860px] text-xs">
+              <Table className="w-full min-w-[760px] text-xs">
                 <TableHeader className="bg-muted/40">
                   <TableRow className="hover:bg-transparent border-b">
-                    <TableHead className="w-24 text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
+                    <TableHead className="w-24 text-xs font-bold uppercase tracking-wider py-3 px-3.5">
                       ID Log
                     </TableHead>
-                    <TableHead className="w-36 text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
-                      Timestamp
+                    <TableHead className="w-36 text-xs font-bold uppercase tracking-wider py-3 px-3.5">
+                      Waktu
                     </TableHead>
-                    <TableHead className="w-44 text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
+                    <TableHead className="text-xs font-bold uppercase tracking-wider py-3 px-3.5">
                       Pengguna / Aktor
                     </TableHead>
-                    <TableHead className="w-32 text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
+                    <TableHead className="w-32 text-xs font-bold uppercase tracking-wider py-3 px-3.5">
                       Tindakan
                     </TableHead>
-                    <TableHead className="w-36 text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
+                    <TableHead className="w-36 text-xs font-bold uppercase tracking-wider py-3 px-3.5">
                       Modul
                     </TableHead>
-                    <TableHead className="w-24 text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
+                    <TableHead className="w-24 text-xs font-bold uppercase tracking-wider py-3 px-3.5">
                       Level
                     </TableHead>
-                    <TableHead className="w-28 text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
-                      Alamat IP
-                    </TableHead>
-                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
+                    <TableHead className="text-xs font-bold uppercase tracking-wider py-3 px-3.5">
                       Rincian Event
                     </TableHead>
-                    <TableHead className="w-14 text-center text-[11px] font-semibold uppercase tracking-wider py-2.5 px-3">
+                    <TableHead className="w-14 text-center text-xs font-bold uppercase tracking-wider py-3 px-3.5">
                       Aksi
                     </TableHead>
                   </TableRow>
@@ -482,14 +478,14 @@ export default function AuditLogPage() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-xs">
+                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-xs">
                         <RefreshCwIcon className="size-4 animate-spin mx-auto mb-2 text-red-600" />
                         Memuat data audit log real-time...
                       </TableCell>
                     </TableRow>
                   ) : filteredLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-xs">
+                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-xs">
                         Tidak ada log yang sesuai dengan filter pencarian.
                       </TableCell>
                     </TableRow>
@@ -500,54 +496,51 @@ export default function AuditLogPage() {
                         className="cursor-pointer hover:bg-muted/40 transition-colors border-b last:border-0"
                         onClick={() => setSelectedLog(row)}
                       >
-                        <TableCell className="font-mono text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 py-2 px-3">
+                        <TableCell className="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100 py-3 px-3.5">
                           {row.id}
                         </TableCell>
-                        <TableCell className="font-mono text-[11px] whitespace-nowrap text-muted-foreground py-2 px-3">
+                        <TableCell className="font-mono text-xs whitespace-nowrap text-muted-foreground py-3 px-3.5">
                           {row.timestamp}
                         </TableCell>
-                        <TableCell className="text-xs font-medium text-foreground max-w-[180px] truncate py-2 px-3">
+                        <TableCell className="text-xs font-semibold text-foreground max-w-[180px] truncate py-3 px-3.5">
                           {row.user}
                         </TableCell>
-                        <TableCell className="py-2 px-3">
-                          <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0.5 bg-muted/60 font-medium">
+                        <TableCell className="py-3 px-3.5">
+                          <Badge variant="outline" className="font-mono text-xs px-2 py-0.5 bg-muted/60 font-semibold rounded-[8px]">
                             {row.action}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap py-2 px-3">
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap py-3 px-3.5 font-medium">
                           {row.module}
                         </TableCell>
-                        <TableCell className="py-2 px-3">
+                        <TableCell className="py-3 px-3.5">
                           <Badge
                             variant="outline"
-                            className={
+                            className={`text-xs px-2 py-0.5 rounded-[8px] font-bold ${
                               row.level === "INFO"
-                                ? "bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/40 dark:text-blue-400 text-[10px] px-1.5 py-0.5"
+                                ? "bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/40 dark:text-blue-400"
                                 : row.level === "AUDIT"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] px-1.5 py-0.5"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-400"
                                   : row.level === "WARNING"
-                                    ? "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-400 text-[10px] px-1.5 py-0.5"
-                                    : "bg-red-50 text-red-700 border-red-200/80 dark:bg-red-950/40 dark:text-red-400 font-bold text-[10px] px-1.5 py-0.5"
-                            }
+                                    ? "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-400"
+                                    : "bg-red-50 text-red-700 border-red-200/80 dark:bg-red-950/40 dark:text-red-400"
+                            }`}
                           >
                             {row.level}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-mono text-[11px] text-muted-foreground py-2 px-3">
-                          {row.ip}
-                        </TableCell>
-                        <TableCell className="text-xs text-foreground max-w-[300px] truncate py-2 px-3">
+                        <TableCell className="text-xs text-foreground max-w-[320px] truncate py-3 px-3.5">
                           {row.detail}
                         </TableCell>
-                        <TableCell className="text-center py-2 px-3" onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="text-center py-3 px-3.5" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-7 rounded-md"
+                            className="size-7 rounded-[8px]"
                             onClick={() => setSelectedLog(row)}
                             title="Lihat Detail Log"
                           >
-                            <EyeIcon className="size-3.5 text-muted-foreground" />
+                            <EyeIcon className="size-4 text-muted-foreground" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -559,8 +552,8 @@ export default function AuditLogPage() {
 
             {/* Pagination Controls */}
             {filteredLogs.length > 0 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 border-t bg-muted/10 text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground text-[11px]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 border-t bg-muted/10 text-xs">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <span>
                     Menampilkan <strong className="text-foreground">{startRecord}</strong> - <strong className="text-foreground">{endRecord}</strong> dari <strong className="text-foreground">{filteredLogs.length}</strong> log
                   </span>
@@ -575,10 +568,10 @@ export default function AuditLogPage() {
                         }
                       }}
                     >
-                      <SelectTrigger className="h-7 w-16 text-[11px] rounded-md bg-background">
+                      <SelectTrigger className="h-8 w-18 text-xs rounded-[8px] bg-background">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-[8px]">
                         <SelectItem value="10">10</SelectItem>
                         <SelectItem value="25">25</SelectItem>
                         <SelectItem value="50">50</SelectItem>
@@ -592,45 +585,45 @@ export default function AuditLogPage() {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="size-7 rounded-md"
+                    className="size-8 rounded-[8px]"
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
                     title="Halaman Pertama"
                   >
-                    <ChevronsLeftIcon className="size-3.5" />
+                    <ChevronsLeftIcon className="size-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="size-7 rounded-md"
+                    className="size-8 rounded-[8px]"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     title="Halaman Sebelumnya"
                   >
-                    <ChevronLeftIcon className="size-3.5" />
+                    <ChevronLeftIcon className="size-4" />
                   </Button>
-                  <span className="text-[11px] px-2 text-muted-foreground">
+                  <span className="text-xs px-2 text-muted-foreground">
                     Hal <strong className="text-foreground">{currentPage}</strong> dari <strong className="text-foreground">{totalPages}</strong>
                   </span>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="size-7 rounded-md"
+                    className="size-8 rounded-[8px]"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     title="Halaman Selanjutnya"
                   >
-                    <ChevronRightIcon className="size-3.5" />
+                    <ChevronRightIcon className="size-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="size-7 rounded-md"
+                    className="size-8 rounded-[8px]"
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
                     title="Halaman Terakhir"
                   >
-                    <ChevronsRightIcon className="size-3.5" />
+                    <ChevronsRightIcon className="size-4" />
                   </Button>
                 </div>
               </div>
@@ -638,9 +631,9 @@ export default function AuditLogPage() {
           </Card>
         </div>
 
-        {/* Modal Detail Log Event - Responsive & Compact */}
+        {/* Modal Detail Log Event - Overview Consistent Style */}
         <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
-          <DialogContent className="w-[95vw] sm:max-w-lg rounded-2xl p-4 sm:p-6 max-h-[85vh] overflow-y-auto font-sans">
+          <DialogContent className="w-[95vw] sm:max-w-lg rounded-[8px] p-5 sm:p-6 max-h-[85vh] overflow-y-auto font-sans shadow-xl border-border">
             <DialogHeader>
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full bg-red-600" />
@@ -655,20 +648,20 @@ export default function AuditLogPage() {
             </DialogHeader>
 
             {selectedLog && (
-              <div className="space-y-3 mt-2 text-xs">
-                <div className="p-3 rounded-xl bg-muted/40 border border-border/80 space-y-1.5">
+              <div className="space-y-3.5 mt-2 text-xs">
+                <div className="p-3.5 rounded-[8px] bg-muted/40 border border-border space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-medium">Tindakan (Action):</span>
-                    <Badge variant="outline" className="font-mono text-xs font-semibold bg-background">
+                    <span className="text-muted-foreground font-semibold">Tindakan (Action):</span>
+                    <Badge variant="outline" className="font-mono text-xs font-bold bg-background rounded-[8px]">
                       {selectedLog.action}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-medium">Level & Modul:</span>
+                    <span className="text-muted-foreground font-semibold">Level & Modul:</span>
                     <div className="flex items-center gap-1.5">
                       <Badge
                         variant="outline"
-                        className={
+                        className={`text-xs font-bold rounded-[8px] ${
                           selectedLog.level === "INFO"
                             ? "bg-blue-50 text-blue-700"
                             : selectedLog.level === "AUDIT"
@@ -676,51 +669,47 @@ export default function AuditLogPage() {
                               : selectedLog.level === "WARNING"
                                 ? "bg-amber-50 text-amber-700"
                                 : "bg-red-50 text-red-700 font-bold"
-                        }
+                        }`}
                       >
                         {selectedLog.level}
                       </Badge>
-                      <span className="text-foreground font-medium">{selectedLog.module}</span>
+                      <span className="text-foreground font-semibold">{selectedLog.module}</span>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-medium">Timestamp:</span>
-                    <span className="font-mono text-foreground font-medium">{selectedLog.timestamp}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-medium">Alamat IP:</span>
-                    <span className="font-mono text-foreground">{selectedLog.ip}</span>
+                    <span className="text-muted-foreground font-semibold">Waktu Tercatat:</span>
+                    <span className="font-mono text-foreground font-semibold">{selectedLog.timestamp}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-muted-foreground font-medium block mb-1">Aktor / Pengguna:</label>
-                  <div className="p-2.5 rounded-lg bg-background border border-border font-medium text-foreground">
+                  <label className="text-muted-foreground font-semibold block mb-1 text-xs">Aktor / Pengguna:</label>
+                  <div className="p-3 rounded-[8px] bg-background border border-border font-semibold text-foreground text-xs">
                     {selectedLog.user}
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-muted-foreground font-medium block mb-1">Deskripsi Lengkap Event:</label>
-                  <div className="p-2.5 rounded-lg bg-background border border-border leading-relaxed text-foreground">
+                  <label className="text-muted-foreground font-semibold block mb-1 text-xs">Deskripsi Lengkap Event:</label>
+                  <div className="p-3 rounded-[8px] bg-background border border-border leading-relaxed text-foreground text-xs">
                     {selectedLog.detail}
                   </div>
                 </div>
 
                 {selectedLog.meta && (
                   <div>
-                    <label className="text-muted-foreground font-medium block mb-1">Metadata Tambahan:</label>
-                    <pre className="p-2.5 rounded-lg bg-muted text-[11px] font-mono overflow-x-auto text-foreground">
+                    <label className="text-muted-foreground font-semibold block mb-1 text-xs">Metadata Tambahan:</label>
+                    <pre className="p-3 rounded-[8px] bg-muted text-xs font-mono overflow-x-auto text-foreground">
                       {JSON.stringify(selectedLog.meta, null, 2)}
                     </pre>
                   </div>
                 )}
 
-                <div className="flex justify-end pt-2 border-t">
+                <div className="flex justify-end pt-3 border-t">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs rounded-lg"
+                    className="h-8.5 px-4 text-xs font-semibold rounded-[8px]"
                     onClick={() => setSelectedLog(null)}
                   >
                     Tutup

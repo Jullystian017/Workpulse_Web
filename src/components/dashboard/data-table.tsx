@@ -49,8 +49,8 @@ import {
   UsersIcon,
   ActivityIcon,
 } from "lucide-react"
-import { Task, TaskPriority, TaskStatus } from "@/types/database"
-import { deleteTask, updateTaskStatus, getActiveUserFromStorage } from "@/lib/api"
+import { Task, TaskPriority, TaskStatus, User } from "@/types/database"
+import { deleteTask, updateTaskStatus, getActiveUserFromStorage, getTaskAssigneeIds } from "@/lib/api"
 import { toast } from "sonner"
 import { TaskDetailSheet } from "@/components/dashboard/tasks/task-detail-sheet"
 import { DelegateTaskModal } from "@/components/dashboard/tasks/delegate-task-modal"
@@ -147,7 +147,7 @@ function TaskTableRow({
   const activeUser = React.useMemo(() => getActiveUserFromStorage(), [])
   const canApprove = React.useMemo(() => {
     if (!activeUser || !task) return false
-    if (task.assigned_to && activeUser.id === task.assigned_to) return false
+    if (getTaskAssigneeIds(task).includes(activeUser.id)) return false
     if (activeUser.role === "admin" || activeUser.role === "sgm") return true
     if (task.delegated_by && task.delegated_by === activeUser.id) return true
     if (task.created_by && task.created_by === activeUser.id) return true
@@ -192,49 +192,72 @@ function TaskTableRow({
 
       {/* 3. Pelaksana & Delegasi */}
       <TableCell className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-        {task.assignee ? (
-          <div className="flex flex-col gap-1 min-w-[140px]">
-            <div className="flex items-center gap-2">
-              <img
-                src={
-                  task.assignee.avatar_url ||
-                  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                }
-                alt={task.assignee.nama}
-                className="size-6 rounded-full object-cover shrink-0 border border-border"
-              />
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-foreground truncate max-w-[130px]">
-                  {task.assignee.nama}
-                </span>
-                <span className="text-[10px] text-muted-foreground truncate max-w-[130px]">
-                  {task.assignee.position_title || "Pelaksana"}
-                </span>
+        {(() => {
+          const allAssignees = task.assignees && task.assignees.length > 0
+            ? task.assignees
+            : [task.assignee, task.secondary_assignee].filter(Boolean) as User[]
+
+          if (allAssignees.length > 0) {
+            const primary = allAssignees[0]
+            const extraCount = allAssignees.length - 1
+            return (
+              <div className="flex flex-col gap-1 min-w-[140px]">
+                <div className="flex items-center gap-2">
+                  <div className="flex -space-x-1.5 overflow-hidden shrink-0">
+                    {allAssignees.slice(0, 3).map((u, i) => (
+                      <img
+                        key={u.id || i}
+                        src={
+                          u.avatar_url ||
+                          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                        }
+                        alt={u.nama}
+                        title={u.nama}
+                        className="size-6 rounded-full object-cover border-2 border-background ring-1 ring-border shrink-0"
+                      />
+                    ))}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold text-foreground truncate max-w-[130px]">
+                      {primary.nama}
+                      {extraCount > 0 ? ` +${extraCount}` : ""}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[130px]">
+                      {extraCount > 0 ? `${allAssignees.length} Pelaksana (Tim)` : (primary.position_title || "Pelaksana")}
+                    </span>
+                  </div>
+                </div>
+                {task.delegator && (
+                  <div className="flex items-center gap-1 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded w-fit border border-amber-200/60 font-medium">
+                    <ArrowRightLeftIcon className="size-2.5 shrink-0 text-amber-600" />
+                    <span className="truncate max-w-[130px]">
+                      Delegasi: {task.delegator.nama.split(" ")[0]}
+                    </span>
+                  </div>
+                )}
               </div>
-            </div>
-            {task.delegator && (
-              <div className="flex items-center gap-1 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded w-fit border border-amber-200/60 font-medium">
-                <ArrowRightLeftIcon className="size-2.5 shrink-0 text-amber-600" />
-                <span className="truncate max-w-[130px]">
-                  Delegasi: {task.delegator.nama.split(" ")[0]}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : isStaff ? (
-          <span className="text-[11px] text-muted-foreground font-mono italic">
-            Belum Ditugaskan
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onOpenDelegate(task)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 rounded-md border border-red-200 dark:border-red-900/50 cursor-pointer transition-colors"
-          >
-            <UserPlusIcon className="size-3" />
-            <span>Tugaskan</span>
-          </button>
-        )}
+            )
+          }
+
+          if (isStaff) {
+            return (
+              <span className="text-[11px] text-muted-foreground font-mono italic">
+                Belum Ditugaskan
+              </span>
+            )
+          }
+
+          return (
+            <button
+              type="button"
+              onClick={() => onOpenDelegate(task)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 rounded-md border border-red-200 dark:border-red-900/50 cursor-pointer transition-colors"
+            >
+              <UserPlusIcon className="size-3" />
+              <span>Tugaskan</span>
+            </button>
+          )
+        })()}
       </TableCell>
 
       {/* 4. Prioritas */}
@@ -453,7 +476,10 @@ export function DataTable({
         const q = searchQuery.toLowerCase()
         const matchTitle = task.title.toLowerCase().includes(q)
         const matchTicket = task.ticket_code.toLowerCase().includes(q)
-        const matchAssignee = task.assignee?.nama.toLowerCase().includes(q)
+        const allAssignees = task.assignees && task.assignees.length > 0
+          ? task.assignees
+          : [task.assignee, task.secondary_assignee].filter(Boolean) as User[]
+        const matchAssignee = allAssignees.some((u) => u?.nama.toLowerCase().includes(q))
         if (!matchTitle && !matchTicket && !matchAssignee) return false
       }
 

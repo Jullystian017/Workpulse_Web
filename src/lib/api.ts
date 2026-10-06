@@ -19,6 +19,99 @@ import { recordActivity } from './activity-logger';
 
 export const supabase = createClient();
 
+/** Semua id PIC sebuah tugas (gabungan assignee_ids, assigned_to, secondary_assigned_to; unik). */
+export function getTaskAssigneeIds(t: Pick<Task, 'assigned_to' | 'secondary_assigned_to' | 'assignee_ids'>): string[] {
+  const ids = [t.assigned_to, t.secondary_assigned_to, ...(t.assignee_ids || [])].filter(Boolean) as string[];
+  return Array.from(new Set(ids));
+}
+
+/**
+ * Tentukan PIC review (atasan) efektif sebuah tugas.
+ * Prioritas: reviewer yang dipilih saat penugasan → delegator → pembuat tugas → atasan langsung PIC utama.
+ */
+export function getTaskReviewerId(
+  t: Pick<Task, 'reviewer_id' | 'delegated_by' | 'created_by'> & { assignee?: User | null }
+): string | null {
+  return t.reviewer_id || t.delegated_by || t.created_by || t.assignee?.supervisor_id || null;
+}
+
+async function pushNotification(
+  userId: string,
+  n: { title: string; message: string; type: NotificationType; taskId: string }
+): Promise<void> {
+  try {
+    const users = await getAllUsers();
+    const target = users.find((u) => u.id === userId);
+    const link_url =
+      target?.role === 'admin' ? `/admin/tasks?selected=${n.taskId}` : `/karyawan/tasks?task=${n.taskId}`;
+    await supabase.from('notifications').insert([
+      { user_id: userId, title: n.title, message: n.message, type: n.type, link_url, is_read: false },
+    ]);
+  } catch (e) {
+    console.warn('Could not insert notification:', e);
+  }
+}
+
+/** Kirim notifikasi terkait siklus review sebuah tahapan (subtask). */
+async function notifySubtaskEvent(
+  subtaskId: string,
+  event: 'submitted' | 'approved' | 'rejected',
+  note?: string
+): Promise<void> {
+  try {
+    const { data: st } = await supabase
+      .from('subtasks')
+      .select('title, sort_order, task_id')
+      .eq('id', subtaskId)
+      .single();
+    if (!st) return;
+    const { data: t } = await supabase
+      .from('tasks')
+      .select('ticket_code, title, assigned_to, secondary_assigned_to, assignee_ids, reviewer_id, delegated_by, created_by')
+      .eq('id', st.task_id)
+      .single();
+    if (!t) return;
+    const actor = getActiveUserFromStorage();
+
+    if (event === 'submitted') {
+      const users = await getAllUsers();
+      const assignee = users.find((u) => u.id === t.assigned_to);
+      const reviewerId = getTaskReviewerId({ ...t, assignee });
+      if (reviewerId && reviewerId !== actor?.id) {
+        await pushNotification(reviewerId, {
+          title: `Tahap Menunggu Review: [${t.ticket_code}] ⏳`,
+          message: `${actor?.nama || 'Pelaksana'} mengajukan tahap "${st.title}" pada tugas "${t.title}" untuk Anda review.`,
+          type: 'task_submitted',
+          taskId: st.task_id,
+        });
+      }
+      return;
+    }
+
+    const targets = getTaskAssigneeIds(t).filter((id) => id !== actor?.id);
+    for (const id of targets) {
+      await pushNotification(
+        id,
+        event === 'approved'
+          ? {
+              title: `Tahap Disetujui: [${t.ticket_code}] ✅`,
+              message: `Tahap "${st.title}" pada tugas "${t.title}" telah disetujui. Tahap berikutnya kini terbuka untuk dikerjakan.`,
+              type: 'task_approved',
+              taskId: st.task_id,
+            }
+          : {
+              title: `Tahap Perlu Revisi: [${t.ticket_code}] ⚠️`,
+              message: `Tahap "${st.title}" dikembalikan atasan${note ? `: "${note}"` : '.'}`,
+              type: 'task_returned',
+              taskId: st.task_id,
+            }
+      );
+    }
+  } catch (e) {
+    console.warn('Could not insert subtask notification:', e);
+  }
+}
+
 // ==========================================
 // FALLBACK SEED DATA (Resilience Guarantee)
 // ==========================================
@@ -228,6 +321,7 @@ export async function createUser(user: Partial<User>): Promise<User | null> {
         department_id: user.department_id,
         supervisor_id: user.supervisor_id || null,
         position_title: user.position_title,
+        sub_unit: user.sub_unit || 'Procurement',
         avatar_url: user.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
         phone: user.phone || '0812-3456-7890',
         is_active: true,
@@ -710,7 +804,7 @@ export async function getTasks(filters?: TaskFilters, forceRefresh = false): Pro
         query = query.eq('status', filters.status);
       }
       if (filters?.assignedTo) {
-        query = query.eq('assigned_to', filters.assignedTo);
+        query = query.or(`assigned_to.eq.${filters.assignedTo},secondary_assigned_to.eq.${filters.assignedTo},assignee_ids.cs.{${filters.assignedTo}}`);
       }
       if (filters?.search) {
         query = query.or(`title.ilike.%${filters.search}%,ticket_code.ilike.%${filters.search}%`);
@@ -729,6 +823,8 @@ export async function getTasks(filters?: TaskFilters, forceRefresh = false): Pro
           creator: t.created_by ? userMap.get(t.created_by) : undefined,
           assignee: t.assigned_to ? userMap.get(t.assigned_to) : undefined,
           secondary_assignee: t.secondary_assigned_to ? userMap.get(t.secondary_assigned_to) : undefined,
+          assignees: getTaskAssigneeIds(t).map((id) => userMap.get(id)).filter(Boolean),
+          reviewer: t.reviewer_id ? userMap.get(t.reviewer_id) : undefined,
           delegator: t.delegated_by ? userMap.get(t.delegated_by) : undefined,
         })) as Task[];
 
@@ -791,6 +887,8 @@ export async function getTaskById(taskId: string, forceRefresh = false): Promise
           creator: task.created_by ? userMap.get(task.created_by) : undefined,
           assignee: task.assigned_to ? userMap.get(task.assigned_to) : undefined,
           secondary_assignee: task.secondary_assigned_to ? userMap.get(task.secondary_assigned_to) : undefined,
+          assignees: getTaskAssigneeIds(task).map((id: string) => userMap.get(id)).filter(Boolean),
+          reviewer: task.reviewer_id ? userMap.get(task.reviewer_id) : undefined,
           delegator: task.delegated_by ? userMap.get(task.delegated_by) : undefined,
           subtasks: (task.subtasks || [])
             .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
@@ -834,6 +932,10 @@ export async function createTask(task: {
   priority: TaskPriority;
   created_by: string;
   assigned_to?: string | null;
+  /** Multi-PIC: daftar semua pelaksana. Jika diisi, menggantikan assigned_to. */
+  assignee_ids?: string[];
+  /** PIC review (atasan) yang menyetujui tahapan & tugas. */
+  reviewer_id?: string | null;
   deadline_at?: string | null;
   estimated_hours?: number;
   location_name?: string;
@@ -842,6 +944,9 @@ export async function createTask(task: {
 }): Promise<Task | null> {
   const randomTicketNum = Math.floor(1000 + Math.random() * 9000);
   const ticketCode = `TLK-BDG-${randomTicketNum}`;
+
+  const assigneeIds = Array.from(new Set((task.assignee_ids && task.assignee_ids.length > 0 ? task.assignee_ids : task.assigned_to ? [task.assigned_to] : []).filter(Boolean)));
+  const hasAssignee = assigneeIds.length > 0;
 
   const { data: newTask, error } = await supabase
     .from('tasks')
@@ -853,9 +958,12 @@ export async function createTask(task: {
         channel_id: task.channel_id,
         department_id: task.department_id,
         priority: task.priority,
-        status: task.assigned_to ? 'todo' : 'unassigned',
+        status: hasAssignee ? 'todo' : 'unassigned',
         created_by: task.created_by,
-        assigned_to: task.assigned_to || null,
+        assigned_to: assigneeIds[0] || null,
+        secondary_assigned_to: assigneeIds[1] || null,
+        assignee_ids: assigneeIds,
+        reviewer_id: task.reviewer_id || null,
         deadline_at: task.deadline_at || (() => {
           const d = new Date();
           d.setHours(18, 0, 0, 0);
@@ -890,7 +998,7 @@ export async function createTask(task: {
     {
       task_id: newTask.id,
       user_id: task.created_by,
-      comment: `Tugas ${ticketCode} dibuat dengan prioritas ${task.priority.toUpperCase()}.${task.assigned_to ? ' Ditugaskan langsung.' : ' Masuk ke Unassigned Pool.'}`,
+      comment: `Tugas ${ticketCode} dibuat dengan prioritas ${task.priority.toUpperCase()}.${hasAssignee ? (assigneeIds.length > 1 ? ` Ditugaskan langsung kepada ${assigneeIds.length} PIC.` : ' Ditugaskan langsung.') : ' Masuk ke Unassigned Pool.'}`,
       is_system_log: true,
     },
   ]);
@@ -902,8 +1010,18 @@ export async function createTask(task: {
     action: 'CREATE_TASK',
     module: 'Task Management',
     level: 'AUDIT',
-    detail: `[${ticketCode}] Tugas '${newTask.title}' dibuat (${task.priority.toUpperCase()}).${task.assigned_to ? ' Ditugaskan langsung.' : ' Masuk ke Unassigned Pool.'}`,
+    detail: `[${ticketCode}] Tugas '${newTask.title}' dibuat (${task.priority.toUpperCase()}).${hasAssignee ? (assigneeIds.length > 1 ? ` Ditugaskan langsung kepada ${assigneeIds.length} PIC.` : ' Ditugaskan langsung.') : ' Masuk ke Unassigned Pool.'}`,
   });
+
+  // Beritahu PIC review bahwa dirinya ditunjuk sebagai reviewer tugas ini
+  if (task.reviewer_id && task.reviewer_id !== task.created_by) {
+    await pushNotification(task.reviewer_id, {
+      title: `Anda Ditunjuk Sebagai PIC Review: [${ticketCode}] 🛡️`,
+      message: `Anda menjadi PIC review untuk tugas "${newTask.title}". Notifikasi akan masuk saat tahapan/tugas diajukan.`,
+      type: 'task_delegated',
+      taskId: newTask.id,
+    });
+  }
 
   invalidateTasksCache();
   return getTaskById(newTask.id);
@@ -951,6 +1069,8 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   assigned_to?: string | null;
   secondary_assigned_to?: string | null;
+  assignee_ids?: string[];
+  reviewer_id?: string | null;
   deadline_at?: string;
   estimated_hours?: number;
   location_name?: string;
@@ -961,6 +1081,25 @@ export async function updateTask(taskId: string, input: UpdateTaskInput, userId?
     ...input,
     updated_at: new Date().toISOString(),
   };
+
+  if (input.assignee_ids) {
+    const ids = Array.from(new Set(input.assignee_ids.filter(Boolean)));
+    updates.assigned_to = ids[0] || null;
+    updates.secondary_assigned_to = ids[1] || null;
+    updates.assignee_ids = ids;
+  } else if ('assigned_to' in input || 'secondary_assigned_to' in input) {
+    const { data: cur } = await supabase
+      .from('tasks')
+      .select('assigned_to, secondary_assigned_to, assignee_ids')
+      .eq('id', taskId)
+      .single();
+    const extras = ((cur?.assignee_ids as string[] | null) || []).filter(
+      (id) => id !== cur?.assigned_to && id !== cur?.secondary_assigned_to
+    );
+    const primary = 'assigned_to' in input ? input.assigned_to : cur?.assigned_to;
+    const secondary = 'secondary_assigned_to' in input ? input.secondary_assigned_to : cur?.secondary_assigned_to;
+    updates.assignee_ids = Array.from(new Set([primary, secondary, ...extras].filter(Boolean) as string[]));
+  }
 
   const { error } = await supabase.from('tasks').update(updates).eq('id', taskId);
   if (error) {
@@ -1017,6 +1156,7 @@ export async function updateTaskAssignees(
     .update({
       assigned_to: primaryId,
       secondary_assigned_to: secondaryId || null,
+      assignee_ids: [primaryId, secondaryId].filter(Boolean),
       updated_at: new Date().toISOString(),
     })
     .eq('id', taskId);
@@ -1041,6 +1181,7 @@ export async function delegateTask(
     .update({
       assigned_to: toUserId,
       secondary_assigned_to: secondaryToUserId || null,
+      assignee_ids: [toUserId, secondaryToUserId].filter(Boolean),
       delegated_by: delegatorId,
       delegated_at: new Date().toISOString(),
       status: 'todo',
@@ -1106,6 +1247,8 @@ export async function claimTask(taskId: string, staffUserId: string): Promise<bo
     .from('tasks')
     .update({
       assigned_to: staffUserId,
+      secondary_assigned_to: null,
+      assignee_ids: [staffUserId],
       status: 'in_progress',
       updated_at: new Date().toISOString(),
     })
@@ -1150,21 +1293,25 @@ export async function submitTaskForReview(taskId: string, userId: string, notes?
 
   // Fetch task info to notify supervisors / admin
   try {
-    const { data: t } = await supabase.from('tasks').select('ticket_code, title, created_by').eq('id', taskId).single();
+    const { data: t } = await supabase
+      .from('tasks')
+      .select('ticket_code, title, assigned_to, reviewer_id, delegated_by, created_by')
+      .eq('id', taskId)
+      .single();
     if (t) {
       const activeUser = getActiveUserFromStorage();
       const submitterName = activeUser ? activeUser.nama : 'Staff';
-      const targetAdmin = t.created_by || userId;
-      await supabase.from('notifications').insert([
-        {
-          user_id: targetAdmin,
+      const users = await getAllUsers();
+      const assignee = users.find((u) => u.id === t.assigned_to);
+      const reviewerId = getTaskReviewerId({ ...t, assignee }) || userId;
+      if (reviewerId !== userId) {
+        await pushNotification(reviewerId, {
           title: `Tugas Menunggu Review: [${t.ticket_code}] ⏳`,
           message: `${submitterName} telah menyelesaikan pengerjaan "${t.title}" dan mengajukan review pengerjaan.`,
           type: 'task_submitted',
-          link_url: `/admin/tasks?selected=${taskId}`,
-          is_read: false,
-        },
-      ]);
+          taskId,
+        });
+      }
     }
   } catch (err) {
     console.warn('Could not insert submit notification:', err);
@@ -1311,7 +1458,7 @@ export async function addSubtask(taskId: string, title: string, description?: st
         description: description || null,
         sort_order: nextOrder,
         is_completed: false,
-        approval_status: 'pending',
+        approval_status: 'draft',
       },
     ])
     .select()
@@ -1350,6 +1497,7 @@ export async function approveSubtask(
       level: 'AUDIT',
       detail: `Tahapan subtask disetujui oleh atasan (${approvedByUserId}).`,
     });
+    await notifySubtaskEvent(subtaskId, 'approved');
   }
 
   return !error;
@@ -1382,6 +1530,7 @@ export async function rejectSubtask(
       level: 'AUDIT',
       detail: `Tahapan subtask dikembalikan untuk perbaikan: ${note}`,
     });
+    await notifySubtaskEvent(subtaskId, 'rejected', note);
   }
 
   return !error;
@@ -1396,12 +1545,16 @@ export async function submitSubtaskForApproval(
     .from('subtasks')
     .update({
       approval_status: 'pending',
+      submitted_at: new Date().toISOString(),
       is_completed: false,
       rejection_note: null,
     })
     .eq('id', subtaskId);
 
-  if (!error) invalidateTaskCache();
+  if (!error) {
+    invalidateTaskCache();
+    await notifySubtaskEvent(subtaskId, 'submitted');
+  }
   return !error;
 }
 
@@ -2128,6 +2281,45 @@ export async function getNotificationsForUser(user: User): Promise<NotificationI
         created_at: new Date(Date.now() - 7200000).toISOString(),
       });
     }
+
+    // ── PIC REVIEW: tahapan / tugas yang menunggu review user ini (semua role) ──
+    tasks.forEach((t) => {
+      if (t.status === 'done') return;
+      const reviewerId = getTaskReviewerId({ ...t, assignee: t.assignee });
+      if (reviewerId !== user.id) return;
+      if (getTaskAssigneeIds(t).includes(user.id)) return;
+      const link_url =
+        user.role === 'admin' ? `/admin/tasks?selected=${t.id}` : `/karyawan/tasks?task=${t.id}`;
+      const picName = t.assignee?.nama || 'Pelaksana';
+
+      if (user.role !== 'admin' && t.status === 'review') {
+        dynamicNotifs.push({
+          id: `dyn-rv-task-${t.id}`,
+          user_id: user.id,
+          title: `Tugas Menunggu Review Anda: [${t.ticket_code}] ⏳`,
+          message: `${picName} telah menyelesaikan "${t.title}" dan menunggu persetujuan Anda.`,
+          type: 'task_submitted',
+          link_url,
+          is_read: false,
+          created_at: t.updated_at || t.created_at || now.toISOString(),
+        });
+      }
+
+      (t.subtasks || [])
+        .filter((s) => s.approval_status === 'pending')
+        .forEach((s) => {
+          dynamicNotifs.push({
+            id: `dyn-rv-sub-${s.id}`,
+            user_id: user.id,
+            title: `Tahap Menunggu Review: [${t.ticket_code}] ⏳`,
+            message: `${picName} mengajukan tahap "${s.title}" pada tugas "${t.title}" untuk Anda review.`,
+            type: 'task_submitted',
+            link_url,
+            is_read: false,
+            created_at: s.submitted_at || t.updated_at || now.toISOString(),
+          });
+        });
+    });
 
     // Merge database notifications and dynamic ones, deduping by ID
     const mergedMap = new Map<string, NotificationItem>();

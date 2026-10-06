@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Task } from "@/types/database"
+import { Task, User } from "@/types/database"
 
 interface TimelineViewProps {
   tasks: Task[]
@@ -286,26 +286,41 @@ export function TimelineView({
 
                             {/* Card Footer: PIC + Delegasi Quick Action + Progress */}
                             <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-muted-foreground gap-2">
-                              {task.assignee ? (
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <img
-                                    src={
-                                      task.assignee.avatar_url ||
-                                      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                                    }
-                                    alt={task.assignee.nama}
-                                    className="size-5 rounded-full object-cover border border-border shrink-0"
-                                  />
-                                  <span className="font-semibold text-foreground truncate text-[11px] max-w-[85px]">
-                                    {task.assignee.nama.split(" ")[0]}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[10px]">
-                                  <UserPlusIcon className="size-3 shrink-0" />
-                                  <span>Unassigned</span>
-                                </div>
-                              )}
+                              {(() => {
+                                const allAssignees = task.assignees && task.assignees.length > 0
+                                  ? task.assignees
+                                  : [task.assignee, task.secondary_assignee].filter(Boolean) as User[]
+                                if (allAssignees.length > 0) {
+                                  return (
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <div className="flex -space-x-1.5 overflow-hidden shrink-0">
+                                        {allAssignees.slice(0, 3).map((u, i) => (
+                                          <img
+                                            key={u.id || i}
+                                            src={
+                                              u.avatar_url ||
+                                              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                                            }
+                                            alt={u.nama}
+                                            title={u.nama}
+                                            className="size-5 rounded-full object-cover border-2 border-background ring-1 ring-border shrink-0"
+                                          />
+                                        ))}
+                                      </div>
+                                      <span className="font-semibold text-foreground truncate text-[11px] max-w-[85px]">
+                                        {allAssignees[0].nama.split(" ")[0]}
+                                        {allAssignees.length > 1 ? ` +${allAssignees.length - 1}` : ""}
+                                      </span>
+                                    </div>
+                                  )
+                                }
+                                return (
+                                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[10px]">
+                                    <UserPlusIcon className="size-3 shrink-0" />
+                                    <span>Unassigned</span>
+                                  </div>
+                                )
+                              })()}
 
                               <div className="flex items-center gap-2">
                                 {onOpenDelegate && (
