@@ -22,12 +22,20 @@ export default function AdminProtectedLayout({
     const user = getActiveUserFromStorage()
     if (!user) {
       router.replace("/login")
-    } else if (user.role !== "admin") {
-      router.replace("/karyawan/dashboard")
-    } else {
-      setCurrentUser(user)
-      setIsChecking(false)
+      return
     }
+
+    if (user.role !== "admin") {
+      if ((user.role === "manager" || user.role === "sgm") && pathname.startsWith("/admin/laporan/kinerja")) {
+        router.replace("/karyawan/laporan/kinerja")
+      } else {
+        router.replace("/karyawan/dashboard")
+      }
+      return
+    }
+
+    setCurrentUser(user)
+    setIsChecking(false)
   }, [router, pathname])
 
   if (isChecking) {

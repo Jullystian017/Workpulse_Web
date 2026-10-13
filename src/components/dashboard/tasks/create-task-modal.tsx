@@ -498,10 +498,10 @@ export function CreateTaskModal({
                             className="size-5 rounded-full object-cover shrink-0"
                           />
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-semibold text-foreground truncate">
+                            <span className="font-semibold text-foreground truncate min-w-0">
                               {u.nama} {u.id === activeUser?.id ? "(Saya Sendiri)" : ""}
                             </span>
-                            <span className="text-[10px] text-muted-foreground truncate">
+                            <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
                               ({ROLE_LABELS[u.role]?.badge || u.role})
                             </span>
                           </div>
@@ -538,11 +538,11 @@ export function CreateTaskModal({
 
             <Select value={reviewerId} onValueChange={(val) => setReviewerId(val || "")}>
               <SelectTrigger className="w-full h-10 rounded-xl bg-background border-border text-xs md:text-sm font-medium">
-                <div className="flex items-center gap-2 truncate">
+                <div className="flex items-center gap-2 truncate min-w-0">
                   {(() => {
                     const selected = users.find((u) => u.id === reviewerId)
                     if (!selected) {
-                      return <span className="text-muted-foreground font-normal">Pilih atasan yang berwenang menilai...</span>
+                      return <span className="text-muted-foreground font-normal truncate">Pilih atasan yang berwenang menilai...</span>
                     }
                     return (
                       <>
@@ -554,10 +554,10 @@ export function CreateTaskModal({
                           alt={selected.nama}
                           className="size-5 rounded-full object-cover shrink-0"
                         />
-                        <span className="font-semibold text-foreground truncate">
+                        <span className="font-semibold text-foreground truncate min-w-0">
                           {selected.nama}
                         </span>
-                        <span className="text-[10px] text-muted-foreground truncate">
+                        <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
                           ({ROLE_LABELS[selected.role]?.badge || selected.role})
                         </span>
                       </>
@@ -568,7 +568,7 @@ export function CreateTaskModal({
               <SelectContent className="w-full max-h-60">
                 {eligibleReviewers.map((u) => (
                   <SelectItem key={u.id} value={u.id}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <img
                         src={
                           u.avatar_url ||
@@ -578,14 +578,14 @@ export function CreateTaskModal({
                         className="size-5 rounded-full object-cover shrink-0"
                       />
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-semibold text-foreground truncate">
+                        <span className="font-semibold text-foreground truncate min-w-0">
                           {u.nama}
                         </span>
-                        <span className="text-[10px] text-muted-foreground truncate">
+                        <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
                           ({ROLE_LABELS[u.role]?.badge || u.role})
                         </span>
                         {assigneeIds.includes(u.id) && (
-                          <span className="text-[9px] text-amber-600 font-semibold">(Juga Pelaksana)</span>
+                          <span className="text-[9px] text-amber-600 font-semibold shrink-0 whitespace-nowrap">(Juga Pelaksana)</span>
                         )}
                       </div>
                     </div>

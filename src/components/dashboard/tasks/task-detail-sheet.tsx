@@ -39,6 +39,7 @@ import {
   HistoryIcon,
   FileCheckIcon,
   MoreHorizontalIcon,
+  CheckIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -87,12 +88,10 @@ import {
 import {
   getTaskById,
   getActiveUserFromStorage,
+  canUserApproveTask,
   toggleSubtask,
   addSubtask,
   deleteSubtask,
-  approveSubtask,
-  rejectSubtask,
-  submitSubtaskForApproval,
   addSubtaskAttachment,
   deleteSubtaskAttachment,
   submitTaskForReview,
@@ -113,6 +112,7 @@ import {
   getTaskAssigneeIds,
 } from "@/lib/api"
 import { TaskDeadlinePicker } from "@/components/dashboard/tasks/task-deadline-picker"
+import { useRealtimeTaskDetail } from "@/hooks/use-realtime"
 
 export type { Task as TaskItem } from "@/types/database"
 
@@ -146,9 +146,11 @@ export function TaskDetailSheet({
   const [editPriority, setEditPriority] = React.useState<TaskPriority>("high")
   const [editAssignedTo, setEditAssignedTo] = React.useState("")
   const [editSecondaryAssignedTo, setEditSecondaryAssignedTo] = React.useState("")
+  const [editReviewerId, setEditReviewerId] = React.useState("")
   const [editDeadline, setEditDeadline] = React.useState<Date>(() => new Date())
   const [availableChannels, setAvailableChannels] = React.useState<Channel[]>([])
   const [availableUsers, setAvailableUsers] = React.useState<User[]>([])
+  const [allUsersList, setAllUsersList] = React.useState<User[]>([])
   const [isSavingEdit, setIsSavingEdit] = React.useState(false)
 
   // Subtask creation state
@@ -167,18 +169,10 @@ export function TaskDetailSheet({
     }))
   }
 
-  // Subtask comments and approval submission state
+  // Subtask comments state
   const [subtaskCommentInputs, setSubtaskCommentInputs] = React.useState<Record<string, string>>({})
   const [subtaskCommentsExpanded, setSubtaskCommentsExpanded] = React.useState<Record<string, boolean>>({})
   const [isSubmittingSubtaskComment, setIsSubmittingSubtaskComment] = React.useState<Record<string, boolean>>({})
-  const [isSubmittingSubtaskApproval, setIsSubmittingSubtaskApproval] = React.useState<Record<string, boolean>>({})
-
-  // Subtask approval/rejection dialog state
-  const [approvalTargetSubtask, setApprovalTargetSubtask] = React.useState<Subtask | null>(null)
-  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = React.useState(false)
-  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = React.useState(false)
-  const [rejectionNote, setRejectionNote] = React.useState("")
-  const [isSubtaskActionLoading, setIsSubtaskActionLoading] = React.useState(false)
 
   // Per-subtask file upload state (Supports multiple files/photos)
   const subtaskFileInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -274,6 +268,15 @@ export function TaskDetailSheet({
     }
   }, [open, taskId, loadTaskData])
 
+  // Real-time synchronization for subtasks, comments, and task modifications
+  useRealtimeTaskDetail(
+    open ? taskId : null,
+    React.useCallback(() => {
+      loadTaskData(true)
+      onTaskUpdated?.()
+    }, [loadTaskData, onTaskUpdated])
+  )
+
   // Load Channels & Users when entering edit mode
   const handleStartEdit = async () => {
     if (!task) return
@@ -283,11 +286,13 @@ export function TaskDetailSheet({
     setEditPriority(task.priority)
     setEditAssignedTo(task.assigned_to || "")
     setEditSecondaryAssignedTo(task.secondary_assigned_to || "")
+    setEditReviewerId(task.reviewer_id || "")
     setEditDeadline(task.deadline_at ? new Date(task.deadline_at) : new Date())
 
     try {
       const [chs, usrs] = await Promise.all([getChannels(), getAllUsers()])
       setAvailableChannels(chs)
+      setAllUsersList(usrs)
 
       let filteredUsers = usrs
       const activeUser = getActiveUserFromStorage()
@@ -308,6 +313,42 @@ export function TaskDetailSheet({
     }
   }
 
+  // Reviewer candidates eligible based on hierarchy and assignee exclusion
+  const eligibleReviewers = React.useMemo(() => {
+    if (allUsersList.length === 0) return []
+    const currentAssigneeIds = [editAssignedTo, editSecondaryAssignedTo].filter(Boolean)
+
+    const selectedAssignees = currentAssigneeIds
+      .map((id) => allUsersList.find((u) => u.id === id))
+      .filter((u): u is User => Boolean(u))
+
+    let requiredLevel = 1
+    if (selectedAssignees.length > 0) {
+      const maxAssigneeLevel = Math.max(
+        ...selectedAssignees.map((u) => ROLE_HIERARCHY_LEVEL[u.role] ?? 1)
+      )
+      requiredLevel = maxAssigneeLevel
+    }
+
+    const candidates = allUsersList.filter((u) => {
+      if (currentAssigneeIds.includes(u.id)) return false
+      if (u.role === "admin") return true
+      const uLevel = ROLE_HIERARCHY_LEVEL[u.role] ?? 1
+      return uLevel > requiredLevel
+    })
+
+    const result =
+      candidates.length > 0
+        ? candidates
+        : allUsersList.filter((u) => (u.role === "admin" || u.role === "manager") && !currentAssigneeIds.includes(u.id))
+
+    return result.sort((a, b) => {
+      const diff = (ROLE_HIERARCHY_LEVEL[a.role] ?? 1) - (ROLE_HIERARCHY_LEVEL[b.role] ?? 1)
+      if (diff !== 0) return diff
+      return a.nama.localeCompare(b.nama)
+    })
+  }, [allUsersList, editAssignedTo, editSecondaryAssignedTo])
+
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!task || !editTitle.trim()) {
@@ -326,6 +367,7 @@ export function TaskDetailSheet({
           priority: editPriority,
           assigned_to: editAssignedTo || null,
           secondary_assigned_to: editSecondaryAssignedTo || null,
+          reviewer_id: editReviewerId || null,
           deadline_at: editDeadline.toISOString(),
         },
         currentUser?.id
@@ -466,33 +508,16 @@ export function TaskDetailSheet({
   // Hak menyetujui (Approve / Reject):
   // Diberikan kepada PIC Review (reviewer_id), Delegator, Atasan Langsung, atau Admin/SGM.
   // Pelaksana tugas MUTLAK dilarang menyetujui tugasnya sendiri.
+  // Hak menyetujui (Approve / Reject):
+  // Menggunakan helper terpusat canUserApproveTask
   const canApprove = React.useMemo(() => {
+    return canUserApproveTask(task, currentUser)
+  }, [currentUser, task])
+
+  // Memeriksa apakah user saat ini adalah pelaksana tugas (yang mengerjakan)
+  const isAssignee = React.useMemo(() => {
     if (!currentUser || !task) return false
-    const assigneeIds = getTaskAssigneeIds(task)
-    // Pelaksana dilarang approve tugasnya sendiri
-    if (assigneeIds.includes(currentUser.id)) return false
-
-    // 1. PIC Review resmi yang ditunjuk
-    if (task.reviewer_id && task.reviewer_id === currentUser.id) return true
-    if (task.reviewer && task.reviewer.id === currentUser.id) return true
-
-    // 2. Admin & SGM selalu memiliki wewenang override
-    if (currentUser.role === "admin" || currentUser.role === "sgm") return true
-
-    // 3. Delegator tugas
-    if (task.delegated_by && task.delegated_by === currentUser.id) return true
-    if (task.delegator && task.delegator.id === currentUser.id) return true
-
-    // 4. Atasan langsung si pelaksana tugas
-    if (task.assignee?.supervisor_id && task.assignee.supervisor_id === currentUser.id) return true
-
-    // 5. Pembuat tugas (inisiator) HANYA jika bukan reviewer_id khusus dan bukan salah satu pelaksana
-    if (!task.reviewer_id) {
-      if (task.created_by && task.created_by === currentUser.id) return true
-      if (task.creator && task.creator.id === currentUser.id) return true
-    }
-
-    return false
+    return getTaskAssigneeIds(task).includes(currentUser.id)
   }, [currentUser, task])
 
   // Nama atasan / reviewer yang berhak me-review
@@ -611,36 +636,6 @@ export function TaskDetailSheet({
     }
   }
 
-  // ── Staff Submits Subtask Step for Approval ──
-  const handleSubmitSubtaskApproval = async (subtaskId: string) => {
-    if (!task || !currentUser) return
-    setIsSubmittingSubtaskApproval((prev) => ({ ...prev, [subtaskId]: true }))
-    try {
-      const ok = await submitSubtaskForApproval(subtaskId, currentUser.id)
-      if (ok) {
-        toast.success("Tahapan berhasil diajukan untuk persetujuan atasan!")
-        setTask((prev) => {
-          if (!prev) return null
-          return {
-            ...prev,
-            subtasks: (prev.subtasks || []).map((s) =>
-              s.id === subtaskId
-                ? { ...s, approval_status: "pending", rejection_note: null }
-                : s
-            ),
-          }
-        })
-        onTaskUpdated?.()
-      } else {
-        toast.error("Gagal mengajukan tahapan.")
-      }
-    } catch (err) {
-      console.error(err)
-      toast.error("Terjadi kesalahan saat mengajukan tahapan.")
-    } finally {
-      setIsSubmittingSubtaskApproval((prev) => ({ ...prev, [subtaskId]: false }))
-    }
-  }
 
   // ── Send Subtask-Specific Comment/Note ──
   const handleSendSubtaskComment = async (subtaskId: string) => {
@@ -680,86 +675,6 @@ export function TaskDetailSheet({
     setSubtaskCommentsExpanded((prev) => ({ ...prev, [subtaskId]: !prev[subtaskId] }))
   }
 
-  // ── Approve Subtask Handler (atasan) ──
-  const handleApproveSubtask = async () => {
-    if (!approvalTargetSubtask || !currentUser) return
-    setIsSubtaskActionLoading(true)
-    try {
-      const ok = await approveSubtask(approvalTargetSubtask.id, currentUser.id)
-      if (ok) {
-        toast.success(`Tahap "${approvalTargetSubtask.title}" disetujui! Tahap selanjutnya terbuka.`)
-        setIsApprovalDialogOpen(false)
-        setApprovalTargetSubtask(null)
-        setTask((prev) => {
-          if (!prev) return null
-          return {
-            ...prev,
-            subtasks: (prev.subtasks || []).map((st) =>
-              st.id === approvalTargetSubtask.id
-                ? {
-                    ...st,
-                    approval_status: "approved",
-                    is_completed: true,
-                    approved_by: currentUser.id,
-                    approver: currentUser,
-                    approved_at: new Date().toISOString(),
-                    rejection_note: null,
-                  }
-                : st
-            ),
-          }
-        })
-        onTaskUpdated?.()
-      } else {
-        toast.error("Gagal menyetujui tahap ini.")
-      }
-    } catch (err) {
-      toast.error("Terjadi kesalahan.")
-    } finally {
-      setIsSubtaskActionLoading(false)
-    }
-  }
-
-  // ── Reject Subtask Handler (atasan) ──
-  const handleRejectSubtask = async () => {
-    if (!approvalTargetSubtask || !currentUser || !rejectionNote.trim()) {
-      toast.error("Harap isi catatan penolakan.")
-      return
-    }
-    setIsSubtaskActionLoading(true)
-    try {
-      const ok = await rejectSubtask(approvalTargetSubtask.id, currentUser.id, rejectionNote.trim())
-      if (ok) {
-        toast.warning(`Tahap "${approvalTargetSubtask.title}" dikembalikan untuk diperbaiki.`)
-        setIsRejectionDialogOpen(false)
-        setApprovalTargetSubtask(null)
-        setRejectionNote("")
-        setTask((prev) => {
-          if (!prev) return null
-          return {
-            ...prev,
-            subtasks: (prev.subtasks || []).map((st) =>
-              st.id === approvalTargetSubtask.id
-                ? {
-                    ...st,
-                    approval_status: "rejected",
-                    is_completed: false,
-                    rejection_note: rejectionNote.trim(),
-                  }
-                : st
-            ),
-          }
-        })
-        onTaskUpdated?.()
-      } else {
-        toast.error("Gagal menolak tahap ini.")
-      }
-    } catch (err) {
-      toast.error("Terjadi kesalahan.")
-    } finally {
-      setIsSubtaskActionLoading(false)
-    }
-  }
 
   // ── Upload file bukti per subtask (karyawan) (Mendukung upload banyak foto/berkas) ──
   const handleSubtaskFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1359,14 +1274,16 @@ export function TaskDetailSheet({
                           </SelectItem>
                           {availableUsers.map((u) => (
                             <SelectItem key={u.id} value={u.id}>
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
-                                  alt={u.nama}
-                                  className="size-4.5 rounded-full object-cover shrink-0"
-                                />
-                                <span className="font-medium text-foreground">{u.nama}</span>
-                                <span className="text-[10px] text-muted-foreground">({ROLE_LABELS[u.role]?.badge || u.role})</span>
+                              <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <img
+                                    src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                                    alt={u.nama}
+                                    className="size-4.5 rounded-full object-cover shrink-0"
+                                  />
+                                  <span className="font-medium text-foreground truncate min-w-0 flex-1">{u.nama}</span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">({ROLE_LABELS[u.role]?.badge || u.role})</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -1395,20 +1312,82 @@ export function TaskDetailSheet({
                             .filter((u) => u.id !== editAssignedTo)
                             .map((u) => (
                               <SelectItem key={u.id} value={u.id}>
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
-                                    alt={u.nama}
-                                    className="size-4.5 rounded-full object-cover shrink-0"
-                                  />
-                                  <span className="font-medium text-foreground">{u.nama}</span>
-                                  <span className="text-[10px] text-muted-foreground">({ROLE_LABELS[u.role]?.badge || u.role})</span>
+                                <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <img
+                                      src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                                      alt={u.nama}
+                                      className="size-4.5 rounded-full object-cover shrink-0"
+                                    />
+                                    <span className="font-medium text-foreground truncate min-w-0 flex-1">{u.nama}</span>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">({ROLE_LABELS[u.role]?.badge || u.role})</span>
                                 </div>
                               </SelectItem>
                             ))}
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* PIC Review (Atasan Penilai) */}
+                  <div className="p-3 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/30 dark:bg-amber-950/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                        <ShieldCheckIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+                        PIC Review (Atasan Penilai)
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">
+                        Atasan yang berwenang mengevaluasi & menyetujui
+                      </span>
+                    </div>
+
+                    <Select
+                      value={editReviewerId || "none"}
+                      onValueChange={(val) => setEditReviewerId(val === "none" ? "" : (val || ""))}
+                    >
+                      <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2.5 text-xs font-medium">
+                        <div className="flex items-center gap-2 truncate min-w-0">
+                          {(() => {
+                            const selected = allUsersList.find((u) => u.id === editReviewerId)
+                            if (!selected) {
+                              return <span className="text-muted-foreground font-medium truncate">Gunakan Default (Atasan Langsung / Delegator)</span>
+                            }
+                            return (
+                              <>
+                                <img
+                                  src={selected.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                                  alt={selected.nama}
+                                  className="size-4.5 rounded-full object-cover shrink-0"
+                                />
+                                <span className="font-semibold text-foreground truncate min-w-0">{selected.nama}</span>
+                                <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">({ROLE_LABELS[selected.role]?.badge || selected.role})</span>
+                              </>
+                            )
+                          })()}
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="w-full max-h-56">
+                        <SelectItem value="none">
+                          <span className="text-muted-foreground font-medium">Default (Atasan Langsung / Delegator)</span>
+                        </SelectItem>
+                        {eligibleReviewers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <img
+                                  src={u.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60"}
+                                  alt={u.nama}
+                                  className="size-4.5 rounded-full object-cover shrink-0"
+                                />
+                                <span className="font-medium text-foreground truncate min-w-0 flex-1">{u.nama}</span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">({ROLE_LABELS[u.role]?.badge || u.role})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>
@@ -1724,45 +1703,48 @@ export function TaskDetailSheet({
 
                 {/* 3. Action Workflow Banner (If Actionable) */}
                 {task.status === "review" && (
-                  <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50/70 dark:bg-amber-950/40 flex items-center justify-between gap-2">
-                    <div className="text-xs">
-                      <span className="font-bold text-amber-900 dark:text-amber-200 block">
+                  <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="text-xs space-y-1">
+                      <span className="font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1.5 text-xs sm:text-sm">
+                        <ShieldCheckIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         {canApprove
-                          ? "Menunggu Persetujuan Anda (Atasan / Delegator)"
+                          ? "Pemeriksaan Akhir oleh Atasan (Evaluasi Semua Tahapan)"
                           : "Menunggu Persetujuan Atasan"}
                       </span>
                       {task.review_notes ? (
-                        <span className="text-[11px] text-amber-800 dark:text-amber-300 italic line-clamp-1">
-                          &ldquo;{task.review_notes}&rdquo;
-                        </span>
+                        <p className="text-[11px] text-amber-800 dark:text-amber-300 italic line-clamp-2">
+                          Catatan pelaksana: &ldquo;{task.review_notes}&rdquo;
+                        </p>
                       ) : (
-                        <span className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
+                        <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
                           {canApprove
-                            ? "Silakan periksa berkas SPJ & bukti pengerjaan sebelum menyetujui."
+                            ? "Periksa seluruh kelengkapan tahapan (checklist), berkas bukti/foto, dan catatan di bawah. Jika valid, klik 'Setujui'. Jika ada kekurangan atau belum beres, kembalikan untuk revisi."
                             : task.assigned_to === currentUser?.id
-                            ? `Laporan pekerjaan Anda sedang diverifikasi oleh ${reviewerName}.`
+                            ? `Laporan pekerjaan Anda telah diajukan dan sedang diverifikasi oleh ${reviewerName}.`
                             : `Tugas sedang menunggu verifikasi & persetujuan dari ${reviewerName}.`}
-                        </span>
+                        </p>
                       )}
                     </div>
                     {canApprove && (
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 pt-1 sm:pt-0">
                         <Button
                           size="sm"
                           onClick={handleApprove}
                           disabled={isActionLoading}
-                          className="h-7 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs"
+                          className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs gap-1.5"
                         >
-                          Setujui
+                          <CheckCircle2Icon className="size-3.5" />
+                          <span>Setujui Tugas</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setIsRevisionOpen(true)}
                           disabled={isActionLoading}
-                          className="h-7 px-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 border-amber-300 rounded-lg cursor-pointer"
+                          className="h-8 px-3 text-xs font-bold text-amber-900 dark:text-amber-200 border-amber-300 hover:bg-amber-100/50 dark:hover:bg-amber-900/40 rounded-lg cursor-pointer gap-1.5"
                         >
-                          Revisi
+                          <RotateCcwIcon className="size-3.5 text-amber-600" />
+                          <span>Kembalikan Revisi</span>
                         </Button>
                       </div>
                     )}
@@ -1776,22 +1758,25 @@ export function TaskDetailSheet({
                       <span className="font-bold text-blue-900 dark:text-blue-200 block">
                         {!task.assigned_to
                           ? "Antrean To Do (Belum Ada Pelaksana)"
-                          : task.assigned_to === currentUser?.id
+                          : isAssignee
                           ? "Tugas Ditugaskan Kepada Anda"
                           : `Antrean To Do (PIC: ${task.assignee?.nama || "Karyawan"})`}
                       </span>
                       <span className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
                         {!task.assigned_to
                           ? "Ambil tugas ini untuk langsung memulai pengerjaan."
-                          : "Klik untuk mulai mengerjakan tugas ini."}
+                          : isAssignee
+                          ? "Klik untuk mulai mengerjakan tugas ini."
+                          : "Menunggu pelaksana memulai pengerjaan tugas."}
                       </span>
                     </div>
-                    {(!isStaff || !task.assigned_to || task.assigned_to === currentUser?.id) && (
+                    {/* Tombol Ambil Tugas / Mulai Kerjakan hanya untuk yang mengerjakan */}
+                    {(!task.assigned_to || isAssignee) && (
                       <Button
                         size="sm"
                         onClick={handleTakeTask}
                         disabled={isActionLoading}
-                        className="h-7 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg gap-1.5 cursor-pointer shrink-0"
+                        className="h-7 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg gap-1.5 cursor-pointer shrink-0 shadow-xs"
                       >
                         <PlayIcon className="size-3.5 fill-current" />
                         {!task.assigned_to ? "Ambil Tugas" : "Mulai Kerjakan"}
@@ -1800,26 +1785,51 @@ export function TaskDetailSheet({
                   </div>
                 )}
 
-                {/* Banner 2: In Progress -> Submit Review */}
+                {/* Banner 2: In Progress -> Submit Review (Khusus untuk Pelaksana Tugas) */}
                 {task.status === "in_progress" && (
-                  <div className="p-3 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/40 dark:bg-red-950/20 flex items-center justify-between gap-2">
-                    <div className="text-xs">
-                      <span className="font-bold text-foreground block">
-                        Sedang Dalam Pengerjaan
-                      </span>
-                      <span className="text-[11px] text-muted-foreground">
-                        Pekerjaan telah selesai? Ajukan untuk direview atasan.
-                      </span>
+                  <div className="space-y-2">
+                    {task.review_notes && (
+                      <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50/80 dark:bg-amber-950/40 text-xs space-y-1.5 shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200">
+                          <AlertTriangleIcon className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span>Catatan Evaluasi / Permintaan Revisi dari Atasan:</span>
+                        </div>
+                        <div className="italic text-amber-950 dark:text-amber-100 font-medium bg-background/80 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 leading-relaxed">
+                          &ldquo;{task.review_notes}&rdquo;
+                        </div>
+                        <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80">
+                          {isAssignee
+                            ? "Silakan perbaiki tahapan atau berkas terkait di bawah, kemudian klik tombol \"Ajukan Ulang Review\" setelah selesai."
+                            : "Pelaksana telah menerima catatan revisi dan sedang melakukan perbaikan."}
+                        </p>
+                      </div>
+                    )}
+                    <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 flex items-center justify-between gap-2">
+                      <div className="text-xs">
+                        <span className="font-bold text-foreground block">
+                          {isAssignee ? "Sedang Anda Kerjakan" : `Sedang Dikerjakan oleh ${task.assignee?.nama || "Pelaksana"}`}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {isAssignee
+                            ? task.review_notes
+                              ? "Revisi telah selesai dikerjakan? Ajukan kembali untuk direview atasan."
+                              : "Pekerjaan telah selesai? Ajukan untuk direview atasan."
+                            : "Pelaksana sedang mengerjakan seluruh tahapan & bukti pengerjaan. Menunggu pelaksana mengajukan review akhir."}
+                        </span>
+                      </div>
+                      {/* Tombol Ajukan Review HANYA muncul untuk Pelaksana Tugas */}
+                      {isAssignee && (
+                        <Button
+                          size="sm"
+                          onClick={() => setIsSubmitReviewOpen(true)}
+                          disabled={isActionLoading}
+                          className="h-7 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg gap-1.5 cursor-pointer shrink-0 shadow-xs"
+                        >
+                          <CheckCircle2Icon className="size-3.5" />
+                          {task.review_notes ? "Ajukan Ulang Review" : "Ajukan Review"}
+                        </Button>
+                      )}
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => setIsSubmitReviewOpen(true)}
-                      disabled={isActionLoading}
-                      className="h-7 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg gap-1.5 cursor-pointer shrink-0"
-                    >
-                      <CheckCircle2Icon className="size-3.5" />
-                      Submit Review
-                    </Button>
                   </div>
                 )}
 
@@ -1929,19 +1939,13 @@ export function TaskDetailSheet({
                       <div className="p-3 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between gap-2">
                         <div className="text-xs">
                           <span className="font-bold text-foreground block">
-                            Alur Tahapan Terstruktur (Sequential)
+                            Daftar Tahapan Pekerjaan
                           </span>
                           <span className="text-[11px] text-muted-foreground">
-                            Progres: {completedSubtasks} dari {subtasks.length} tahap disetujui ({progressPercent}%). Setiap tahap harus disetujui atasan sebelum membuka tahap selanjutnya.
+                            Progres: {completedSubtasks} dari {subtasks.length} tahap selesai ({progressPercent}%). Selesaikan semua tahapan & unggah bukti sebelum mengajukan review akhir ke atasan.
                           </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          {subtasks.some((s) => s.approval_status === "rejected") && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-md">
-                              <XCircleIcon className="size-3" />
-                              Perlu Perbaikan
-                            </span>
-                          )}
                           {subtasks.length > 1 && (
                             <Button
                               type="button"
@@ -1979,81 +1983,22 @@ export function TaskDetailSheet({
                       {/* Stepper Cards */}
                       <div className="space-y-3">
                         {subtasks.map((st, idx) => {
-                          // Strict sequential rule:
-                          // Step at index idx is unlocked ONLY IF idx === 0 OR all steps prior to idx are approved
-                          const prevSteps = subtasks.slice(0, idx)
-                          const allPrevApproved = prevSteps.every((s) => s.approval_status === "approved")
-                          const isUnlocked = idx === 0 || allPrevApproved
-                          const isApproved = st.approval_status === "approved"
-                          const isRejected = st.approval_status === "rejected"
-                          const isPending = st.approval_status === "pending"
-                          const prevStep = idx > 0 ? subtasks[idx - 1] : null
+                          const isCompleted = Boolean(st.is_completed)
                           const isPIC = currentUser ? getTaskAssigneeIds(task).includes(currentUser.id) : false
-                          const canActAsPIC = isPIC || isStaff || currentUser?.role === "admin"
-
-                          // 1. LOCKED STAGE (Tahap Sebelumnya Belum Disetujui)
-                          if (!isUnlocked) {
-                            return (
-                              <div
-                                key={st.id}
-                                className="rounded-xl border border-border/50 bg-muted/15 p-3.5 space-y-2 opacity-75 select-none transition-all"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="flex items-center justify-center size-6.5 rounded-full bg-muted border border-border/80 text-muted-foreground text-[11px] font-bold shrink-0">
-                                      <LockIcon className="size-3 text-muted-foreground/70" />
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                          Tahap {idx + 1}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
-                                          <LockIcon className="size-2.5" /> Terkunci
-                                        </span>
-                                      </div>
-                                      <h4 className="text-xs font-semibold text-muted-foreground">
-                                        {st.title}
-                                      </h4>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="text-[11px] text-muted-foreground bg-muted/40 p-2 rounded-lg border border-border/40 flex items-center gap-2">
-                                  <AlertCircleIcon className="size-3.5 text-muted-foreground/80 shrink-0" />
-                                  <span>
-                                    Tahap ini terkunci. Tunggu persetujuan resmi atasan pada{" "}
-                                    <strong>Tahap {idx} ({prevStep?.title})</strong> sebelum dapat dikerjakan.
-                                  </span>
-                                </div>
-
-                                {st.description && (
-                                  <div className="text-[11px] text-muted-foreground/80 pl-9 italic line-clamp-2">
-                                    Instruksi: {st.description}
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          }
-
+                          const canActAsPIC = isPIC || (!task.assigned_to) || currentUser?.role === "admin"
                           const isExpanded =
                             subtaskExpandedMap[st.id] !== undefined
                               ? subtaskExpandedMap[st.id]
-                              : !isApproved
+                              : !isCompleted
                           const attachmentsCount = (st.attachments || []).length
                           const commentsCount = (st.comments || []).length
 
-                          // 2. UNLOCKED STAGE (Sedang Dikerjakan / Menunggu Review / Disetujui / Perlu Revisi)
                           return (
                             <div
                               key={st.id}
                               className={`rounded-xl border transition-all overflow-hidden ${
-                                isApproved
-                                  ? "bg-emerald-50/40 border-emerald-200/80 dark:bg-emerald-950/20 dark:border-emerald-800/50"
-                                  : isRejected
-                                  ? "bg-red-50/40 border-red-200 dark:bg-red-950/25 dark:border-red-800/60 shadow-xs"
-                                  : isPending
-                                  ? "bg-amber-50/40 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/60 shadow-xs"
+                                isCompleted
+                                  ? "bg-emerald-50/30 border-emerald-200/70 dark:bg-emerald-950/20 dark:border-emerald-800/50"
                                   : "bg-card border-border shadow-xs hover:border-blue-300 dark:hover:border-blue-900"
                               }`}
                             >
@@ -2063,28 +2008,30 @@ export function TaskDetailSheet({
                                 className="flex items-center justify-between gap-2 p-3 sm:p-3.5 cursor-pointer select-none hover:bg-muted/40 transition-colors"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  {/* Step Circle */}
-                                  <div
-                                    className={`flex items-center justify-center size-6.5 rounded-full shrink-0 text-[11px] font-bold border-2 ${
-                                      isApproved
-                                        ? "bg-emerald-500 border-emerald-500 text-white"
-                                        : isRejected
-                                        ? "bg-red-500 border-red-500 text-white"
-                                        : isPending
-                                        ? "bg-amber-500 border-amber-500 text-white"
-                                        : "bg-background border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-300"
+                                  {/* Step Circle / Interactive Toggle Checkbox */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      if (canActAsPIC || !isStaff) handleToggleSubtask(st)
+                                    }}
+                                    className={`flex items-center justify-center size-6.5 rounded-full shrink-0 text-[11px] font-bold border-2 transition-colors cursor-pointer ${
+                                      isCompleted
+                                        ? "bg-emerald-500 border-emerald-500 text-white hover:bg-emerald-600"
+                                        : "bg-background border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-300 dark:hover:bg-blue-950/40"
                                     }`}
+                                    title={
+                                      isCompleted
+                                        ? "Klik untuk tandai belum selesai"
+                                        : "Klik untuk tandai selesai"
+                                    }
                                   >
-                                    {isApproved ? (
-                                      <ShieldCheckIcon className="size-3.5" />
-                                    ) : isRejected ? (
-                                      <XCircleIcon className="size-3.5" />
-                                    ) : isPending ? (
-                                      <ClockIcon className="size-3.5" />
+                                    {isCompleted ? (
+                                      <CheckIcon className="size-3.5 stroke-[3]" />
                                     ) : (
                                       <span>{idx + 1}</span>
                                     )}
-                                  </div>
+                                  </button>
 
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -2092,29 +2039,24 @@ export function TaskDetailSheet({
                                         Tahap {idx + 1}
                                       </span>
                                       {/* Status Badges */}
-                                      {isApproved && (
+                                      {isCompleted ? (
                                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                          <ShieldCheckIcon className="size-3" /> Disetujui Atasan
+                                          <CheckCircle2Icon className="size-3" /> Selesai
                                         </span>
-                                      )}
-                                      {isRejected && (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300 border border-red-200 dark:border-red-800">
-                                          <XCircleIcon className="size-3" /> Perlu Revisi
-                                        </span>
-                                      )}
-                                      {isPending && (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                          <ClockIcon className="size-3 animate-pulse" /> Menunggu Review Atasan
-                                        </span>
-                                      )}
-                                      {!isApproved && !isRejected && !isPending && (
+                                      ) : (
                                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
                                           ⚡ Sedang Dikerjakan
                                         </span>
                                       )}
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                      <h4 className="text-xs font-bold text-foreground">
+                                      <h4
+                                        className={`text-xs font-bold ${
+                                          isCompleted
+                                            ? "text-foreground line-through decoration-muted-foreground/60 opacity-80"
+                                            : "text-foreground"
+                                        }`}
+                                      >
                                         {st.title}
                                       </h4>
                                       {/* Collapsed summary badges */}
@@ -2138,7 +2080,7 @@ export function TaskDetailSheet({
 
                                 {/* Right: Quick Delete Button & Collapse/Expand Toggle */}
                                 <div className="flex items-center gap-1 shrink-0">
-                                  {!isStaff && !isApproved && (
+                                  {!isStaff && task.status !== "done" && (
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -2178,41 +2120,7 @@ export function TaskDetailSheet({
                                 </div>
                               )}
 
-                              {/* Approved Banner */}
-                              {isApproved && (
-                                <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center justify-between flex-wrap gap-2">
-                                  <span className="flex items-center gap-1.5 font-medium">
-                                    <ShieldCheckIcon className="size-3.5 text-emerald-600" />
-                                    Disetujui oleh: <strong>{st.approver?.nama || "Atasan"}</strong>
-                                  </span>
-                                  {st.approved_at && (
-                                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400">
-                                      {new Date(st.approved_at).toLocaleString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
 
-                              {/* Rejection Note Alert Banner */}
-                              {isRejected && (
-                                <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-[11px] text-red-900 dark:text-red-200 space-y-1.5">
-                                  <span className="font-bold flex items-center gap-1.5 text-red-700 dark:text-red-400">
-                                    <AlertTriangleIcon className="size-3.5" />
-                                    Catatan Revisi dari Atasan:
-                                  </span>
-                                  <div className="italic bg-background/80 p-2 rounded border border-red-200 dark:border-red-900/60 font-medium">
-                                    &ldquo;{st.rejection_note}&rdquo;
-                                  </div>
-                                  <p className="text-[10px] text-red-700/80">
-                                    Silakan perbaiki hasil kerja, unggah bukti tambahan di bawah, lalu klik tombol &ldquo;Ajukan Ulang&rdquo;.
-                                  </p>
-                                </div>
-                              )}
 
                               {/* Dedicated Per-Subtask Attachments Section */}
                               <div className="space-y-1.5 pt-1 border-t border-border/40">
@@ -2221,8 +2129,8 @@ export function TaskDetailSheet({
                                     <PaperclipIcon className="size-3 text-muted-foreground" />
                                     Lampiran Bukti Tahap Ini ({(st.attachments || []).length})
                                   </span>
-                                  {/* Upload button (only if not yet approved) */}
-                                  {!isApproved && (canActAsPIC || !isStaff) && (
+                                  {/* Upload button (enabled as long as task is not done) */}
+                                  {task.status !== "done" && (canActAsPIC || !isStaff) && (
                                     <Button
                                       type="button"
                                       size="sm"
@@ -2268,7 +2176,7 @@ export function TaskDetailSheet({
                                           )}
                                           <ExternalLinkIcon className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                                         </button>
-                                        {!isApproved && (
+                                        {task.status !== "done" && (
                                           <button
                                             type="button"
                                             onClick={(e) => handleDeleteSubtaskAttachment(att.id, st.id, e)}
@@ -2283,67 +2191,47 @@ export function TaskDetailSheet({
                                   </div>
                                 ) : (
                                   <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-2 rounded-lg border border-dashed border-border/60 text-center">
-                                    {!isApproved
-                                      ? "Belum ada bukti lampiran. Unggah foto atau dokumen pengerjaan tahap ini."
-                                      : "Tidak ada lampiran untuk tahap ini."}
+                                    Belum ada bukti lampiran. Unggah foto atau dokumen pengerjaan tahap ini.
                                   </div>
                                 )}
                               </div>
 
-                              {/* Action Bar (Submit Approval by Staff & Approve/Reject by Atasan) */}
-                              {!isApproved && (
+                              {/* Quick Toggle Completion Bar */}
+                              {(canActAsPIC || !isStaff) && task.status !== "done" && (
                                 <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2 flex-wrap">
-                                  {/* Staff Submission */}
-                                  {!isPending ? (
-                                    (canActAsPIC || isStaff) && (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleSubmitSubtaskApproval(st.id)}
-                                        disabled={isSubmittingSubtaskApproval[st.id]}
-                                        className="h-7.5 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg gap-1.5 cursor-pointer shadow-xs"
-                                      >
-                                        {isSubmittingSubtaskApproval[st.id] ? (
-                                          <Loader2Icon className="size-3 animate-spin" />
-                                        ) : (
-                                          <SendIcon className="size-3" />
-                                        )}
-                                        {isRejected ? "Ajukan Ulang Persetujuan Tahap" : "Ajukan Persetujuan Tahap"}
-                                      </Button>
-                                    )
-                                  ) : (
-                                    <div className="text-[11px] text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1.5">
-                                      <ClockIcon className="size-3 text-amber-600 animate-pulse" />
-                                      <span>Menunggu verifikasi atasan ({reviewerName})</span>
-                                    </div>
-                                  )}
-
-                                  {/* Supervisor Approval Actions */}
-                                  {canApprove && (
-                                    <div className="flex items-center gap-1.5 ml-auto">
-                                      <Button
-                                        size="sm"
-                                        onClick={() => {
-                                          setApprovalTargetSubtask(st)
-                                          setIsApprovalDialogOpen(true)
-                                        }}
-                                        className="h-7.5 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1 cursor-pointer shadow-xs"
-                                      >
-                                        <ShieldCheckIcon className="size-3.5" />
-                                        Setujui Tahap
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          setApprovalTargetSubtask(st)
-                                          setIsRejectionDialogOpen(true)
-                                        }}
-                                        className="h-7.5 px-2.5 text-xs font-bold text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg gap-1 cursor-pointer"
-                                      >
-                                        <XCircleIcon className="size-3.5" />
-                                        Minta Revisi
-                                      </Button>
-                                    </div>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={isCompleted ? "outline" : "default"}
+                                    onClick={() => handleToggleSubtask(st)}
+                                    className={`h-7.5 px-3 text-xs font-semibold rounded-lg gap-1.5 cursor-pointer ${
+                                      isCompleted
+                                        ? "text-muted-foreground border-border hover:bg-muted"
+                                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                                    }`}
+                                  >
+                                    {isCompleted ? (
+                                      <>
+                                        <CheckCircle2Icon className="size-3.5 text-emerald-600" />
+                                        <span>Tandai Belum Selesai</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckIcon className="size-3.5 stroke-[3]" />
+                                        <span>Tandai Tahap Ini Selesai</span>
+                                      </>
+                                    )}
+                                  </Button>
+                                  {isCompleted && st.completed_at && (
+                                    <span className="text-[10px] text-muted-foreground font-medium">
+                                      Diselesaikan:{" "}
+                                      {new Date(st.completed_at).toLocaleString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
                                   )}
                                 </div>
                               )}
@@ -2803,106 +2691,6 @@ export function TaskDetailSheet({
             </Dialog>
 
             {/* DIALOG: APPROVE SUBTASK (Atasan) */}
-            <Dialog open={isApprovalDialogOpen} onOpenChange={(o) => { setIsApprovalDialogOpen(o); if (!o) setApprovalTargetSubtask(null) }}>
-              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
-                <DialogHeader>
-                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <ShieldCheckIcon className="size-4 text-emerald-600" />
-                    Setujui Tahapan Ini
-                  </DialogTitle>
-                  <DialogDescription className="text-xs text-muted-foreground">
-                    Anda akan menyetujui tahapan berikut dan membuka tahap selanjutnya.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800">
-                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-                    {approvalTargetSubtask?.title}
-                  </p>
-                </div>
-
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 rounded-lg text-xs font-semibold cursor-pointer"
-                    onClick={() => { setIsApprovalDialogOpen(false); setApprovalTargetSubtask(null) }}
-                    disabled={isSubtaskActionLoading}
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                    onClick={handleApproveSubtask}
-                    disabled={isSubtaskActionLoading}
-                  >
-                    {isSubtaskActionLoading ? (
-                      <Loader2Icon className="size-3 animate-spin" />
-                    ) : (
-                      <><ShieldCheckIcon className="size-3" /> Ya, Setujui</>
-                    )}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* DIALOG: REJECT SUBTASK (Atasan) */}
-            <Dialog open={isRejectionDialogOpen} onOpenChange={(o) => { setIsRejectionDialogOpen(o); if (!o) { setApprovalTargetSubtask(null); setRejectionNote("") } }}>
-              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
-                <DialogHeader>
-                  <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                    <XCircleIcon className="size-4 text-red-600" />
-                    Kembalikan untuk Revisi
-                  </DialogTitle>
-                  <DialogDescription className="text-xs text-muted-foreground">
-                    Tahapan ini akan dikembalikan ke karyawan dengan catatan perbaikan.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-800">
-                  <p className="text-xs font-semibold text-red-800 dark:text-red-300">
-                    {approvalTargetSubtask?.title}
-                  </p>
-                </div>
-
-                <div className="mt-3 space-y-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground">
-                    Catatan Revisi <span className="text-red-500">*</span>
-                  </label>
-                  <Textarea
-                    value={rejectionNote}
-                    onChange={(e) => setRejectionNote(e.target.value)}
-                    placeholder="Apa yang perlu diperbaiki dari tahapan ini?"
-                    className="text-xs rounded-lg min-h-[80px]"
-                  />
-                </div>
-
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 rounded-lg text-xs font-semibold cursor-pointer"
-                    onClick={() => { setIsRejectionDialogOpen(false); setApprovalTargetSubtask(null); setRejectionNote("") }}
-                    disabled={isSubtaskActionLoading}
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-                    onClick={handleRejectSubtask}
-                    disabled={isSubtaskActionLoading || !rejectionNote.trim()}
-                  >
-                    {isSubtaskActionLoading ? (
-                      <Loader2Icon className="size-3 animate-spin" />
-                    ) : (
-                      <><XCircleIcon className="size-3" /> Kembalikan</>
-                    )}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
 
             {/* DIALOG: SUBTASK FILE UPLOAD CONFIRMATION (Supports Multiple Photos/Files) */}
             <Dialog

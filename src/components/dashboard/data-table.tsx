@@ -149,9 +149,12 @@ function TaskTableRow({
     if (!activeUser || !task) return false
     if (getTaskAssigneeIds(task).includes(activeUser.id)) return false
     if (activeUser.role === "admin" || activeUser.role === "sgm") return true
+    if (task.reviewer_id && task.reviewer_id === activeUser.id) return true
+    if (task.reviewer && task.reviewer.id === activeUser.id) return true
     if (task.delegated_by && task.delegated_by === activeUser.id) return true
-    if (task.created_by && task.created_by === activeUser.id) return true
+    if (task.delegator && task.delegator.id === activeUser.id) return true
     if (task.assignee?.supervisor_id && task.assignee.supervisor_id === activeUser.id) return true
+    if (!task.reviewer_id && task.created_by && task.created_by === activeUser.id) return true
     return false
   }, [activeUser, task])
 

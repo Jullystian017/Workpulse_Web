@@ -113,11 +113,13 @@ export function CommandPalette({
         (t) =>
           getTaskAssigneeIds(t).includes(activeUser.id) ||
           t.created_by === activeUser.id ||
+          t.reviewer_id === activeUser.id ||
+          t.delegated_by === activeUser.id ||
           (t.status === "unassigned" && !t.assigned_to)
       )
     }
 
-    // Officer, Manager, SGM: own tasks + subordinates' tasks
+    // Officer, Manager, SGM: own tasks + reviewer/delegator tasks + subordinates' tasks
     const subordinateIds = users
       .filter((u) => u.supervisor_id === activeUser.id)
       .map((u) => u.id)
@@ -126,8 +128,11 @@ export function CommandPalette({
       (t) =>
         getTaskAssigneeIds(t).includes(activeUser.id) ||
         t.created_by === activeUser.id ||
+        t.reviewer_id === activeUser.id ||
+        t.delegated_by === activeUser.id ||
         (t.status === "unassigned" && !t.assigned_to) ||
-        getTaskAssigneeIds(t).some((id) => subordinateIds.includes(id))
+        getTaskAssigneeIds(t).some((id) => subordinateIds.includes(id)) ||
+        (t.assignee?.supervisor_id && t.assignee.supervisor_id === activeUser.id)
     )
   }, [tasks, users, activeUser, isAdmin])
 
@@ -357,6 +362,22 @@ export function CommandPalette({
               }
             },
           },
+          ...(activeUser?.role === "manager" || activeUser?.role === "sgm"
+            ? [
+                {
+                  id: "nav-manager-report",
+                  category: "Navigasi Halaman",
+                  title: "Laporan Kinerja & SLA",
+                  subtitle: "Akuntabilitas pengerjaan tugas dan persentase SLA On-Time",
+                  icon: FileBarChartIcon,
+                  iconColor: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60",
+                  action: () => {
+                    setOpen(false)
+                    router.push("/karyawan/laporan/kinerja")
+                  },
+                },
+              ]
+            : []),
         ]
 
     const all = [...quickActions, ...taskItems, ...navItems]
@@ -374,6 +395,7 @@ export function CommandPalette({
     userFilteredTasks,
     isAdmin,
     isKaryawan,
+    activeUser,
     aiPanel,
     onOpenCreateTask,
     router,

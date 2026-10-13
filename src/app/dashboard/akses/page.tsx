@@ -424,7 +424,7 @@ export default function AccessControlPage() {
                                 </div>
                               </td>
                               <td className="p-3.5">
-                                <Badge variant="outline" className="text-[11px] font-semibold">
+                                <Badge variant="outline" className="text-[11px] font-semibold shrink-0 whitespace-nowrap">
                                   {user.role}
                                 </Badge>
                               </td>

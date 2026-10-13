@@ -52,9 +52,13 @@ import {
   getAllUsers,
   updateTaskStatus,
   claimTask,
+  approveTask,
+  returnTaskForRevision,
+  submitTaskForReview,
   getActiveUserFromStorage,
 } from "@/lib/api"
 import { Task, Channel, User, TaskStatus } from "@/types/database"
+import { useRealtimeTasks } from "@/hooks/use-realtime"
 
 function AdminTasksContent() {
   const searchParams = useSearchParams()
@@ -119,6 +123,9 @@ function AdminTasksContent() {
   React.useEffect(() => {
     loadAllData()
   }, [loadAllData])
+
+  // Real-time task synchronization for Admin
+  useRealtimeTasks(loadAllData)
 
   React.useEffect(() => {
     if (urlView) {
@@ -881,7 +888,19 @@ function AdminTasksContent() {
                       )
 
                       const movingTask = tasks.find((t) => t.id === taskId)
-                      if (status === "in_progress" && movingTask && !movingTask.assigned_to && currentUser) {
+                      const prevStatus = movingTask?.status
+
+                      if (status === "done" && prevStatus === "review" && currentUser) {
+                        await approveTask(taskId, currentUser.id)
+                      } else if (status === "in_progress" && prevStatus === "review" && currentUser) {
+                        await returnTaskForRevision(
+                          taskId,
+                          currentUser.id,
+                          "Dikembalikan oleh atasan melalui Kanban Board untuk evaluasi/revisi."
+                        )
+                      } else if (status === "review" && currentUser) {
+                        await submitTaskForReview(taskId, currentUser.id, "Diajukan melalui Kanban Board.")
+                      } else if (status === "in_progress" && movingTask && !movingTask.assigned_to && currentUser) {
                         await claimTask(taskId, currentUser.id)
                       } else {
                         await updateTaskStatus(taskId, status, currentUser?.id)

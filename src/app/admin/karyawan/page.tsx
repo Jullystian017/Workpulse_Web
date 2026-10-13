@@ -862,7 +862,7 @@ export default function AdminKaryawanPage() {
                               </h3>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-[6px] text-xs font-bold ${
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-[6px] text-xs font-bold shrink-0 whitespace-nowrap ${
                                     u.role === "admin"
                                       ? "bg-zinc-100 text-zinc-800 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700"
                                       : roleMeta.color
@@ -1037,7 +1037,7 @@ export default function AdminKaryawanPage() {
                           <td className="py-3 px-4 font-mono font-bold text-red-600 text-xs">{u.nik}</td>
                           <td className="py-3 px-4">
                             <span
-                              className={`px-2 py-0.5 rounded-[6px] text-xs font-bold ${
+                              className={`px-2 py-0.5 rounded-[6px] text-xs font-bold shrink-0 whitespace-nowrap ${
                                 u.role === "admin"
                                   ? "bg-zinc-100 text-zinc-800 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700"
                                   : ROLE_LABELS[u.role]?.color
@@ -1456,7 +1456,7 @@ export default function AdminKaryawanPage() {
                                             <div className="min-w-0">
                                               <h5 className="text-xs font-bold text-foreground truncate">{u.nama}</h5>
                                               <div className="flex items-center gap-1.5 mt-0.5">
-                                                <span className={`px-2 py-0.2 rounded-[6px] text-xs font-bold ${ROLE_LABELS[u.role]?.color}`}>
+                                                <span className={`px-2 py-0.2 rounded-[6px] text-xs font-bold shrink-0 whitespace-nowrap ${ROLE_LABELS[u.role]?.color}`}>
                                                   {ROLE_LABELS[u.role]?.badge}
                                                 </span>
                                                 <span className="text-xs text-muted-foreground font-mono">
@@ -1564,7 +1564,7 @@ export default function AdminKaryawanPage() {
                                 <div className="min-w-0">
                                   <h5 className="text-xs font-bold text-foreground truncate">{u.nama}</h5>
                                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                                    <span className={`px-1.5 py-0.2 rounded-[6px] font-bold ${ROLE_LABELS[u.role]?.color}`}>
+                                    <span className={`px-1.5 py-0.2 rounded-[6px] font-bold shrink-0 whitespace-nowrap ${ROLE_LABELS[u.role]?.color}`}>
                                       {ROLE_LABELS[u.role]?.badge}
                                     </span>
                                     <span>•</span>

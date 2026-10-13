@@ -8,6 +8,7 @@ import {
   CheckCircle2Icon,
   ClipboardListIcon,
   StarIcon,
+  EyeIcon,
 } from "lucide-react"
 import { Task } from "@/types/database"
 import { calculatePerformance, getActiveUserFromStorage, getTaskAssigneeIds } from "@/lib/api"
@@ -15,12 +16,86 @@ import { calculatePerformance, getActiveUserFromStorage, getTaskAssigneeIds } fr
 export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
   const cards = React.useMemo(() => {
     const activeUser = getActiveUserFromStorage()
-    const myTasks = activeUser && tasks
-      ? tasks.filter((t) => getTaskAssigneeIds(t).includes(activeUser.id) || t.created_by === activeUser.id)
-      : (tasks || [])
+    const allTasks = tasks || []
+    const isManagerOrOfficer = activeUser && ['manager', 'sgm', 'officer_1', 'officer_2', 'officer_3'].includes(activeUser.role)
 
-    // Jika pengguna baru atau belum memiliki penugasan
-    if (!myTasks || myTasks.length === 0) {
+    // Direct tasks
+    const directTasks = activeUser
+      ? allTasks.filter((t) => getTaskAssigneeIds(t).includes(activeUser.id) || t.created_by === activeUser.id)
+      : allTasks
+
+    // Reviewer & subordinate tasks
+    const reviewerTasks = activeUser ? allTasks.filter((t) => t.reviewer_id === activeUser.id) : []
+    const pendingReviewTasks = activeUser
+      ? allTasks.filter(
+          (t) =>
+            (t.reviewer_id === activeUser.id || (t.assignee?.supervisor_id === activeUser.id && !t.reviewer_id)) &&
+            t.status === 'review'
+        )
+      : []
+    const teamTasks = activeUser ? allTasks.filter((t) => t.assignee?.supervisor_id === activeUser.id) : []
+
+    const evaluatedTasks = directTasks.length > 0
+      ? directTasks
+      : isManagerOrOfficer
+      ? (reviewerTasks.length > 0 ? reviewerTasks : teamTasks)
+      : directTasks
+
+    const perf = calculatePerformance(evaluatedTasks, {
+      role: activeUser?.role,
+      userId: activeUser?.id,
+      reviewerTasks,
+      teamTasks,
+    })
+
+    // 1. Tampilan Khusus Role Manager / Officer (Supervisi, Review & Tim SLA)
+    if (isManagerOrOfficer) {
+      const activeSupervisionCount = (teamTasks.length > 0 ? teamTasks : (reviewerTasks.length > 0 ? reviewerTasks : directTasks))
+        .filter((t) => t.status === "in_progress" || t.status === "review" || t.status === "todo").length
+      const totalSupervisionCount = teamTasks.length > 0 ? teamTasks.length : (reviewerTasks.length > 0 ? reviewerTasks.length : directTasks.length)
+
+      return [
+        {
+          icon: StarIcon,
+          label: "Bintang Supervisi Saya",
+          value: perf.stars.toFixed(1),
+          valueSuffix: "/ 5.0",
+          badge: perf.predicate,
+          isStar: true,
+          trend: perf.stars >= 4.0 ? ("up" as const) : ("down" as const),
+          desc: `${perf.onTimeRate}% SLA Tim (Skor ${perf.score})`,
+        },
+        {
+          icon: EyeIcon,
+          label: "Menunggu Review Saya",
+          value: `${pendingReviewTasks.length}`,
+          badge: pendingReviewTasks.length > 0 ? `${pendingReviewTasks.length} Perlu Cek` : "Tuntas",
+          trend: pendingReviewTasks.length > 0 ? ("down" as const) : ("up" as const),
+          desc: pendingReviewTasks.length > 0
+            ? "Tugas bawahan menunggu verifikasi Anda"
+            : "Semua antrean review telah diverifikasi",
+        },
+        {
+          icon: ClipboardListIcon,
+          label: "Tugas Dalam Supervisi",
+          value: `${totalSupervisionCount}`,
+          badge: `${activeSupervisionCount} Aktif`,
+          trend: "up" as const,
+          desc: `${activeSupervisionCount} tugas sedang berjalan dalam pengawasan`,
+        },
+        {
+          icon: ClockIcon,
+          label: "Ketepatan Waktu SLA",
+          value: `${perf.onTimeRate}%`,
+          badge: perf.penaltyPoints === 0 ? "SLA Prima" : "Ada Penalti",
+          trend: perf.onTimeRate >= 85 ? ("up" as const) : ("down" as const),
+          desc: perf.penaltyPoints === 0 ? "Bebas penalti keterlambatan tugas & review" : `Penalti -${perf.penaltyPoints} poin keterlambatan`,
+        },
+      ]
+    }
+
+    // 2. Tampilan Khusus Staff Pelaksana
+    if (!directTasks || directTasks.length === 0) {
       return [
         {
           icon: StarIcon,
@@ -59,11 +134,10 @@ export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
       ]
     }
 
-    const perf = calculatePerformance(myTasks)
-    const completed = myTasks.filter((t) => t.status === "done").length
-    const inProgress = myTasks.filter((t) => t.status === "in_progress").length
-    const review = myTasks.filter((t) => t.status === "review").length
-    const active = inProgress + review + myTasks.filter((t) => t.status === "todo").length
+    const completed = directTasks.filter((t) => t.status === "done").length
+    const inProgress = directTasks.filter((t) => t.status === "in_progress").length
+    const review = directTasks.filter((t) => t.status === "review").length
+    const active = inProgress + review + directTasks.filter((t) => t.status === "todo").length
 
     return [
       {
@@ -80,9 +154,9 @@ export function KaryawanSectionCards({ tasks }: { tasks?: Task[] }) {
         icon: CheckCircle2Icon,
         label: "Tugas Selesai",
         value: `${completed}`,
-        badge: `${Math.round((completed / myTasks.length) * 100)}%`,
+        badge: `${Math.round((completed / directTasks.length) * 100)}%`,
         trend: "up" as const,
-        desc: `${completed} dari ${myTasks.length} total penugasan Anda`,
+        desc: `${completed} dari ${directTasks.length} total penugasan Anda`,
       },
       {
         icon: ClipboardListIcon,

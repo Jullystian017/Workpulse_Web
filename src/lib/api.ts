@@ -29,6 +29,36 @@ export function getTaskAssigneeIds(t: Pick<Task, 'assigned_to' | 'secondary_assi
  * Tentukan PIC review (atasan) efektif sebuah tugas.
  * Prioritas: reviewer yang dipilih saat penugasan → delegator → pembuat tugas → atasan langsung PIC utama.
  */
+/**
+ * Memeriksa apakah user berhak menyetujui (approve) atau mengembalikan (return) tugas.
+ * Aturan:
+ * 1. Pelaksana tugas (assignee/PIC) MUTLAK dilarang menyetujui tugasnya sendiri.
+ * 2. Admin & SGM selalu memiliki wewenang override.
+ * 3. PIC Reviewer resmi (reviewer_id / reviewer).
+ * 4. Delegator tugas (delegated_by / delegator).
+ * 5. Atasan langsung si pelaksana tugas (assignee.supervisor_id).
+ * 6. Pembuat tugas (inisiator) jika bukan reviewer khusus dan bukan pelaksana.
+ */
+export function canUserApproveTask(task: Task | null | undefined, user: User | null | undefined): boolean {
+  if (!user || !task) return false;
+  const assigneeIds = getTaskAssigneeIds(task);
+  if (assigneeIds.includes(user.id)) return false;
+
+  if (user.role === 'admin' || user.role === 'sgm') return true;
+  if (task.reviewer_id && task.reviewer_id === user.id) return true;
+  if (task.reviewer && task.reviewer.id === user.id) return true;
+  if (task.delegated_by && task.delegated_by === user.id) return true;
+  if (task.delegator && task.delegator.id === user.id) return true;
+  if (task.assignee?.supervisor_id && task.assignee.supervisor_id === user.id) return true;
+
+  if (!task.reviewer_id) {
+    if (task.created_by && task.created_by === user.id) return true;
+    if (task.creator && task.creator.id === user.id) return true;
+  }
+
+  return false;
+}
+
 export function getTaskReviewerId(
   t: Pick<Task, 'reviewer_id' | 'delegated_by' | 'created_by'> & { assignee?: User | null }
 ): string | null {
@@ -1906,7 +1936,17 @@ export function formatDelayDuration(ms: number): string {
   return remainingHours > 0 ? `${days} hari ${remainingHours} jam` : `${days} hari`;
 }
 
-export function calculatePerformance(userTasks: Task[]): {
+export interface PerformanceOptions {
+  role?: UserRole;
+  userId?: string;
+  reviewerTasks?: Task[];
+  teamTasks?: Task[];
+}
+
+export function calculatePerformance(
+  userTasks: Task[],
+  options?: PerformanceOptions
+): {
   score: number;
   stars: number;
   predicate: "Sangat Baik" | "Baik" | "Cukup" | "Perlu Perhatian" | "Kurang";
@@ -1918,6 +1958,9 @@ export function calculatePerformance(userTasks: Task[]): {
   reviewPending: number;
   overdueCount: number;
   history: PerformanceHistoryItem[];
+  roleType?: "staff" | "officer" | "manager";
+  pendingReviewCount?: number;
+  teamOnTimeRate?: number;
 } {
   const completed = userTasks.filter((t) => t.status === 'done').length;
   const inProgress = userTasks.filter((t) => t.status === 'in_progress').length;
@@ -1931,6 +1974,7 @@ export function calculatePerformance(userTasks: Task[]): {
   let completedOnTimeCount = 0;
   const history: PerformanceHistoryItem[] = [];
 
+  // 1. Evaluasi tugas mandiri / operasional langsung
   userTasks.forEach((t) => {
     const hasDeadline = Boolean(t.deadline_at);
     const deadlineTime = t.deadline_at ? new Date(t.deadline_at).getTime() : 0;
@@ -1968,6 +2012,7 @@ export function calculatePerformance(userTasks: Task[]): {
           reason = `Selesai tepat waktu sebelum batas deadline (+2 poin bonus).`;
         }
       }
+
       bonusPoints += taskBonus;
     } else if (isCompletedAfterGrace) {
       outcome = 'late';
@@ -1976,19 +2021,16 @@ export function calculatePerformance(userTasks: Task[]): {
       // Penalti bertingkat proporsional berdasarkan durasi keterlambatan
       const delayHours = delayMs / (1000 * 60 * 60);
       if (delayHours <= 2) {
-        // Terlambat ringan (15 menit - 2 jam)
         if (t.priority === 'urgent') taskPenalty = 4;
         else if (t.priority === 'high') taskPenalty = 3;
         else if (t.priority === 'medium') taskPenalty = 2;
         else taskPenalty = 1;
       } else if (delayHours <= 24) {
-        // Terlambat sedang (2 jam - 24 jam)
         if (t.priority === 'urgent') taskPenalty = 7;
         else if (t.priority === 'high') taskPenalty = 5;
         else if (t.priority === 'medium') taskPenalty = 3;
         else taskPenalty = 2;
       } else {
-        // Terlambat berat (> 24 jam / berhari-hari)
         if (t.priority === 'urgent') taskPenalty = 10;
         else if (t.priority === 'high') taskPenalty = 6;
         else if (t.priority === 'medium') taskPenalty = 4;
@@ -1997,7 +2039,6 @@ export function calculatePerformance(userTasks: Task[]): {
 
       penaltyPoints += taskPenalty;
 
-      // Apresiasi jika seluruh subtask tetap dikerjakan dengan rapi
       const subtasks = t.subtasks || [];
       if (subtasks.length > 0 && subtasks.every((s) => s.is_completed)) {
         taskBonus = 1;
@@ -2052,11 +2093,78 @@ export function calculatePerformance(userTasks: Task[]): {
     });
   });
 
+  // 2. Evaluasi Peran Khusus: Officer & Manager (Review Speed & Tim SLA)
+  const isOfficer = options?.role ? ['officer_1', 'officer_2', 'officer_3'].includes(options.role) : false;
+  const isManager = options?.role ? ['manager', 'sgm'].includes(options.role) : false;
+  let pendingReviewCount = 0;
+  let teamOnTimeRate = 100;
+
+  if (isOfficer || isManager) {
+    const reviewerTasks = options?.reviewerTasks || [];
+    const pendingReviews = reviewerTasks.filter((t) => t.status === 'review');
+    pendingReviewCount = pendingReviews.length;
+
+    // Evaluasi kecepatan review
+    reviewerTasks.forEach((t) => {
+      if (t.status === 'done') {
+        // Bonus verifikasi tepat & tuntas
+        bonusPoints += 1;
+      } else if (t.status === 'review' && t.deadline_at) {
+        const deadlineTime = new Date(t.deadline_at).getTime();
+        if (now.getTime() > deadlineTime + GRACE_PERIOD_MS) {
+          // Penalti review tertahan melewati batas SLA
+          penaltyPoints += 2;
+          history.push({
+            taskId: t.id,
+            ticketCode: t.ticket_code,
+            title: `[Review Pending] ${t.title}`,
+            priority: t.priority,
+            status: t.status,
+            deadlineAt: t.deadline_at || null,
+            completedAt: null,
+            outcome: 'overdue',
+            pointsChange: -2,
+            penaltyAmount: 2,
+            bonusAmount: 0,
+            reason: `Tugas bawahan menunggu review Anda melewati batas deadline SLA (-2 poin).`,
+          });
+        }
+      }
+    });
+
+    // Khusus Manager/SGM: Evaluasi performa kepemimpinan tim
+    if (isManager && options?.teamTasks && options.teamTasks.length > 0) {
+      const teamTasks = options.teamTasks;
+      const teamDone = teamTasks.filter((t) => t.status === 'done').length;
+      const teamOverdue = teamTasks.filter((t) => {
+        const deadlineTime = t.deadline_at ? new Date(t.deadline_at).getTime() : 0;
+        return t.status !== 'done' && deadlineTime > 0 && now.getTime() > deadlineTime + GRACE_PERIOD_MS;
+      }).length;
+
+      const totalTeamEvaluated = teamDone + teamOverdue;
+      if (totalTeamEvaluated > 0) {
+        teamOnTimeRate = Math.round((teamDone / totalTeamEvaluated) * 100);
+      }
+
+      if (teamOnTimeRate >= 90) {
+        bonusPoints += 3; // Bonus kepemimpinan operasional
+      } else if (teamOverdue > 0) {
+        const teamPenalty = Math.min(5, teamOverdue);
+        penaltyPoints += teamPenalty; // Penalti supervisi tim
+      }
+    }
+  }
+
   // Tingkat Ketepatan Waktu Murni (On-Time SLA Rate %)
   const evaluatedTasksCount = completed + overdueCount;
-  const onTimeRate = evaluatedTasksCount > 0
+  let onTimeRate = evaluatedTasksCount > 0
     ? Math.round((completedOnTimeCount / evaluatedTasksCount) * 100)
     : 100;
+
+  // Jika manager/officer tidak memiliki tugas langsung pribadi, gunakan On-Time SLA dari tim/review
+  if (userTasks.length === 0 && (isManager || isOfficer)) {
+    onTimeRate = teamOnTimeRate;
+  }
 
   // Rumus KPI Bersih & Adil: Skor Dasar 100 dikurangi penalti keterlambatan + bonus pencapaian
   const cappedBonus = Math.min(10, bonusPoints);
@@ -2083,6 +2191,9 @@ export function calculatePerformance(userTasks: Task[]): {
     reviewPending,
     overdueCount,
     history,
+    roleType: isManager ? "manager" : isOfficer ? "officer" : "staff",
+    pendingReviewCount,
+    teamOnTimeRate,
   };
 }
 
@@ -2091,17 +2202,42 @@ export async function getEmployeePerformanceReport(): Promise<EmployeePerformanc
   const tasks = await getTasks();
 
   return users.map((u) => {
-    const userTasks = tasks.filter((t) => t.assigned_to === u.id);
-    const metrics = calculatePerformance(userTasks);
+    const isManagerRole = ['manager', 'sgm'].includes(u.role);
+    const isOfficerRole = ['officer_1', 'officer_2', 'officer_3'].includes(u.role);
+
+    // Tugas langsung
+    const userTasks = tasks.filter((t) => getTaskAssigneeIds(t).includes(u.id));
+
+    // Tugas bawahan & review
+    const subordinateIds = users.filter((sub) => sub.supervisor_id === u.id).map((sub) => sub.id);
+    const teamTasks = tasks.filter(
+      (t) =>
+        getTaskAssigneeIds(t).some((id) => subordinateIds.includes(id)) ||
+        (t.assignee?.supervisor_id && t.assignee.supervisor_id === u.id)
+    );
+    const reviewerTasks = tasks.filter((t) => t.reviewer_id === u.id);
+
+    // Karyawan dievaluasi dengan konteks perannya
+    const evaluatedTasks = userTasks.length > 0
+      ? userTasks
+      : (isManagerRole ? (reviewerTasks.length > 0 ? reviewerTasks : teamTasks) : reviewerTasks);
+
+    const metrics = calculatePerformance(evaluatedTasks, {
+      role: u.role,
+      userId: u.id,
+      reviewerTasks,
+      teamTasks,
+    });
 
     return {
       user: u,
-      totalAssigned: userTasks.length,
-      tasks: userTasks,
+      totalAssigned: userTasks.length > 0 ? userTasks.length : evaluatedTasks.length,
+      tasks: evaluatedTasks,
       ...metrics,
     };
   });
 }
+
 
 // ==========================================
 // 8. NOTIFICATIONS SYSTEM (ROLE-BASED & REAL-TIME)

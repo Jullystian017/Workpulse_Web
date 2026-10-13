@@ -210,7 +210,7 @@ export function DelegateTaskModal({
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs md:text-sm font-bold text-foreground">{rec.user.nama}</span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ROLE_LABELS[rec.user.role]?.color}`}>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 whitespace-nowrap ${ROLE_LABELS[rec.user.role]?.color}`}>
                             {ROLE_LABELS[rec.user.role]?.badge}
                           </span>
                           {isPrimary && (

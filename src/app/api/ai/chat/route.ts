@@ -85,10 +85,9 @@ PRINSIP JAWABAN (BERISI INSIGHT & ANALISIS, TETAP LUGAS TANPA BERTELE-TELE):
 
     const candidateModels = [
       process.env.GROQ_MODEL,
-      "openai/gpt-oss-20b",
       "qwen/qwen3.8-27b",
       "openai/gpt-oss-120b",
-      "llama-3.3-70b-versatile",
+      "openai/gpt-oss-20b",
     ].filter(Boolean) as string[]
 
     let reply = ""

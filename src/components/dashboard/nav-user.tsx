@@ -78,22 +78,22 @@ export function NavUser({
               />
             }
           >
-            <Avatar className="size-8 rounded-lg bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 border border-border">
+            <Avatar className="size-8 rounded-lg bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 border border-border shrink-0">
               <AvatarImage src={avatar} alt={name} className="object-cover" />
               <AvatarFallback className="rounded-lg font-bold text-xs bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">{initials}</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-xs leading-tight">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate font-bold text-foreground">{name.split(",")[0]}</span>
-                <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${roleMeta.color}`}>
+            <div className="grid flex-1 text-left text-xs leading-tight min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="truncate font-bold text-foreground min-w-0 flex-1" title={name}>{name.split(",")[0]}</span>
+                <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border shrink-0 whitespace-nowrap ${roleMeta.color}`}>
                   {role === "admin" ? "Superadmin" : roleMeta.badge}
                 </span>
               </div>
-              <span className="truncate text-[10px] text-muted-foreground mt-0.5">
+              <span className="truncate text-[10px] text-muted-foreground mt-0.5 min-w-0" title={email}>
                 {email}
               </span>
             </div>
-            <ChevronsUpDownIcon className="ml-auto size-3.5 text-muted-foreground" />
+            <ChevronsUpDownIcon className="ml-auto size-3.5 text-muted-foreground shrink-0" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="min-w-64 rounded-xl p-1.5"
@@ -104,12 +104,12 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2.5 px-2.5 py-2 text-left text-xs bg-zinc-50 dark:bg-zinc-800/50 rounded-lg">
-                  <Avatar className="size-9 rounded-lg border border-border">
+                  <Avatar className="size-9 rounded-lg border border-border shrink-0">
                     <AvatarImage src={avatar} alt={name} className="object-cover" />
                     <AvatarFallback className="rounded-lg font-bold text-xs bg-red-50 text-red-700">{initials}</AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-xs leading-tight">
-                    <span className="truncate font-bold text-foreground">{name}</span>
+                  <div className="grid flex-1 text-left text-xs leading-tight min-w-0">
+                    <span className="truncate font-bold text-foreground" title={name}>{name}</span>
                     <span className="truncate text-[11px] text-muted-foreground mt-0.5">
                       NIK: {currentUser?.nik || "10293801"}
                     </span>

@@ -31,6 +31,7 @@ import {
   markAllNotificationsAsRead,
 } from "@/lib/api"
 import { NotificationItem, User, NotificationType } from "@/types/database"
+import { useRealtimeNotifications } from "@/hooks/use-realtime"
 
 export function NotificationBellDropdown() {
   const router = useRouter()
@@ -51,10 +52,15 @@ export function NotificationBellDropdown() {
     }
   }, [])
 
+  // Live real-time notification listener via Supabase WebSocket
+  useRealtimeNotifications(currentUser?.id, (newNotif) => {
+    setNotifications((prev) => [newNotif, ...prev.filter((n) => n.id !== newNotif.id)])
+  })
+
   React.useEffect(() => {
     loadNotifications()
-    // Poll updates every 25 seconds
-    const interval = setInterval(loadNotifications, 25000)
+    // Background safety sync (every 60s)
+    const interval = setInterval(loadNotifications, 60000)
     return () => clearInterval(interval)
   }, [loadNotifications])
 

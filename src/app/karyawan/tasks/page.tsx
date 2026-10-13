@@ -16,6 +16,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ArrowLeftIcon,
+  Building2Icon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -41,16 +42,22 @@ import {
   getChannels,
   getAllUsers,
   getActiveUserFromStorage,
+  getTaskAssigneeIds,
   updateTaskStatus,
   claimTask,
+  approveTask,
+  returnTaskForRevision,
+  submitTaskForReview,
 } from "@/lib/api"
 import { Task, Channel, User, TaskStatus } from "@/types/database"
+import { useRealtimeTasks } from "@/hooks/use-realtime"
 
 function KaryawanTasksContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
   const [tasks, setTasks] = React.useState<Task[]>([])
+  const [allOfficeTasks, setAllOfficeTasks] = React.useState<Task[]>([])
   const [channels, setChannels] = React.useState<Channel[]>([])
   const [users, setUsers] = React.useState<User[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -64,9 +71,10 @@ function KaryawanTasksContent() {
   const [searchQuery, setSearchQuery] = React.useState<string>("")
   const [selectedStatus, setSelectedStatus] = React.useState<string>("all")
   const [selectedPriority, setSelectedPriority] = React.useState<string>("all")
+  const [selectedChannel, setSelectedChannel] = React.useState<string>("all")
 
-  // Primary Macro Views: "calendar" (default) or "table"
-  const [activeTab, setActiveTab] = React.useState<"calendar" | "table">("calendar")
+  // Primary Macro Views: "calendar" (default), "table" (my tasks), or "all_office" (all office tasks for manager+)
+  const [activeTab, setActiveTab] = React.useState<"calendar" | "table" | "all_office">("calendar")
 
   // Daily Workspace Drill-Down State
   const [dailyDate, setDailyDate] = React.useState<string | null>(null)
@@ -91,26 +99,37 @@ function KaryawanTasksContent() {
         getAllUsers(),
       ])
 
+      // Keep full list of office tasks for management transparency view
+      setAllOfficeTasks(fetchedTasks)
+
       // Filter tasks based on role:
-      // - staff: only their assigned tasks, unassigned pool, or tasks they created
-      // - officer_1/2/3, manager, sgm: their own tasks + tasks assigned to subordinates
+      // - staff: assigned tasks, created by them, reviewer/delegator, or unassigned pool
+      // - officer_1/2/3, manager, sgm: own tasks, reviewer/delegator, unassigned pool, or tasks of direct subordinates
       let userTasks: Task[] = []
       if (activeUser) {
         if (activeUser.role === 'staff') {
           userTasks = fetchedTasks.filter(
-            (t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id || (t.status === 'unassigned' && !t.assigned_to)
+            (t) =>
+              getTaskAssigneeIds(t).includes(activeUser.id) ||
+              t.created_by === activeUser.id ||
+              t.reviewer_id === activeUser.id ||
+              t.delegated_by === activeUser.id ||
+              (t.status === 'unassigned' && !t.assigned_to)
           )
         } else if (activeUser.role !== 'admin') {
-          // Officer+ can see their own + their direct subordinates' tasks
+          // Officer+ can see their own + tasks where they are reviewer/delegator + their direct subordinates' tasks
           const subordinateIds = fetchedUsers
             .filter((u) => u.supervisor_id === activeUser.id)
             .map((u) => u.id)
           userTasks = fetchedTasks.filter(
             (t) =>
-              t.assigned_to === activeUser.id ||
+              getTaskAssigneeIds(t).includes(activeUser.id) ||
               t.created_by === activeUser.id ||
+              t.reviewer_id === activeUser.id ||
+              t.delegated_by === activeUser.id ||
               (t.status === 'unassigned' && !t.assigned_to) ||
-              (t.assigned_to && subordinateIds.includes(t.assigned_to))
+              getTaskAssigneeIds(t).some((id) => subordinateIds.includes(id)) ||
+              (t.assignee?.supervisor_id && t.assignee.supervisor_id === activeUser.id)
           )
         } else {
           userTasks = fetchedTasks
@@ -126,7 +145,7 @@ function KaryawanTasksContent() {
       // Synchronize selectedTask so open TaskDetailSheet updates immediately with fresh status
       setSelectedTask((prev) => {
         if (!prev) return null
-        const fresh = userTasks.find((t) => t.id === prev.id)
+        const fresh = fetchedTasks.find((t) => t.id === prev.id)
         return fresh ? { ...prev, ...fresh } : prev
       })
     } catch (e) {
@@ -140,10 +159,16 @@ function KaryawanTasksContent() {
     loadAllData()
   }, [loadAllData])
 
+  // Real-time task synchronization
+  useRealtimeTasks(loadAllData)
+
   React.useEffect(() => {
     if (urlView) {
       if (urlView === "table") {
         setActiveTab("table")
+        setDailyDate(null)
+      } else if (urlView === "all_office" || urlView === "office") {
+        setActiveTab("all_office")
         setDailyDate(null)
       } else if (urlView === "calendar") {
         setActiveTab("calendar")
@@ -176,9 +201,10 @@ function KaryawanTasksContent() {
   }, [urlAction])
 
   React.useEffect(() => {
-    if (urlTask && tasks.length > 0) {
+    if (urlTask && (tasks.length > 0 || allOfficeTasks.length > 0)) {
       if (handledUrlTaskRef.current !== urlTask) {
-        const t = tasks.find((item) => item.id === urlTask || item.ticket_code === urlTask)
+        const pool = allOfficeTasks.length > 0 ? allOfficeTasks : tasks
+        const t = pool.find((item) => item.id === urlTask || item.ticket_code === urlTask)
         if (t) {
           handledUrlTaskRef.current = urlTask
           setSelectedTask(t)
@@ -188,7 +214,7 @@ function KaryawanTasksContent() {
     } else if (!urlTask) {
       handledUrlTaskRef.current = null
     }
-  }, [urlTask, tasks])
+  }, [urlTask, tasks, allOfficeTasks])
 
   // Daily Workspace Handlers
   const handleSelectDateFromCalendar = (dateStr: string) => {
@@ -268,15 +294,28 @@ function KaryawanTasksContent() {
     [router]
   )
 
+  // Metrics & Role Context
+  const isStaff = currentUser?.role === 'staff'
+  const isManagerOrAbove = currentUser?.role === 'manager' || currentUser?.role === 'sgm' || currentUser?.role === 'admin'
+  const canDelegate = currentUser && currentUser.role !== 'staff' && currentUser.role !== 'admin'
+
+  // Source task list based on active tab
+  const currentTaskList = React.useMemo(() => {
+    return activeTab === "all_office" ? allOfficeTasks : tasks
+  }, [activeTab, allOfficeTasks, tasks])
+
   // Filter Logic
   const filteredTasks = React.useMemo(() => {
-    return tasks.filter((task) => {
+    return currentTaskList.filter((task) => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase()
         const matchTitle = task.title.toLowerCase().includes(q)
         const matchCode = task.ticket_code.toLowerCase().includes(q)
-        const matchAssignee = task.assignee?.nama.toLowerCase().includes(q)
-        if (!matchTitle && !matchCode && !matchAssignee) return false
+        const matchAssignee = task.assignee?.nama?.toLowerCase().includes(q)
+        const matchAssignees = task.assignees?.some((u) => u?.nama?.toLowerCase().includes(q))
+        const matchCreator = task.creator?.nama?.toLowerCase().includes(q)
+        const matchReviewer = task.reviewer?.nama?.toLowerCase().includes(q)
+        if (!matchTitle && !matchCode && !matchAssignee && !matchAssignees && !matchCreator && !matchReviewer) return false
       }
       if (selectedStatus !== "all" && task.status !== selectedStatus) {
         return false
@@ -284,9 +323,12 @@ function KaryawanTasksContent() {
       if (selectedPriority !== "all" && task.priority !== selectedPriority) {
         return false
       }
+      if (selectedChannel !== "all" && task.channel_id !== selectedChannel) {
+        return false
+      }
       return true
     })
-  }, [tasks, searchQuery, selectedStatus, selectedPriority])
+  }, [currentTaskList, searchQuery, selectedStatus, selectedPriority, selectedChannel])
 
   // Daily Filtered Tasks
   const dailyFilteredTasks = React.useMemo(() => {
@@ -298,14 +340,10 @@ function KaryawanTasksContent() {
     })
   }, [filteredTasks, dailyDate])
 
-  // Metrics
-  const isStaff = currentUser?.role === 'staff'
-  const canDelegate = currentUser && currentUser.role !== 'staff' && currentUser.role !== 'admin'
-
-  const totalTasksCount = tasks.length
-  const inProgressCount = tasks.filter((t) => t.status === "in_progress").length
-  const underReviewCount = tasks.filter((t) => t.status === "review").length
-  const doneCount = tasks.filter((t) => t.status === "done").length
+  const totalTasksCount = currentTaskList.length
+  const inProgressCount = currentTaskList.filter((t) => t.status === "in_progress").length
+  const underReviewCount = currentTaskList.filter((t) => t.status === "review").length
+  const doneCount = currentTaskList.filter((t) => t.status === "done").length
 
   const getStatusDisplay = () => {
     if (selectedStatus === "all") return "Semua Status"
@@ -348,11 +386,17 @@ function KaryawanTasksContent() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                Penugasan & Agenda Kerja Saya
+                {activeTab === "all_office"
+                  ? "Semua Tugas Kantor & Divisi"
+                  : isStaff
+                  ? "Penugasan & Agenda Kerja Saya"
+                  : "Penugasan Kerja Saya & Tim"}
               </h1>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Daftar penugasan kantor yang didelegasikan kepada Anda, monitoring deadline, dan update progres kerja.
+              {activeTab === "all_office"
+                ? "Monitoring transparansi seluruh agenda kerja, tiket penugasan, dan status pengerjaan lintas departemen."
+                : "Daftar penugasan kantor yang didelegasikan kepada Anda, monitoring deadline, dan update progres kerja."}
             </p>
           </div>
 
@@ -387,7 +431,9 @@ function KaryawanTasksContent() {
             <ClipboardListIcon className="absolute -right-2 -top-2 size-20 text-red-100 dark:text-red-950/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
             <div className="relative">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground">Total Penugasan Saya</span>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {activeTab === "all_office" ? "Total Penugasan Kantor" : (isStaff ? "Total Penugasan Saya" : "Total Tugas Saya & Tim")}
+                </span>
                 <span className="inline-flex items-center rounded-full bg-red-50 dark:bg-red-950/60 px-2 py-0.5 text-[11px] font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900">
                   {totalTasksCount} Tugas
                 </span>
@@ -395,7 +441,9 @@ function KaryawanTasksContent() {
               <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                 {totalTasksCount}
               </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">Tugas aktif & riwayat kantor</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {activeTab === "all_office" ? "Seluruh divisi & departemen" : "Tugas aktif & riwayat tim"}
+              </p>
             </div>
           </div>
 
@@ -411,7 +459,9 @@ function KaryawanTasksContent() {
               <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                 {inProgressCount}
               </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">Sedang Anda kerjakan hari ini</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {activeTab === "all_office" ? "Sedang dikerjakan seluruh personil" : "Sedang Anda/tim kerjakan hari ini"}
+              </p>
             </div>
           </div>
 
@@ -427,7 +477,9 @@ function KaryawanTasksContent() {
               <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-foreground">
                 {underReviewCount}
               </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">Sudah diserahkan untuk diverifikasi</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {activeTab === "all_office" ? "Menunggu verifikasi PIC/atasan" : "Sudah diserahkan untuk diverifikasi"}
+              </p>
             </div>
           </div>
 
@@ -444,7 +496,7 @@ function KaryawanTasksContent() {
                 {doneCount}
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Tingkat penyelesaian: {totalTasksCount > 0 ? Math.round((doneCount / totalTasksCount) * 100) : 0}%
+                {activeTab === "all_office" ? "Tuntas diselesaikan di kantor" : `Tingkat penyelesaian: ${totalTasksCount > 0 ? Math.round((doneCount / totalTasksCount) * 100) : 0}%`}
               </p>
             </div>
           </div>
@@ -537,14 +589,17 @@ function KaryawanTasksContent() {
             </div>
           </div>
         ) : (
-          /* MACRO LEVEL NAVIGATION (KALENDER VS DAFTAR) */
+          /* MACRO LEVEL NAVIGATION (KALENDER VS DAFTAR VS SEMUA TUGAS KANTOR) */
           <>
             {/* View Switcher Tabs Bar */}
             <div className="px-4 lg:px-6 border-b border-border">
               <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto scrollbar-none">
                 <button
                   type="button"
-                  onClick={() => setActiveTab("calendar")}
+                  onClick={() => {
+                    setActiveTab("calendar")
+                    setDailyDate(null)
+                  }}
                   className={`flex items-center gap-2 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === "calendar"
                       ? "border-red-600 text-red-600 dark:text-red-400"
@@ -557,7 +612,10 @@ function KaryawanTasksContent() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab("table")}
+                  onClick={() => {
+                    setActiveTab("table")
+                    setDailyDate(null)
+                  }}
                   className={`flex items-center gap-2 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === "table"
                       ? "border-red-600 text-red-600 dark:text-red-400"
@@ -565,22 +623,53 @@ function KaryawanTasksContent() {
                   }`}
                 >
                   <TableIcon className="size-4" />
-                  <span>Daftar (Semua Tugas)</span>
+                  <span>{isStaff ? "Daftar Tugas Saya" : "Tugas Saya & Tim"}</span>
+                  <Badge variant="secondary" className="text-[10px] h-4.5 px-1.5 font-bold">
+                    {tasks.length}
+                  </Badge>
                 </button>
+
+                {isManagerOrAbove && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("all_office")
+                      setDailyDate(null)
+                    }}
+                    className={`flex items-center gap-2 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === "all_office"
+                        ? "border-red-600 text-red-600 dark:text-red-400"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Building2Icon className="size-4" />
+                    <span>Semua Tugas Kantor</span>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] h-4.5 px-1.5 font-bold ${
+                        activeTab === "all_office"
+                          ? "bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300 border-red-300 dark:border-red-800"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {allOfficeTasks.length}
+                    </Badge>
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Filter & Sort Toolbar Row (For Macro Views) */}
             <div className="px-4 lg:px-6">
               <div className="flex items-center justify-between gap-3 p-2 bg-card dark:bg-zinc-900 border border-border rounded-xl shadow-2xs">
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 flex-wrap">
                   {/* Search Box */}
                   <div className="relative w-44 sm:w-56 lg:w-64 shrink-0">
                     <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari data, tugas..."
+                      placeholder={activeTab === "all_office" ? "Cari semua tugas, PIC, pembuat..." : "Cari data, tugas, PIC..."}
                       className="h-8.5 pl-8 pr-3 text-xs rounded-lg bg-background border-border shadow-2xs placeholder:text-muted-foreground"
                     />
                   </div>
@@ -653,6 +742,36 @@ function KaryawanTasksContent() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Channel / Kategori Divisi Filter */}
+                  <Select
+                    value={selectedChannel}
+                    onValueChange={(v) => setSelectedChannel(v || "all")}
+                  >
+                    <SelectTrigger
+                      className={`h-8.5 text-xs rounded-lg border px-2.5 gap-1.5 shrink-0 transition-colors shadow-2xs ${
+                        selectedChannel !== "all"
+                          ? "border-red-400/80 bg-red-50/70 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
+                          : "border-border bg-background hover:bg-muted/50 text-foreground font-medium"
+                      }`}
+                    >
+                      <span className="truncate">
+                        {selectedChannel === "all"
+                          ? "Semua Kategori"
+                          : channels.find((c) => c.id === selectedChannel)?.name || "Kategori"}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent align="start" className="w-52 max-h-60">
+                      <SelectItem value="all">
+                        <span className="font-medium">Semua Kategori / Divisi</span>
+                      </SelectItem>
+                      {channels.map((ch) => (
+                        <SelectItem key={ch.id} value={ch.id}>
+                          <span className="font-medium">{ch.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -685,6 +804,19 @@ function KaryawanTasksContent() {
                         : t
                     )
                   )
+                  setAllOfficeTasks((prev) =>
+                    prev.map((t) =>
+                      t.id === taskId
+                        ? {
+                            ...t,
+                            status,
+                            assigned_to: status === "in_progress" && !t.assigned_to && currentUser ? currentUser.id : t.assigned_to,
+                            assignee: status === "in_progress" && !t.assigned_to && currentUser ? currentUser : t.assignee,
+                            completed_at: status === "done" ? nowIso : t.completed_at,
+                          }
+                        : t
+                    )
+                  )
                   // 2. Also immediately update selectedTask if open
                   setSelectedTask((prev) =>
                     prev && prev.id === taskId
@@ -698,8 +830,20 @@ function KaryawanTasksContent() {
                       : prev
                   )
 
-                  const movingTask = tasks.find((t) => t.id === taskId)
-                  if (status === "in_progress" && movingTask && !movingTask.assigned_to && currentUser) {
+                  const movingTask = (activeTab === "all_office" ? allOfficeTasks : tasks).find((t) => t.id === taskId)
+                  const prevStatus = movingTask?.status
+
+                  if (status === "done" && prevStatus === "review" && currentUser) {
+                    await approveTask(taskId, currentUser.id)
+                  } else if (status === "in_progress" && prevStatus === "review" && currentUser) {
+                    await returnTaskForRevision(
+                      taskId,
+                      currentUser.id,
+                      "Dikembalikan oleh atasan melalui Kanban Board untuk evaluasi/revisi."
+                    )
+                  } else if (status === "review" && currentUser) {
+                    await submitTaskForReview(taskId, currentUser.id, "Diajukan melalui Kanban Board.")
+                  } else if (status === "in_progress" && movingTask && !movingTask.assigned_to && currentUser) {
                     await claimTask(taskId, currentUser.id)
                   } else {
                     await updateTaskStatus(taskId, status, currentUser?.id)
@@ -732,7 +876,7 @@ function KaryawanTasksContent() {
                 hideTitle
                 hideToolbar
                 className="px-4 lg:px-6"
-                isStaff={isStaff}
+                isStaff={isStaff && activeTab !== "all_office"}
               />
             )
           )}

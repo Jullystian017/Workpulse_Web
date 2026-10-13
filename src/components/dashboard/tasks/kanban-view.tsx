@@ -10,11 +10,14 @@ import {
   ArrowUpDownIcon,
   ClockIcon,
   CalendarIcon,
+  ShieldCheckIcon,
+  LockIcon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Task, TaskStatus, User } from "@/types/database"
 import { toast } from "sonner"
+import { getActiveUserFromStorage, canUserApproveTask } from "@/lib/api"
 
 interface KanbanViewProps {
   tasks: Task[]
@@ -70,6 +73,52 @@ export function KanbanView({
   const [draggedTaskId, setDraggedTaskId] = React.useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = React.useState<TaskStatus | null>(null)
   const [dropTarget, setDropTarget] = React.useState<{ taskId: string; position: "top" | "bottom" } | null>(null)
+
+  const currentUser = React.useMemo(() => getActiveUserFromStorage(), [])
+
+  // Strict Validation: Cannot bypass review to done, and review -> done requires supervisor approval
+  const validateStatusTransition = (
+    movingTask: Task,
+    targetColId: TaskStatus
+  ): { allowed: boolean; reason?: string } => {
+    const fromStatus = movingTask.status === "unassigned" ? "todo" : movingTask.status
+    if (fromStatus === targetColId) return { allowed: true }
+
+    // 1. Moving to 'done':
+    if (targetColId === "done") {
+      // Must come through 'review' first (cannot jump from todo or in_progress directly to done)
+      if (fromStatus !== "review" && currentUser?.role !== "admin") {
+        return {
+          allowed: false,
+          reason: "Tugas tidak dapat langsung diselesaikan! Pindahkan ke kolom 'Review Atasan' terlebih dahulu agar seluruh tahapan dan lampiran bukti dapat diverifikasi.",
+        }
+      }
+
+      // Moving from 'review' to 'done' requires supervisor/reviewer/admin approval
+      if (fromStatus === "review") {
+        const canApprove = canUserApproveTask(movingTask, currentUser)
+        if (!canApprove) {
+          return {
+            allowed: false,
+            reason: "Hanya Atasan atau Reviewer yang berwenang menyetujui tugas ini menjadi Selesai. Pelaksana dilarang menyetujui tugasnya sendiri.",
+          }
+        }
+      }
+    }
+
+    // 2. Moving out of 'review' to another status (e.g. back to in_progress or todo):
+    if (fromStatus === "review" && targetColId !== "done") {
+      const canApprove = canUserApproveTask(movingTask, currentUser)
+      if (!canApprove && currentUser?.role !== "admin") {
+        return {
+          allowed: false,
+          reason: "Tugas sedang dalam proses review atasan dan terkunci sampai atasan memberikan persetujuan atau evaluasi/revisi.",
+        }
+      }
+    }
+
+    return { allowed: true }
+  }
 
   // Sync with incoming tasks prop
   React.useEffect(() => {
@@ -150,6 +199,15 @@ export function KanbanView({
     const isStatusChanging =
       (movingTask.status === "unassigned" ? "todo" : movingTask.status) !== targetColId
 
+    // Enforce approval & transition validation
+    if (isStatusChanging) {
+      const validation = validateStatusTransition(movingTask, targetColId)
+      if (!validation.allowed) {
+        toast.error(validation.reason)
+        return
+      }
+    }
+
     // Reorder local state
     setLocalTasks((prev) => {
       const filtered = prev.filter((t) => t.id !== movingTaskId)
@@ -169,7 +227,13 @@ export function KanbanView({
 
     if (isStatusChanging) {
       const colMeta = KANBAN_COLUMNS.find((c) => c.id === targetColId)
-      toast.success(`[${movingTask.ticket_code}] dipindahkan ke "${colMeta?.label || targetColId}"`)
+      if (movingTask.status === "review" && targetColId === "done") {
+        toast.success(`[${movingTask.ticket_code}] disetujui & diselesaikan resmi! ✅`)
+      } else if (movingTask.status === "review" && targetColId === "in_progress") {
+        toast.warning(`[${movingTask.ticket_code}] dikembalikan ke Dalam Pengerjaan untuk evaluasi/revisi. ⚠️`)
+      } else {
+        toast.success(`[${movingTask.ticket_code}] dipindahkan ke "${colMeta?.label || targetColId}"`)
+      }
       onUpdateStatus?.(movingTaskId, targetColId)
     } else {
       toast.info(`Urutan [${movingTask.ticket_code}] berhasil disesuaikan`)
@@ -193,6 +257,15 @@ export function KanbanView({
     const isStatusChanging =
       (movingTask.status === "unassigned" ? "todo" : movingTask.status) !== targetColId
 
+    // Enforce approval & transition validation
+    if (isStatusChanging) {
+      const validation = validateStatusTransition(movingTask, targetColId)
+      if (!validation.allowed) {
+        toast.error(validation.reason)
+        return
+      }
+    }
+
     setLocalTasks((prev) => {
       const filtered = prev.filter((t) => t.id !== movingTaskId)
       const updatedMovingTask: Task = {
@@ -204,10 +277,17 @@ export function KanbanView({
 
     if (isStatusChanging) {
       const colMeta = KANBAN_COLUMNS.find((c) => c.id === targetColId)
-      toast.success(`[${movingTask.ticket_code}] dipindahkan ke "${colMeta?.label || targetColId}"`)
+      if (movingTask.status === "review" && targetColId === "done") {
+        toast.success(`[${movingTask.ticket_code}] disetujui & diselesaikan resmi! ✅`)
+      } else if (movingTask.status === "review" && targetColId === "in_progress") {
+        toast.warning(`[${movingTask.ticket_code}] dikembalikan ke Dalam Pengerjaan untuk evaluasi/revisi. ⚠️`)
+      } else {
+        toast.success(`[${movingTask.ticket_code}] dipindahkan ke "${colMeta?.label || targetColId}"`)
+      }
       onUpdateStatus?.(movingTaskId, targetColId)
     }
   }
+
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 px-4 lg:px-6 items-start pb-10">
@@ -334,6 +414,27 @@ export function KanbanView({
                             </span>
                           )}
                         </div>
+
+                        {/* Review Status Indicator */}
+                        {task.status === "review" && (
+                          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold ${
+                            canUserApproveTask(task, currentUser)
+                              ? "bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/60 dark:border-amber-800 dark:text-amber-200"
+                              : "bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950/50 dark:border-purple-800 dark:text-purple-300"
+                          }`}>
+                            {canUserApproveTask(task, currentUser) ? (
+                              <>
+                                <ShieldCheckIcon className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                                <span>Perlu Persetujuan Anda (Atasan)</span>
+                              </>
+                            ) : (
+                              <>
+                                <LockIcon className="size-3 text-purple-600 dark:text-purple-400 shrink-0" />
+                                <span>Menunggu Review Atasan</span>
+                              </>
+                            )}
+                          </div>
+                        )}
 
                         {/* Subtask Progress Bar */}
                         {totalSubtasks > 0 && (

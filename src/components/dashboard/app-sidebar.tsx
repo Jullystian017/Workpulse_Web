@@ -28,6 +28,8 @@ import {
   ActivityIcon,
   SparklesIcon,
 } from "lucide-react"
+import { getActiveUserFromStorage } from "@/lib/api"
+import { User } from "@/types/database"
 
 const sidebarData = {
   navMain: [
@@ -64,6 +66,39 @@ const sidebarData = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const aiPanel = useAiPanel()
   const pathname = usePathname()
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null)
+
+  React.useEffect(() => {
+    const user = getActiveUserFromStorage()
+    if (user) {
+      setCurrentUser(user)
+    }
+  }, [])
+
+  const isAdmin = currentUser?.role === "admin"
+
+  const navMainItems = React.useMemo(() => {
+    if (isAdmin) return sidebarData.navMain
+    return [
+      {
+        title: "Portal Karyawan",
+        url: "/karyawan/dashboard",
+        icon: LayoutDashboardIcon,
+      },
+      {
+        title: "Tugas Tim & Saya",
+        url: "/karyawan/tasks",
+        icon: CheckSquareIcon,
+      },
+    ]
+  }, [isAdmin])
+
+  const documentItems = React.useMemo(() => {
+    if (isAdmin) return sidebarData.documents
+    // Managers & non-superadmins can access Laporan Kinerja, but NOT Log Aktivitas & Audit
+    return sidebarData.documents.filter((doc) => doc.url !== "/admin/log")
+  }, [isAdmin])
+
   const isAiPanelOpen = aiPanel?.isOpen ?? false
   const isAiPage = pathname === "/admin/ai" || pathname === "/dashboard/ai"
   const isAiActive = isAiPanelOpen || isAiPage
@@ -82,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               tooltip="WorkPulse"
               className="h-10 px-2 rounded-xl hover:bg-muted/50 transition-colors"
-              render={<Link href="/admin/dashboard" />}
+              render={<Link href={isAdmin ? "/admin/dashboard" : "/karyawan/dashboard"} />}
             >
               <div className="size-7 rounded-lg bg-white dark:bg-zinc-800 p-0.5 flex items-center justify-center shadow-xs border border-zinc-200 dark:border-zinc-700 overflow-hidden shrink-0">
                 <Image
@@ -128,9 +163,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
-        <NavMain items={sidebarData.navMain} />
+        <NavMain items={navMainItems} />
         <SidebarSeparator className="hidden group-data-[collapsible=icon]:block my-1 mx-1 opacity-50" />
-        <NavDocuments items={sidebarData.documents} />
+        <NavDocuments items={documentItems} />
       </SidebarContent>
 
       <SidebarFooter className="p-2.5 pt-1.5 flex flex-col gap-1.5">

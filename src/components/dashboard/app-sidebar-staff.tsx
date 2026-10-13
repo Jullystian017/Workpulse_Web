@@ -23,23 +23,10 @@ import {
   CheckSquareIcon,
   SparklesIcon,
   ActivityIcon,
+  FileBarChartIcon,
 } from "lucide-react"
 import { getActiveUserFromStorage } from "@/lib/api"
 import { ROLE_LABELS, UserRole } from "@/types/database"
-
-// Nav items for karyawan portal (full focus on tasks)
-const navItems = [
-  {
-    title: "Dashboard Saya",
-    url: "/karyawan/dashboard",
-    icon: LayoutDashboardIcon,
-  },
-  {
-    title: "Tugas Saya",
-    url: "/karyawan/tasks",
-    icon: CheckSquareIcon,
-  },
-]
 
 export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const aiPanel = useAiPanel()
@@ -54,6 +41,31 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
       setRoleLabel(`Portal ${ROLE_LABELS[user.role]?.badge || "Karyawan"}`)
     }
   }, [])
+
+  const dynamicNavItems = React.useMemo(() => {
+    const items = [
+      {
+        title: "Dashboard Saya",
+        url: "/karyawan/dashboard",
+        icon: LayoutDashboardIcon,
+      },
+      {
+        title: "Tugas Saya",
+        url: "/karyawan/tasks",
+        icon: CheckSquareIcon,
+      },
+    ]
+
+    if (userRole === "manager" || userRole === "sgm") {
+      items.push({
+        title: "Laporan Kinerja & SLA",
+        url: "/karyawan/laporan/kinerja",
+        icon: FileBarChartIcon,
+      })
+    }
+
+    return items
+  }, [userRole])
   const isAiPanelOpen = aiPanel?.isOpen ?? false
   const isAiPage = pathname === "/karyawan/ai"
   const isAiActive = isAiPanelOpen || isAiPage
@@ -122,7 +134,7 @@ export function AppSidebarStaff({ ...props }: React.ComponentProps<typeof Sideba
           </SidebarMenu>
         </SidebarGroup>
 
-        <NavMain items={navItems} />
+        <NavMain items={dynamicNavItems} />
       </SidebarContent>
 
       <SidebarFooter className="p-2.5 pt-1.5 flex flex-col gap-1.5">

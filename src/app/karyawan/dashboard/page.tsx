@@ -5,8 +5,9 @@ import { KaryawanWelcome } from "@/components/karyawan/karyawan-welcome"
 import { KaryawanSectionCards } from "@/components/karyawan/karyawan-section-cards"
 import { KaryawanAiInsight } from "@/components/karyawan/karyawan-ai-insight"
 import { DataTable } from "@/components/dashboard/data-table"
-import { getTasks, getAllUsers, getActiveUserFromStorage } from "@/lib/api"
+import { getTasks, getAllUsers, getActiveUserFromStorage, getTaskAssigneeIds } from "@/lib/api"
 import { Task, User } from "@/types/database"
+import { useRealtimeTasks } from "@/hooks/use-realtime"
 
 export default function KaryawanDashboardPage() {
   const [tasks, setTasks] = React.useState<Task[]>([])
@@ -21,13 +22,18 @@ export default function KaryawanDashboardPage() {
       const [fetchedTasks, fetchedUsers] = await Promise.all([getTasks(), getAllUsers()])
 
       // Filter tasks based on role:
-      // - staff: only their tasks (assigned to them or created by them) or open unassigned pool
-      // - officer+ (non-admin): their own tasks + direct subordinates' tasks
+      // - staff: only their tasks (assigned to them, created by them, or as reviewer/delegator) or open unassigned pool
+      // - officer+ (non-admin): their own tasks, reviewer/delegator tasks, direct subordinates' tasks, or open pool
       let userTasks: Task[] = []
       if (activeUser) {
         if (activeUser.role === 'staff') {
           userTasks = fetchedTasks.filter(
-            (t) => t.assigned_to === activeUser.id || t.created_by === activeUser.id || (t.status === 'unassigned' && !t.assigned_to)
+            (t) =>
+              getTaskAssigneeIds(t).includes(activeUser.id) ||
+              t.created_by === activeUser.id ||
+              t.reviewer_id === activeUser.id ||
+              t.delegated_by === activeUser.id ||
+              (t.status === 'unassigned' && !t.assigned_to)
           )
         } else if (activeUser.role !== 'admin') {
           const subordinateIds = fetchedUsers
@@ -35,10 +41,13 @@ export default function KaryawanDashboardPage() {
             .map((u) => u.id)
           userTasks = fetchedTasks.filter(
             (t) =>
-              t.assigned_to === activeUser.id ||
+              getTaskAssigneeIds(t).includes(activeUser.id) ||
               t.created_by === activeUser.id ||
+              t.reviewer_id === activeUser.id ||
+              t.delegated_by === activeUser.id ||
               (t.status === 'unassigned' && !t.assigned_to) ||
-              (t.assigned_to && subordinateIds.includes(t.assigned_to))
+              getTaskAssigneeIds(t).some((id) => subordinateIds.includes(id)) ||
+              (t.assignee?.supervisor_id && t.assignee.supervisor_id === activeUser.id)
           )
         } else {
           userTasks = fetchedTasks
@@ -58,6 +67,9 @@ export default function KaryawanDashboardPage() {
   React.useEffect(() => {
     loadDashboardData()
   }, [loadDashboardData])
+
+  // Live real-time tasks synchronization across all roles
+  useRealtimeTasks(loadDashboardData)
 
   const isStaff = currentUser?.role === 'staff'
 

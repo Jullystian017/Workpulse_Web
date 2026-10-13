@@ -18,11 +18,13 @@ import {
   ChevronsRightIcon,
   XIcon,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { getActiveUserFromStorage } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -62,6 +64,7 @@ import {
 } from "@/lib/activity-logger"
 
 export default function AuditLogPage() {
+  const router = useRouter()
   const [logs, setLogs] = React.useState<ActivityLogItem[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isRefreshing, setIsRefreshing] = React.useState(false)
@@ -69,6 +72,15 @@ export default function AuditLogPage() {
   const [selectedLevel, setSelectedLevel] = React.useState("Semua")
   const [selectedModule, setSelectedModule] = React.useState("Semua")
   const [selectedLog, setSelectedLog] = React.useState<ActivityLogItem | null>(null)
+
+  // Strictly check superadmin role
+  React.useEffect(() => {
+    const activeUser = getActiveUserFromStorage()
+    if (activeUser && activeUser.role !== "admin") {
+      toast.error("Halaman Log Aktivitas hanya dapat diakses oleh Super Admin.")
+      router.replace(activeUser.role === "manager" || activeUser.role === "sgm" ? "/admin/laporan/kinerja" : "/karyawan/dashboard")
+    }
+  }, [router])
 
   // Pagination state
   const [currentPage, setCurrentPage] = React.useState(1)
