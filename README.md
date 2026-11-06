@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WorkPulse Web — Enterprise Task Management System
+> Sistem Manajemen Tugas, Alur Kerja Berjenjang & Analisis Kinerja PT Telkom Akses.
 
-## Getting Started
+---
 
-First, run the development server:
+## 👥 Data Anggota Kelompok
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+| No | Nama Lengkap | No. Absen | No. Telepon |
+|:--:|:---|:--:|:---|
+| 1 | **Hazeera Syadza Zul Islamadina** | 18 | `[Isi No. Telepon]` |
+| 2 | **Inka Nararya Karuniawardhani** | 22 | `[Isi No. Telepon]` |
+| 3 | **Jathniel Urdha Herauwan** | 26 | `[Isi No. Telepon]` |
+| 4 | **Jullystian Pratama** | 32 | `[Isi No. Telepon]` |
+| 5 | **Keisha Anindya Ramadhani** | 34 | `[Isi No. Telepon]` |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* **Repository GitHub:** [https://github.com/Jullystian017/Workpulse_Web](https://github.com/Jullystian017/Workpulse_Web)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Fitur Utama
+1. **Manajemen Penugasan & Chain of Command:** Delegasi tugas berjenjang dari SGM/Manager ke Officer hingga Staff lapangan.
+2. **Interactive Kanban Board:** Drag-and-drop tiket penugasan dengan validasi alur review ketat.
+3. **AI Assistant & Predictive Insight:** Asisten cerdas ditenagai Groq LLM untuk analisis SLA dan rekomendasi alokasi kerja.
+4. **Bukti Lapangan & Geotagging:** Unggah lampiran bukti pekerjaan dan nota SPJ.
+5. **Real-time Synchronization:** Pembaruan status tiket otomatis via Supabase Realtime.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Tech Stack
+* **Framework:** Next.js 16 (App Router) & React 19
+* **Language:** TypeScript 5
+* **Styling & UI:** Tailwind CSS v4, shadcn/ui, Radix UI, Framer Motion
+* **Database & Auth:** PostgreSQL (Supabase Cloud)
+* **AI Engine:** Groq SDK (Llama 3.3 / Qwen 2.5)
+* **File Basis Data:** `database.sql` (Root project)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ⚙️ Panduan Menjalankan Proyek
 
-## Deploy on Vercel
+1. **Clone repository:**
+   ```bash
+   git clone https://github.com/Jullystian017/Workpulse_Web.git
+   cd Workpulse_Web
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Install dependensi:**
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Konfigurasi Environment:**
+   Salin file `.env.example` menjadi `.env.local` lalu isi kredensial Supabase dan Groq API Key:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. **Jalankan server lokal:**
+   ```bash
+   npm run dev
+   ```
+   Buka browser di [http://localhost:3000](http://localhost:3000).
