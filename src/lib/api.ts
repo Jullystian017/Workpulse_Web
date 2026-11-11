@@ -821,7 +821,7 @@ export async function getTasks(filters?: TaskFilters, forceRefresh = false): Pro
     try {
       let query = supabase
         .from('tasks')
-        .select('*, channel:channels(*), department:departments(*), subtasks(*)')
+        .select('*, channel:channels(*), department:departments(*), subtasks(*, attachments:subtask_attachments(*)), attachments:task_attachments(*)')
         .order('created_at', { ascending: false });
 
       if (filters?.channelId) {
@@ -1351,6 +1351,45 @@ export async function submitTaskForReview(taskId: string, userId: string, notes?
   return true;
 }
 
+// Staff Withdraws / Cancels Review Submission
+export async function withdrawTaskSubmission(taskId: string, userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({
+      status: 'in_progress',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', taskId);
+
+  if (error) return false;
+
+  await supabase.from('task_comments').insert([
+    {
+      task_id: taskId,
+      user_id: userId,
+      comment: '↩ Pengajuan review ditarik kembali oleh pelaksana untuk melengkapi pekerjaan.',
+      is_system_log: true,
+    },
+  ]);
+
+  invalidateTaskCache(taskId);
+  return true;
+}
+
+export async function clearTaskReviewNotes(taskId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({
+      review_notes: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', taskId);
+
+  if (error) return false;
+  invalidateTaskCache(taskId);
+  return true;
+}
+
 // Supervisor Approves Task
 export async function approveTask(taskId: string, supervisorId: string): Promise<boolean> {
   const { error } = await supabase
@@ -1750,7 +1789,8 @@ export async function addComment(
   taskId: string,
   userId: string,
   comment: string,
-  subtaskId?: string
+  subtaskId?: string,
+  isSystemLog: boolean = false
 ): Promise<TaskComment | null> {
   const { data, error } = await supabase
     .from('task_comments')
@@ -1760,7 +1800,7 @@ export async function addComment(
         subtask_id: subtaskId || null,
         user_id: userId,
         comment,
-        is_system_log: false,
+        is_system_log: isSystemLog,
       },
     ])
     .select('*')

@@ -34,12 +34,15 @@ import {
   XCircleIcon,
   Loader2Icon,
   MessageSquareIcon,
+  MessageSquareQuoteIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   HistoryIcon,
   FileCheckIcon,
   MoreHorizontalIcon,
   CheckIcon,
+  EyeIcon,
+  DownloadIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -95,6 +98,8 @@ import {
   addSubtaskAttachment,
   deleteSubtaskAttachment,
   submitTaskForReview,
+  withdrawTaskSubmission,
+  clearTaskReviewNotes,
   approveTask,
   returnTaskForRevision,
   addComment,
@@ -115,6 +120,246 @@ import { TaskDeadlinePicker } from "@/components/dashboard/tasks/task-deadline-p
 import { useRealtimeTaskDetail } from "@/hooks/use-realtime"
 
 export type { Task as TaskItem } from "@/types/database"
+
+function formatFileSize(bytes?: number | null) {
+  if (!bytes || bytes <= 0) return ""
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function PdfIconBadge() {
+  return (
+    <div className="size-11 shrink-0 flex items-center justify-center">
+      <svg viewBox="0 0 44 44" className="size-10" fill="none">
+        <path
+          d="M10 6C7.79 6 6 7.79 6 10V34C6 36.21 7.79 38 10 38H34C36.21 38 38 36.21 38 34V16L28 6H10Z"
+          stroke="#DC2626"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="fill-red-50/70 dark:fill-red-950/30"
+        />
+        <path
+          d="M28 6V16H38"
+          stroke="#DC2626"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14 30C15.8 24.5 19 19.5 22.5 19.5C26 19.5 27 22.5 25 24.8C23.2 26.8 19 27 14 30ZM14 30C16.5 31.2 19 31.8 21 30M25 24.8C27.5 26.5 30 28.2 32 29.5"
+          stroke="#DC2626"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  )
+}
+
+function PptIconBadge() {
+  return (
+    <div className="size-11 shrink-0 flex items-center justify-center">
+      <svg viewBox="0 0 44 44" className="size-10" fill="none">
+        <rect x="14" y="7" width="23" height="30" rx="3" fill="#D04423" />
+        <circle cx="25.5" cy="18" r="5" fill="#FFC9B6" />
+        <path d="M25.5 13A5 5 0 0 1 30.5 18H25.5V13Z" fill="#FFF" />
+        <rect x="18" y="26.5" width="14" height="2.2" rx="1" fill="#FFF" opacity="0.9" />
+        <rect x="18" y="30.5" width="9" height="2.2" rx="1" fill="#FFF" opacity="0.9" />
+        <rect x="7" y="10" width="14" height="24" rx="2.5" fill="#EA580C" />
+        <text x="10.5" y="26.5" fill="white" fontSize="15" fontWeight="bold" fontFamily="system-ui, -apple-system, sans-serif">P</text>
+      </svg>
+    </div>
+  )
+}
+
+function XlsIconBadge() {
+  return (
+    <div className="size-11 shrink-0 flex items-center justify-center">
+      <svg viewBox="0 0 44 44" className="size-10" fill="none">
+        <rect x="14" y="7" width="23" height="30" rx="3" fill="#107C41" />
+        <rect x="18" y="13" width="14" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="18" y="17.5" width="14" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="18" y="22" width="14" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="18" y="26.5" width="14" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="7" y="10" width="14" height="24" rx="2.5" fill="#16A34A" />
+        <text x="10" y="26.5" fill="white" fontSize="14" fontWeight="bold" fontFamily="system-ui, -apple-system, sans-serif">X</text>
+      </svg>
+    </div>
+  )
+}
+
+function DocIconBadge() {
+  return (
+    <div className="size-11 shrink-0 flex items-center justify-center">
+      <svg viewBox="0 0 44 44" className="size-10" fill="none">
+        <rect x="14" y="7" width="23" height="30" rx="3" fill="#185ABD" />
+        <rect x="18" y="13.5" width="14" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="18" y="18" width="14" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="18" y="22.5" width="14" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="18" y="27" width="9" height="2.2" rx="0.5" fill="#FFF" opacity="0.9" />
+        <rect x="7" y="10" width="14" height="24" rx="2.5" fill="#2563EB" />
+        <text x="8.5" y="26.5" fill="white" fontSize="13" fontWeight="bold" fontFamily="system-ui, -apple-system, sans-serif">W</text>
+      </svg>
+    </div>
+  )
+}
+
+function ImageIconBadge() {
+  return (
+    <div className="size-11 rounded-xl bg-sky-50 border border-sky-200/90 dark:bg-sky-950/40 dark:border-sky-800/60 shrink-0 flex items-center justify-center shadow-2xs">
+      <svg viewBox="0 0 24 24" className="size-6 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="18" height="18" x="3" y="3" rx="3.5" ry="3.5" />
+        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none" />
+        <path d="m21 15-5-5L5 21" />
+      </svg>
+    </div>
+  )
+}
+
+function ZipIconBadge() {
+  return (
+    <div className="size-11 rounded-lg bg-purple-50 border border-purple-200 dark:bg-purple-950/40 dark:border-purple-900/60 shrink-0 flex items-center justify-center shadow-2xs">
+      <svg viewBox="0 0 32 32" className="size-6 text-purple-600" fill="none" stroke="currentColor">
+        <path d="M8 4a2 2 0 00-2 2v20a2 2 0 002 2h16a2 2 0 002-2V10.828a2 2 0 00-.586-1.414l-6.828-6.828A2 2 0 0017.172 4H8z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 7h2v2h-2zm0 4h2v2h-2zm0 4h2v2h-2z" fill="currentColor" />
+      </svg>
+    </div>
+  )
+}
+
+function GenericFileBadge({ ext }: { ext: string }) {
+  return (
+    <div className="size-11 rounded-lg bg-slate-100 border border-slate-200 dark:bg-neutral-800 dark:border-neutral-700 shrink-0 flex flex-col items-center justify-center shadow-2xs">
+      <FileTextIcon className="size-4.5 text-slate-600 dark:text-neutral-400" />
+      {ext && (
+        <span className="text-[8.5px] font-bold uppercase text-slate-500 dark:text-neutral-400 mt-0.5 leading-none">
+          {ext.slice(0, 4)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function getFileExtension(fileName: string = "", fileUrl: string = ""): string {
+  const cleanUrl = (fileUrl || "").split("?")[0].split("#")[0]
+
+  // 1. Check extension from fileName
+  if (fileName && fileName.includes(".")) {
+    const ext = fileName.split(".").pop()?.toLowerCase().trim()
+    if (ext && ext.length <= 5) return ext
+  }
+  // 2. Check extension from fileUrl
+  if (cleanUrl && cleanUrl.includes(".")) {
+    const ext = cleanUrl.split(".").pop()?.toLowerCase().trim()
+    if (ext && ext.length <= 5) return ext
+  }
+  // 3. Fallback keywords in fileName or fileUrl
+  const combined = `${fileName} ${cleanUrl}`.toLowerCase()
+  if (combined.includes(".pdf") || combined.includes("pdf")) return "pdf"
+  if (
+    combined.includes(".jpg") ||
+    combined.includes(".jpeg") ||
+    combined.includes(".png") ||
+    combined.includes(".webp") ||
+    combined.includes(".gif") ||
+    combined.includes("foto") ||
+    combined.includes("gambar") ||
+    combined.includes("image") ||
+    combined.includes("bukti")
+  ) {
+    return "jpg"
+  }
+  if (combined.includes(".ppt") || combined.includes(".pptx")) return "pptx"
+  if (combined.includes(".xls") || combined.includes(".xlsx") || combined.includes(".csv")) return "xlsx"
+  if (combined.includes(".doc") || combined.includes(".docx")) return "docx"
+  if (combined.includes(".zip") || combined.includes(".rar")) return "zip"
+  return ""
+}
+
+function FileTypeBadge({ fileName, fileUrl }: { fileName: string; fileUrl?: string }) {
+  const ext = getFileExtension(fileName, fileUrl)
+  if (["jpg", "jpeg", "png", "webp", "gif", "svg", "bmp", "heic", "heif", "tiff"].includes(ext)) {
+    return <ImageIconBadge />
+  }
+  if (ext === "pdf") return <PdfIconBadge />
+  if (["ppt", "pptx", "key", "odp"].includes(ext)) return <PptIconBadge />
+  if (["xls", "xlsx", "csv", "ods"].includes(ext)) return <XlsIconBadge />
+  if (["doc", "docx", "rtf", "odt", "txt"].includes(ext)) return <DocIconBadge />
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return <ZipIconBadge />
+  return <GenericFileBadge ext={ext} />
+}
+
+interface AttachmentCardProps {
+  fileName: string
+  fileUrl: string
+  fileSizeBytes?: number | null
+  onPreview: () => void
+  onDelete?: () => void
+  canDelete?: boolean
+}
+
+function AttachmentCard({
+  fileName,
+  fileUrl,
+  fileSizeBytes,
+  onPreview,
+  onDelete,
+  canDelete,
+}: AttachmentCardProps) {
+  const sizeText = formatFileSize(fileSizeBytes)
+
+  return (
+    <div
+      onClick={onPreview}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onPreview()
+        }
+      }}
+      className="p-2.5 sm:p-3 rounded-xl border border-border/80 bg-card hover:bg-muted/30 hover:border-border transition-all flex items-center justify-between gap-3 shadow-2xs cursor-pointer group text-left"
+    >
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <FileTypeBadge fileName={fileName} fileUrl={fileUrl} />
+        <div className="min-w-0 flex-1">
+          <p
+            className="text-xs sm:text-[13px] font-semibold text-foreground truncate group-hover:text-primary transition-colors"
+            title={fileName}
+          >
+            {fileName}
+          </p>
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
+            {sizeText && <span>{sizeText}</span>}
+            {sizeText && <span>•</span>}
+            <span className="text-muted-foreground group-hover:text-primary font-medium inline-flex items-center gap-1 transition-colors">
+              <EyeIcon className="size-3" />
+              Preview
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {canDelete && onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
+          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-1.5 rounded-lg hover:bg-background transition-all cursor-pointer shrink-0 ml-1"
+          title="Hapus Lampiran"
+        >
+          <Trash2Icon className="size-3.5" />
+        </button>
+      )}
+    </div>
+  )
+}
 
 interface TaskDetailSheetProps {
   taskId: string | null
@@ -413,8 +658,27 @@ export function TaskDetailSheet({
   // Quick Status Changer (Instant Optimistic Update - Zero Lag)
   const handleQuickStatusChange = async (newStatus: TaskStatus) => {
     if (!task) return
+
+    // 1. Validasi review ke done: Hanya atasan/reviewer
     if (newStatus === "done" && task.status === "review" && !canApprove) {
       toast.error("Hanya atasan atau delegator tugas yang berhak menyetujui tugas ini.")
+      return
+    }
+
+    // 2. Validasi kelengkapan subtask: Semua tahapan wajib dicentang selesai sebelum diajukan review / selesai
+    const uncompletedSubtasks = (task.subtasks || []).filter((s) => !s.is_completed)
+    if ((newStatus === "review" || newStatus === "done") && uncompletedSubtasks.length > 0 && currentUser?.role !== "admin") {
+      toast.error("Seluruh tahapan subtask belum selesai!", {
+        description: `Masih ada ${uncompletedSubtasks.length} tahapan pekerjaan yang belum dicentang. Selesaikan seluruh tahapan sebelum melanjutkan.`,
+      })
+      return
+    }
+
+    // 3. Validasi alur: Tidak bisa langsung lompat ke done tanpa melalui review
+    if (newStatus === "done" && task.status !== "review" && currentUser?.role !== "admin") {
+      toast.error("Tugas tidak dapat langsung diselesaikan!", {
+        description: "Ajukan ke status 'Review Atasan' terlebih dahulu agar pekerjaan dapat diverifikasi.",
+      })
       return
     }
 
@@ -520,6 +784,14 @@ export function TaskDetailSheet({
     return getTaskAssigneeIds(task).includes(currentUser.id)
   }, [currentUser, task])
 
+  // Memeriksa apakah user berhak mengajukan review (Pelaksana, Pembuat tugas, atau Admin)
+  const canSubmitReview = React.useMemo(() => {
+    if (!currentUser || !task) return false
+    if (currentUser.role === "admin") return true
+    if (task.created_by === currentUser.id) return true
+    return getTaskAssigneeIds(task).includes(currentUser.id)
+  }, [currentUser, task])
+
   // Nama atasan / reviewer yang berhak me-review
   const reviewerName = React.useMemo(() => {
     if (!task) return "Atasan Penilai"
@@ -557,22 +829,59 @@ export function TaskDetailSheet({
     return (task?.comments || []).filter((c) => !c.is_system_log)
   }, [task?.comments])
 
+  // Cek apakah review_notes berasal dari atasan (revisi) atau dari pelaksana sendiri (ditarik mandiri / draft)
+  const isSupervisorRevision = React.useMemo(() => {
+    if (!task?.review_notes || task.status !== "in_progress") return false
+    const comments = task.comments || []
+    const lastReviewAction = [...comments].reverse().find(
+      (c) =>
+        c.comment.includes("dikembalikan untuk revisi") ||
+        c.comment.includes("ditarik kembali") ||
+        c.comment.includes("disubmit untuk review")
+    )
+    if (!lastReviewAction) return false
+    return lastReviewAction.comment.includes("dikembalikan untuk revisi")
+  }, [task?.review_notes, task?.status, task?.comments])
+
+  // Sinkronisasi otomatis submitNotes saat modal pengajuan dibuka jika sudah ada catatan sebelumnya
+  React.useEffect(() => {
+    if (isSubmitReviewOpen && !submitNotes && task?.review_notes) {
+      setSubmitNotes(task.review_notes)
+    }
+  }, [isSubmitReviewOpen, submitNotes, task?.review_notes])
+
   const totalSubtaskAttachmentsCount = React.useMemo(() => {
     return (task?.subtasks || []).reduce((acc, st) => acc + (st.attachments || []).length, 0)
   }, [task?.subtasks])
 
-  const totalAttachmentsCount = totalSubtaskAttachmentsCount
+  const totalAttachmentsCount = React.useMemo(() => {
+    return totalSubtaskAttachmentsCount + (task?.attachments || []).length
+  }, [totalSubtaskAttachmentsCount, task?.attachments])
+
+  // Helper untuk mengecek apakah tugas sudah memiliki bukti yang diunggah
+  const hasUploadedEvidence = totalAttachmentsCount > 0
 
   // Subtask Toggle Handler
   const handleToggleSubtask = async (st: Subtask) => {
     if (!task) return
     const nextState = !st.is_completed
+
+    // Auto-transisi status: Jika tugas masih unassigned/todo dan dikerjakan/diisi subtask-nya,
+    // langsung ubah status menjadi 'in_progress' (Sedang Dikerjakan)
+    const shouldAutoStart = (task.status === "todo" || task.status === "unassigned") && nextState
+
     const ok = await toggleSubtask(st.id, nextState)
     if (ok) {
+      if (shouldAutoStart) {
+        await updateTaskStatus(task.id, "in_progress", currentUser?.id)
+        toast.info("Tugas otomatis dipindahkan ke 'Dalam Pengerjaan' karena Anda mulai mengisi subtask!")
+      }
+
       setTask((prev) => {
         if (!prev) return null
         return {
           ...prev,
+          status: shouldAutoStart ? "in_progress" : prev.status,
           subtasks: (prev.subtasks || []).map((item) =>
             item.id === st.id ? { ...item, is_completed: nextState } : item
           ),
@@ -594,10 +903,19 @@ export function TaskDetailSheet({
         newSubtaskDesc.trim() || undefined
       )
       if (created) {
+        // Auto-transisi status: Jika subtask baru ditambahkan saat status masih todo/unassigned,
+        // otomatis ubah status tiket jadi 'in_progress'
+        const shouldAutoStart = task.status === "todo" || task.status === "unassigned"
+        if (shouldAutoStart) {
+          await updateTaskStatus(task.id, "in_progress", currentUser?.id)
+          toast.info("Tugas otomatis dipindahkan ke 'Dalam Pengerjaan' karena Anda menambahkan tahapan subtask!")
+        }
+
         setTask((prev) => {
           if (!prev) return null
           return {
             ...prev,
+            status: shouldAutoStart ? "in_progress" : prev.status,
             subtasks: [
               ...(prev.subtasks || []),
               { ...created, attachments: [], comments: [] },
@@ -710,10 +1028,19 @@ export function TaskDetailSheet({
       }
 
       if (uploadedAttachments.length > 0) {
+        // Auto-transisi status: Jika bukti diunggah saat status masih todo/unassigned,
+        // otomatis ubah status tiket jadi 'in_progress'
+        const shouldAutoStart = task.status === "todo" || task.status === "unassigned"
+        if (shouldAutoStart) {
+          await updateTaskStatus(task.id, "in_progress", currentUser.id)
+          toast.info("Tugas otomatis dipindahkan ke 'Dalam Pengerjaan' karena Anda mengunggah bukti!")
+        }
+
         setTask((prev) => {
           if (!prev) return null
           return {
             ...prev,
+            status: shouldAutoStart ? "in_progress" : prev.status,
             subtasks: (prev.subtasks || []).map((st) =>
               st.id === uploadTargetSubtaskId
                 ? { ...st, attachments: [...(st.attachments || []), ...uploadedAttachments] }
@@ -740,8 +1067,8 @@ export function TaskDetailSheet({
   }
 
   // ── Delete subtask attachment ──
-  const handleDeleteSubtaskAttachment = async (attachId: string, subtaskId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleDeleteSubtaskAttachment = async (attachId: string, subtaskId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     const ok = await deleteSubtaskAttachment(attachId)
     if (ok) {
       setTask((prev) => {
@@ -762,6 +1089,26 @@ export function TaskDetailSheet({
   // Submit Task For Review
   const handleSubmitForReview = async () => {
     if (!task || !currentUser) return
+
+    // VALIDASI WAJIB: Seluruh tahapan subtask harus diselesaikan jika ada subtask
+    const uncompletedSubtasks = (task.subtasks || []).filter((s) => !s.is_completed)
+    if (uncompletedSubtasks.length > 0 && currentUser.role !== "admin") {
+      toast.error("Seluruh tahapan subtask belum selesai!", {
+        description: `Masih ada ${uncompletedSubtasks.length} tahapan pekerjaan yang belum dicentang. Selesaikan seluruh tahapan sebelum mengajukan review ke atasan.`,
+      })
+      setIsSubmitReviewOpen(false)
+      return
+    }
+
+    // VALIDASI WAJIB: Ringkasan hasil kerja wajib diisi (minimal 10 karakter)
+    const trimmedNotes = submitNotes.trim()
+    if ((!trimmedNotes || trimmedNotes.length < 10) && currentUser.role !== "admin") {
+      toast.error("Ringkasan hasil kerja wajib diisi!", {
+        description: "Tuliskan ringkasan hasil pekerjaan minimal 10 karakter agar atasan memahami apa yang telah diselesaikan.",
+      })
+      return
+    }
+
     const prevStatus = task.status
     const prevNotes = task.review_notes
 
@@ -771,16 +1118,16 @@ export function TaskDetailSheet({
         ? {
             ...prev,
             status: "review",
-            review_notes: submitNotes,
+            review_notes: trimmedNotes,
           }
         : null
     )
     setIsSubmitReviewOpen(false)
     setIsActionLoading(true)
     try {
-      const ok = await submitTaskForReview(task.id, currentUser.id, submitNotes)
+      const ok = await submitTaskForReview(task.id, currentUser.id, trimmedNotes)
       if (ok) {
-        toast.success("Tugas diajukan untuk review atasan!")
+        toast.success("Tugas diajukan untuk review atasan! ⏳")
         setSubmitNotes("")
         onTaskUpdated?.()
         loadTaskData(true)
@@ -907,6 +1254,44 @@ export function TaskDetailSheet({
     }
   }
 
+  // Pelaksana membatalkan / menarik kembali pengajuan review sebelum di-ACC atasan
+  const handleCancelReview = async () => {
+    if (!task || !currentUser) return
+
+    const prevStatus = task.status
+    const prevReviewNotes = task.review_notes
+
+    // Instant optimistic update (pertahankan review_notes sebagai draft agar tidak hilang)
+    setTask((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "in_progress",
+          }
+        : null
+    )
+    setIsActionLoading(true)
+    try {
+      const ok = await withdrawTaskSubmission(task.id, currentUser.id)
+      if (ok) {
+        toast.info("Pengajuan review berhasil ditarik kembali ke 'Dalam Pengerjaan'. Silakan lengkapi berkas atau tahapan Anda.")
+        onTaskUpdated?.()
+        loadTaskData(true)
+      } else {
+        throw new Error("Gagal menarik pengajuan review.")
+      }
+    } catch (err) {
+      setTask((prev) =>
+        prev
+          ? { ...prev, status: prevStatus, review_notes: prevReviewNotes }
+          : null
+      )
+      toast.error("Terjadi kendala saat menarik pengajuan review.")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
   // Claim Task
   const handleClaim = async () => {
     if (!task || !currentUser) return
@@ -1021,6 +1406,14 @@ export function TaskDetailSheet({
       })
 
       if (att) {
+        // Auto-transisi status: Jika berkas bukti diunggah saat status masih todo/unassigned,
+        // otomatis ubah status tiket jadi 'in_progress'
+        const shouldAutoStart = task.status === "todo" || task.status === "unassigned"
+        if (shouldAutoStart) {
+          await updateTaskStatus(task.id, "in_progress", currentUser.id)
+          toast.info("Tugas otomatis dipindahkan ke 'Dalam Pengerjaan' karena Anda mengunggah berkas bukti!")
+        }
+
         toast.success("Berkas berhasil diunggah!")
         setIsUploadOpen(false)
         setSelectedFile(null)
@@ -1103,7 +1496,7 @@ export function TaskDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         showCloseButton={false}
-        className="w-full sm:max-w-md md:max-w-lg overflow-y-auto p-0 border-l border-border bg-background font-sans shadow-2xl"
+        className="!inset-y-auto !top-1.5 !bottom-1.5 !right-1.5 sm:!top-2 sm:!bottom-2 sm:!right-2 !h-[calc(100vh-0.75rem)] sm:!h-[calc(100vh-1rem)] !w-[calc(100vw-0.75rem)] sm:!w-[calc(100vw-1rem)] sm:!max-w-lg md:!max-w-xl lg:!max-w-[620px] xl:!max-w-[660px] p-0 !border border-border/80 !rounded-xl sm:!rounded-2xl bg-background font-sans shadow-2xl shadow-black/20 dark:shadow-black/60 overflow-hidden flex flex-col focus:outline-none ring-1 ring-black/5 dark:ring-white/10"
       >
         {isLoading && !task ? (
           <div className="flex h-full items-center justify-center p-12">
@@ -1131,9 +1524,9 @@ export function TaskDetailSheet({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col min-h-full">
+          <div className="flex flex-col h-full overflow-hidden">
             {/* Top Navigation Bar (Clean, Minimalist & Spacious) */}
-            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-5 py-3 gap-3">
+            <div className="shrink-0 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-5 py-3 gap-3">
               {/* Left: Clean Ticket Code & Divisi Pill */}
               <div className="flex items-center gap-2 min-w-0">
                 <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2 py-0.5 rounded border border-red-200 dark:border-red-900 shrink-0">
@@ -1157,6 +1550,9 @@ export function TaskDetailSheet({
                 </Button>
               </div>
             </div>
+
+            {/* Scrollable Content Container */}
+            <div className="flex-1 overflow-y-auto min-h-0">
 
             {/* EDIT MODE CONTAINER */}
             {isEditing ? (
@@ -1703,49 +2099,90 @@ export function TaskDetailSheet({
 
                 {/* 3. Action Workflow Banner (If Actionable) */}
                 {task.status === "review" && (
-                  <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                    <div className="text-xs space-y-1">
-                      <span className="font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1.5 text-xs sm:text-sm">
-                        <ShieldCheckIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        {canApprove
-                          ? "Pemeriksaan Akhir oleh Atasan (Evaluasi Semua Tahapan)"
-                          : "Menunggu Persetujuan Atasan"}
-                      </span>
-                      {task.review_notes ? (
-                        <p className="text-[11px] text-amber-800 dark:text-amber-300 italic line-clamp-2">
-                          Catatan pelaksana: &ldquo;{task.review_notes}&rdquo;
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
-                          {canApprove
-                            ? "Periksa seluruh kelengkapan tahapan (checklist), berkas bukti/foto, dan catatan di bawah. Jika valid, klik 'Setujui'. Jika ada kekurangan atau belum beres, kembalikan untuk revisi."
-                            : task.assigned_to === currentUser?.id
-                            ? `Laporan pekerjaan Anda telah diajukan dan sedang diverifikasi oleh ${reviewerName}.`
-                            : `Tugas sedang menunggu verifikasi & persetujuan dari ${reviewerName}.`}
-                        </p>
-                      )}
-                    </div>
-                    {canApprove && (
+                  <div className="p-4 rounded-xl border border-amber-200/80 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20 space-y-3 shadow-xs">
+                    {/* Header Baris Status */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="size-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                          <ShieldCheckIcon className="size-4.5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground text-xs sm:text-sm">
+                              {canApprove
+                                ? "Pemeriksaan Akhir Tugas"
+                                : "Menunggu Persetujuan Atasan"}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                              In Review
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-muted-foreground block mt-0.5">
+                            {canApprove
+                              ? "Periksa kelengkapan hasil kerja & berkas bukti pengerjaan sebelum memberikan persetujuan."
+                              : task.assigned_to === currentUser?.id
+                              ? `Laporan Anda telah diserahkan dan sedang menunggu review dari ${reviewerName}.`
+                              : `Tugas sedang menunggu verifikasi dari ${reviewerName}.`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Button untuk Atasan/Reviewer atau Pelaksana Tugas (Assignee) */}
                       <div className="flex items-center gap-2 shrink-0 pt-1 sm:pt-0">
-                        <Button
-                          size="sm"
-                          onClick={handleApprove}
-                          disabled={isActionLoading}
-                          className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs gap-1.5"
-                        >
-                          <CheckCircle2Icon className="size-3.5" />
-                          <span>Setujui Tugas</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsRevisionOpen(true)}
-                          disabled={isActionLoading}
-                          className="h-8 px-3 text-xs font-bold text-amber-900 dark:text-amber-200 border-amber-300 hover:bg-amber-100/50 dark:hover:bg-amber-900/40 rounded-lg cursor-pointer gap-1.5"
-                        >
-                          <RotateCcwIcon className="size-3.5 text-amber-600" />
-                          <span>Kembalikan Revisi</span>
-                        </Button>
+                        {canApprove && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={handleApprove}
+                              disabled={isActionLoading}
+                              className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-xs gap-1.5"
+                            >
+                              <CheckCircle2Icon className="size-3.5" />
+                              <span>Setujui Tugas</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setIsRevisionOpen(true)}
+                              disabled={isActionLoading}
+                              className="h-8 px-3 text-xs font-bold text-amber-900 dark:text-amber-200 border-amber-300 hover:bg-amber-100/50 dark:hover:bg-amber-900/40 rounded-lg cursor-pointer gap-1.5"
+                            >
+                              <RotateCcwIcon className="size-3.5 text-amber-600" />
+                              <span>Minta Revisi</span>
+                            </Button>
+                          </>
+                        )}
+                        {isAssignee && !canApprove && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelReview}
+                            disabled={isActionLoading}
+                            className="h-8 px-3 text-xs font-semibold text-amber-800 dark:text-amber-300 border-amber-300/80 hover:bg-amber-100/60 dark:hover:bg-amber-950/40 rounded-lg cursor-pointer shadow-2xs gap-1.5"
+                            title="Tarik kembali pengajuan untuk melengkapi pekerjaan"
+                          >
+                            <RotateCcwIcon className="size-3.5 text-amber-600" />
+                            <span>Tarik Pengajuan</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Ringkasan Hasil Kerja Pelaksana */}
+                    {task.review_notes && (
+                      <div className="rounded-lg bg-background p-3 border border-border/70 shadow-2xs space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <FileTextIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+                          <span className="text-[11px] font-bold text-foreground">
+                            Ringkasan Hasil Kerja Pelaksana
+                          </span>
+                        </div>
+                        <div className="border-l-2 border-amber-500/70 dark:border-amber-400/70 pl-3 py-0.5">
+                          <p className="text-xs text-foreground/90 whitespace-pre-line leading-relaxed font-normal">
+                            {task.review_notes}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1785,24 +2222,57 @@ export function TaskDetailSheet({
                   </div>
                 )}
 
-                {/* Banner 2: In Progress -> Submit Review (Khusus untuk Pelaksana Tugas) */}
+                {/* Banner 2: In Progress -> Submit Review (Khusus untuk Pelaksana Tugas / Admin) */}
                 {task.status === "in_progress" && (
                   <div className="space-y-2">
                     {task.review_notes && (
-                      <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50/80 dark:bg-amber-950/40 text-xs space-y-1.5 shadow-2xs">
-                        <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200">
-                          <AlertTriangleIcon className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span>Catatan Evaluasi / Permintaan Revisi dari Atasan:</span>
+                      isSupervisorRevision ? (
+                        <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50/80 dark:bg-amber-950/40 text-xs space-y-1.5 shadow-2xs">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200">
+                              <AlertTriangleIcon className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                              <span>Catatan Evaluasi / Permintaan Revisi dari Atasan:</span>
+                            </div>
+                            {canSubmitReview && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  await clearTaskReviewNotes(task.id)
+                                  setTask((prev) => (prev ? { ...prev, review_notes: null } : null))
+                                  toast.success("Catatan revisi ditandai selesai.")
+                                }}
+                                className="text-[10px] text-amber-700 dark:text-amber-300 hover:underline font-medium cursor-pointer"
+                              >
+                                Tandai Selesai
+                              </button>
+                            )}
+                          </div>
+                          <div className="italic text-amber-950 dark:text-amber-100 font-medium bg-background/80 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 leading-relaxed">
+                            &ldquo;{task.review_notes}&rdquo;
+                          </div>
+                          <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80">
+                            Silakan perbaiki tahapan atau berkas terkait di bawah, kemudian klik tombol &quot;Ajukan Ulang Review&quot; setelah selesai.
+                          </p>
                         </div>
-                        <div className="italic text-amber-950 dark:text-amber-100 font-medium bg-background/80 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 leading-relaxed">
-                          &ldquo;{task.review_notes}&rdquo;
+                      ) : (
+                        <div className="p-3 rounded-xl border border-sky-300 dark:border-sky-800 bg-sky-50/80 dark:bg-sky-950/40 text-xs space-y-1.5 shadow-2xs">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <div className="flex items-center gap-1.5 font-bold text-sky-950 dark:text-sky-200">
+                              <MessageSquareQuoteIcon className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                              <span>Ringkasan Hasil Kerja Anda (Ditarik Mandiri):</span>
+                            </div>
+                            <span className="text-[10px] text-sky-700 dark:text-sky-300 font-semibold bg-sky-100/90 dark:bg-sky-900/60 px-2 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                              Tersimpan
+                            </span>
+                          </div>
+                          <div className="italic text-foreground font-medium bg-background/90 p-2.5 rounded-lg border border-sky-200 dark:border-sky-800/60 leading-relaxed whitespace-pre-line">
+                            &ldquo;{task.review_notes}&rdquo;
+                          </div>
+                          <p className="text-[11px] text-sky-800 dark:text-sky-300">
+                            Catatan ini tersimpan dari pengajuan Anda sebelumnya dan akan otomatis terisi saat Anda mengklik &quot;Ajukan Review ke Atasan&quot;.
+                          </p>
                         </div>
-                        <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80">
-                          {isAssignee
-                            ? "Silakan perbaiki tahapan atau berkas terkait di bawah, kemudian klik tombol \"Ajukan Ulang Review\" setelah selesai."
-                            : "Pelaksana telah menerima catatan revisi dan sedang melakukan perbaikan."}
-                        </p>
-                      </div>
+                      )
                     )}
                     <div className="p-3 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 flex items-center justify-between gap-2">
                       <div className="text-xs">
@@ -1810,23 +2280,41 @@ export function TaskDetailSheet({
                           {isAssignee ? "Sedang Anda Kerjakan" : `Sedang Dikerjakan oleh ${task.assignee?.nama || "Pelaksana"}`}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          {isAssignee
-                            ? task.review_notes
+                          {canSubmitReview
+                            ? isSupervisorRevision && task.review_notes
                               ? "Revisi telah selesai dikerjakan? Ajukan kembali untuk direview atasan."
-                              : "Pekerjaan telah selesai? Ajukan untuk direview atasan."
+                              : "Lengkapi checklist tahapan & bukti pengerjaan, lalu ajukan review jika telah siap."
                             : "Pelaksana sedang mengerjakan seluruh tahapan & bukti pengerjaan. Menunggu pelaksana mengajukan review akhir."}
                         </span>
                       </div>
-                      {/* Tombol Ajukan Review HANYA muncul untuk Pelaksana Tugas */}
-                      {isAssignee && (
+                      {/* Tombol Ajukan Review HANYA muncul untuk Pelaksana Tugas / Admin / Pembuat */}
+                      {canSubmitReview && (
                         <Button
                           size="sm"
-                          onClick={() => setIsSubmitReviewOpen(true)}
+                          onClick={() => {
+                            const uncompleted = (task.subtasks || []).filter((s) => !s.is_completed)
+                            if (uncompleted.length > 0 && currentUser?.role !== "admin") {
+                              toast.error("Tahapan pekerjaan belum selesai!", {
+                                description: `Masih ada ${uncompleted.length} tahapan subtask yang belum dicentang selesai. Selesaikan seluruh tahapan terlebih dahulu.`,
+                              })
+                              return
+                            }
+                            if (!hasUploadedEvidence && currentUser?.role !== "admin") {
+                              toast.error("Wajib mengunggah bukti pengerjaan!", {
+                                description: "Lampirkan minimal 1 foto/berkas bukti sebelum mengajukan review ke atasan.",
+                              })
+                              return
+                            }
+                            if (!submitNotes && task.review_notes) {
+                              setSubmitNotes(task.review_notes)
+                            }
+                            setIsSubmitReviewOpen(true)
+                          }}
                           disabled={isActionLoading}
                           className="h-7 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg gap-1.5 cursor-pointer shrink-0 shadow-xs"
                         >
                           <CheckCircle2Icon className="size-3.5" />
-                          {task.review_notes ? "Ajukan Ulang Review" : "Ajukan Review"}
+                          {task.review_notes ? (isSupervisorRevision ? "Ajukan Ulang Review" : "Ajukan Review") : "Ajukan Review"}
                         </Button>
                       )}
                     </div>
@@ -1863,7 +2351,7 @@ export function TaskDetailSheet({
                 {/* 5. TAB BAR: Tahapan | Catatan | Lampiran */}
                 <div className="pt-2">
                   <div className="flex items-center border-b border-border/80 gap-6">
-                    {/* Tahapan Subtask Tab */}
+                    {/* Pengerjaan (Submission / Checklist) Tab */}
                     <button
                       type="button"
                       onClick={() => setActiveDetailTab("subtasks")}
@@ -1873,16 +2361,24 @@ export function TaskDetailSheet({
                           : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
                       }`}
                     >
-                      <span>Tahapan</span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
-                          activeDetailTab === "subtasks"
-                            ? "bg-red-50 text-red-600 dark:bg-red-950/80 dark:text-red-300 border border-red-100 dark:border-red-900/50"
-                            : "bg-muted text-muted-foreground border border-border/40"
-                        }`}
-                      >
-                        {completedSubtasks}/{subtasks.length}
-                      </span>
+                      <span>Pengerjaan</span>
+                      {subtasks.length === 0 ? (
+                        <span className="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-muted text-muted-foreground border border-border/40">
+                          0
+                        </span>
+                      ) : (
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums leading-none ${
+                            completedSubtasks === subtasks.length
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200"
+                              : activeDetailTab === "subtasks"
+                              ? "bg-red-50 text-red-600 dark:bg-red-950/80 dark:text-red-300 border border-red-100 dark:border-red-900/50"
+                              : "bg-muted text-muted-foreground border border-border/40"
+                          }`}
+                        >
+                          {completedSubtasks}/{subtasks.length}
+                        </span>
+                      )}
                     </button>
 
                     {/* Catatan Tab (All human notes across task & subtasks) */}
@@ -1931,20 +2427,21 @@ export function TaskDetailSheet({
                   </div>
 
                   {/* ─────────────────────────────────────────────────────────────
-                      TAB 1: TAHAPAN (SUBTASK) — Strict Sequential Approval Workflow
+                      TAB 1: TAHAPAN (SUBTASK) — Optional Multi-step Checklist
                       ───────────────────────────────────────────────────────────── */}
                   {activeDetailTab === "subtasks" && (
                     <div className="space-y-3.5 pt-3">
-                      {/* Workflow summary & guide */}
-                      <div className="p-3 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between gap-2">
-                        <div className="text-xs">
-                          <span className="font-bold text-foreground block">
-                            Daftar Tahapan Pekerjaan
-                          </span>
-                          <span className="text-[11px] text-muted-foreground">
-                            Progres: {completedSubtasks} dari {subtasks.length} tahap selesai ({progressPercent}%). Selesaikan semua tahapan & unggah bukti sebelum mengajukan review akhir ke atasan.
-                          </span>
-                        </div>
+                      {/* Workflow summary & guide: Hanya tampil jika tugas memiliki tahapan subtask */}
+                      {subtasks.length > 0 && (
+                        <div className="p-3 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between gap-2">
+                          <div className="text-xs">
+                            <span className="font-bold text-foreground block">
+                              Daftar Tahapan Pekerjaan
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Progres: {completedSubtasks} dari {subtasks.length} tahap selesai ({progressPercent}%). Selesaikan semua tahapan sebelum mengajukan review akhir.
+                            </span>
+                          </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {subtasks.length > 1 && (
                             <Button
@@ -1969,6 +2466,7 @@ export function TaskDetailSheet({
                           )}
                         </div>
                       </div>
+                    )}
 
                       {/* Hidden file input for subtask evidence attachment (supports multiple files/photos) */}
                       <input
@@ -2123,9 +2621,9 @@ export function TaskDetailSheet({
 
 
                               {/* Dedicated Per-Subtask Attachments Section */}
-                              <div className="space-y-1.5 pt-1 border-t border-border/40">
+                              <div className="space-y-1.5 pt-1.5 border-t border-border/40">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5">
+                                  <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
                                     <PaperclipIcon className="size-3 text-muted-foreground" />
                                     Lampiran Bukti Tahap Ini ({(st.attachments || []).length})
                                   </span>
@@ -2149,133 +2647,132 @@ export function TaskDetailSheet({
 
                                 {/* List of attachments for this subtask */}
                                 {(st.attachments || []).length > 0 ? (
-                                  <div className="grid grid-cols-1 gap-1.5">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {(st.attachments || []).map((att) => (
-                                      <div
+                                      <AttachmentCard
                                         key={att.id}
-                                        className="flex items-center justify-between p-2 rounded-lg border border-border/70 bg-background hover:bg-muted/30 text-xs group transition-colors"
-                                      >
-                                        <button
-                                          type="button"
-                                          onClick={() => setPreviewAttachment({ url: att.file_url, name: att.file_name })}
-                                          className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer hover:text-blue-600 transition-colors"
-                                          title={att.file_name}
-                                        >
-                                          {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-                                            <ImageIcon className="size-3.5 text-emerald-600 shrink-0" />
-                                          ) : (
-                                            <FileTextIcon className="size-3.5 text-blue-600 shrink-0" />
-                                          )}
-                                          <span className="truncate font-medium text-foreground">
-                                            {att.file_name}
-                                          </span>
-                                          {att.file_size_bytes && (
-                                            <span className="text-[10px] text-muted-foreground shrink-0">
-                                              ({(att.file_size_bytes / 1024).toFixed(0)} KB)
-                                            </span>
-                                          )}
-                                          <ExternalLinkIcon className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                                        </button>
-                                        {task.status !== "done" && (
-                                          <button
-                                            type="button"
-                                            onClick={(e) => handleDeleteSubtaskAttachment(att.id, st.id, e)}
-                                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-1 transition-opacity cursor-pointer shrink-0 ml-1"
-                                            title="Hapus lampiran bukti"
-                                          >
-                                            <Trash2Icon className="size-3" />
-                                          </button>
-                                        )}
-                                      </div>
+                                        fileName={att.file_name}
+                                        fileUrl={att.file_url}
+                                        fileSizeBytes={att.file_size_bytes}
+                                        onPreview={() => setPreviewAttachment({ url: att.file_url, name: att.file_name })}
+                                        canDelete={task.status !== "done"}
+                                        onDelete={() => handleDeleteSubtaskAttachment(att.id, st.id)}
+                                      />
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-2 rounded-lg border border-dashed border-border/60 text-center">
+                                  <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-2.5 rounded-lg border border-dashed border-border/60 text-center">
                                     Belum ada bukti lampiran. Unggah foto atau dokumen pengerjaan tahap ini.
                                   </div>
                                 )}
                               </div>
 
-                              {/* Quick Toggle Completion Bar */}
+                              {/* Status Pengerjaan & Toggle Bar */}
                               {(canActAsPIC || !isStaff) && task.status !== "done" && (
-                                <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2 flex-wrap">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={isCompleted ? "outline" : "default"}
-                                    onClick={() => handleToggleSubtask(st)}
-                                    className={`h-7.5 px-3 text-xs font-semibold rounded-lg gap-1.5 cursor-pointer ${
-                                      isCompleted
-                                        ? "text-muted-foreground border-border hover:bg-muted"
-                                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
-                                    }`}
-                                  >
-                                    {isCompleted ? (
-                                      <>
-                                        <CheckCircle2Icon className="size-3.5 text-emerald-600" />
-                                        <span>Tandai Belum Selesai</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <CheckIcon className="size-3.5 stroke-[3]" />
-                                        <span>Tandai Tahap Ini Selesai</span>
-                                      </>
-                                    )}
-                                  </Button>
-                                  {isCompleted && st.completed_at && (
-                                    <span className="text-[10px] text-muted-foreground font-medium">
-                                      Diselesaikan:{" "}
-                                      {new Date(st.completed_at).toLocaleString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
+                                <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2 flex-wrap">
+                                  {isCompleted ? (
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
+                                        <CheckCircle2Icon className="size-3.5" />
+                                        <span>Tahap Selesai</span>
+                                        {st.completed_at && (
+                                          <span className="text-[10px] text-muted-foreground font-normal ml-0.5">
+                                            • {new Date(st.completed_at).toLocaleString("id-ID", {
+                                              day: "numeric",
+                                              month: "short",
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleToggleSubtask(st)}
+                                        className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded cursor-pointer"
+                                      >
+                                        Batalkan
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => handleToggleSubtask(st)}
+                                      className="h-7.5 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs cursor-pointer gap-1.5"
+                                    >
+                                      <CheckIcon className="size-3.5 stroke-[3]" />
+                                      <span>Tandai Selesai</span>
+                                    </Button>
                                   )}
                                 </div>
                               )}
 
-                              {/* Subtask-Specific Comments Thread Accordion */}
-                              <div className="pt-2 border-t border-border/40">
+                              {/* Subtask-Specific Comments Thread */}
+                              <div className="pt-2.5 border-t border-border/40 space-y-2">
                                 <button
                                   type="button"
                                   onClick={() => toggleSubtaskComments(st.id)}
-                                  className="flex items-center justify-between w-full text-[11px] font-bold text-muted-foreground hover:text-foreground cursor-pointer py-1"
+                                  className="flex items-center justify-between w-full text-[11px] font-bold text-foreground/80 hover:text-foreground cursor-pointer py-0.5 group"
                                 >
                                   <span className="flex items-center gap-1.5">
-                                    <MessageSquareIcon className="size-3 text-muted-foreground" />
-                                    Catatan Khusus Tahap Ini ({(st.comments || []).length})
+                                    <MessageSquareIcon className="size-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <span>Catatan Khusus Tahap Ini</span>
+                                    {(st.comments || []).length > 0 ? (
+                                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300">
+                                        {(st.comments || []).length}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] text-muted-foreground font-normal">(0)</span>
+                                    )}
                                   </span>
-                                  {subtaskCommentsExpanded[st.id] ? (
-                                    <ChevronUpIcon className="size-3.5" />
-                                  ) : (
-                                    <ChevronDownIcon className="size-3.5" />
-                                  )}
+                                  <div className="flex items-center gap-1 text-muted-foreground group-hover:text-foreground text-[11px] font-normal">
+                                    <span>{subtaskCommentsExpanded[st.id] ? "Sembunyikan" : "Buka Catatan"}</span>
+                                    {subtaskCommentsExpanded[st.id] ? (
+                                      <ChevronUpIcon className="size-3.5" />
+                                    ) : (
+                                      <ChevronDownIcon className="size-3.5" />
+                                    )}
+                                  </div>
                                 </button>
 
+                                {/* Banner dashed interaktif jika belum ada catatan dan belum dibuka */}
+                                {!subtaskCommentsExpanded[st.id] && (st.comments || []).length === 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSubtaskCommentsExpanded((prev) => ({ ...prev, [st.id]: true }))}
+                                    className="w-full py-2 px-3 rounded-lg border border-dashed border-border/80 hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 text-muted-foreground hover:text-blue-600 text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer group"
+                                  >
+                                    <PlusIcon className="size-3 text-muted-foreground group-hover:text-blue-600 transition-colors" />
+                                    <span>Klik di sini untuk menulis catatan atau kendala tahap ini</span>
+                                  </button>
+                                )}
+
+                                {/* Container komentar & input box */}
                                 {subtaskCommentsExpanded[st.id] && (
-                                  <div className="mt-2 space-y-2 bg-muted/20 p-2.5 rounded-lg border border-border/50">
+                                  <div className="space-y-2 pt-1">
                                     {(st.comments || []).length > 0 ? (
-                                      <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                                         {(st.comments || []).map((c) => (
                                           <div
                                             key={c.id}
-                                            className="p-2 rounded-lg bg-background border border-border/60 text-xs space-y-0.5 group"
+                                            className="p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1 group hover:border-border/80 transition-colors"
                                           >
-                                            <div className="flex items-center justify-between">
-                                              <div className="flex items-center gap-1.5">
-                                                <span className="font-bold text-[11px] text-foreground">
+                                            <div className="flex items-center justify-between gap-1">
+                                              <div className="flex items-center gap-1.5 min-w-0">
+                                                <span className="font-semibold text-xs text-foreground truncate">
                                                   {c.user?.nama || "User"}
                                                 </span>
                                                 {c.user?.role && (
-                                                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-muted text-muted-foreground uppercase">
+                                                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-muted text-muted-foreground uppercase border border-border/40 shrink-0">
                                                     {ROLE_LABELS[c.user.role]?.label || c.user.role}
                                                   </span>
                                                 )}
                                               </div>
-                                              <div className="flex items-center gap-1">
-                                                <span className="text-[10px] text-muted-foreground">
+                                              <div className="flex items-center gap-1 shrink-0">
+                                                <span className="text-[10px] text-muted-foreground font-mono">
                                                   {c.created_at
                                                     ? new Date(c.created_at).toLocaleTimeString("id-ID", {
                                                         hour: "2-digit",
@@ -2287,15 +2784,15 @@ export function TaskDetailSheet({
                                                   <button
                                                     type="button"
                                                     onClick={() => handleDeleteComment(c.id)}
-                                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-0.5 transition-opacity cursor-pointer"
-                                                    title="Hapus"
+                                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 p-0.5 rounded transition-all cursor-pointer"
+                                                    title="Hapus catatan"
                                                   >
-                                                    <Trash2Icon className="size-2.5" />
+                                                    <Trash2Icon className="size-3" />
                                                   </button>
                                                 )}
                                               </div>
                                             </div>
-                                            <p className="text-foreground/90 text-[11px] leading-relaxed whitespace-pre-line">
+                                            <p className="text-foreground/90 text-xs leading-relaxed whitespace-pre-line pl-0.5">
                                               {c.comment}
                                             </p>
                                           </div>
@@ -2303,7 +2800,7 @@ export function TaskDetailSheet({
                                       </div>
                                     ) : (
                                       <p className="text-[11px] text-muted-foreground italic text-center py-1">
-                                        Belum ada catatan khusus pada tahap ini.
+                                        Belum ada catatan khusus pada tahap ini. Tulis catatan pertama di bawah.
                                       </p>
                                     )}
 
@@ -2320,8 +2817,8 @@ export function TaskDetailSheet({
                                             handleSendSubtaskComment(st.id)
                                           }
                                         }}
-                                        placeholder="Tulis catatan arahan tahap ini..."
-                                        className="h-7.5 rounded-lg text-xs bg-background"
+                                        placeholder="Tulis catatan atau arahan tahap ini... (Tekan Enter)"
+                                        className="h-8 rounded-lg text-xs bg-background border-border/80"
                                       />
                                       <Button
                                         type="button"
@@ -2331,12 +2828,15 @@ export function TaskDetailSheet({
                                           isSubmittingSubtaskComment[st.id] ||
                                           !(subtaskCommentInputs[st.id] || "").trim()
                                         }
-                                        className="h-7.5 px-2.5 rounded-lg text-xs font-bold bg-foreground text-background shrink-0 cursor-pointer"
+                                        className="h-8 px-3 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shrink-0 cursor-pointer gap-1 shadow-2xs"
                                       >
                                         {isSubmittingSubtaskComment[st.id] ? (
                                           <Loader2Icon className="size-3 animate-spin" />
                                         ) : (
-                                          <SendIcon className="size-3" />
+                                          <>
+                                            <SendIcon className="size-3" />
+                                            <span>Kirim</span>
+                                          </>
                                         )}
                                       </Button>
                                     </div>
@@ -2349,35 +2849,95 @@ export function TaskDetailSheet({
                       )
                         })}
 
-                        {subtasks.length === 0 && (
-                          <div className="p-6 text-center rounded-xl border border-dashed border-border/80 bg-muted/20 space-y-1">
-                            <CheckSquareIcon className="size-7 mx-auto text-muted-foreground/50" />
-                            <p className="text-xs font-semibold text-foreground">Belum Ada Tahapan Pengerjaan</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {isStaff
-                                ? "Atasan belum menentukan tahapan pekerjaan untuk tugas ini."
-                                : "Tambahkan tahapan di bawah agar pekerjaan tersusun rapi dan terverifikasi berurutan."}
-                            </p>
+                        {/* Area Pengerjaan Tugas Mandiri: Opsi Kerjakan Tugas Langsung ATAU Tambah Tahapan */}
+                        {subtasks.length === 0 && !isAddSubtaskExpanded && (
+                          <div className="p-5 sm:p-6 text-center rounded-2xl border border-dashed border-border/80 bg-muted/15 space-y-4">
+                            <div className="size-11 rounded-2xl bg-muted/70 border border-border/60 flex items-center justify-center mx-auto text-muted-foreground shadow-2xs">
+                              <CheckSquareIcon className="size-5.5 text-primary" />
+                            </div>
+                            <div className="max-w-md mx-auto space-y-1">
+                              <h4 className="text-sm font-bold text-foreground">
+                                {task.status === "in_progress"
+                                  ? "Tugas Sedang Dikerjakan Langsung"
+                                  : task.status === "review"
+                                  ? "Tugas Sedang Dalam Review Atasan"
+                                  : task.status === "done"
+                                  ? "Tugas Telah Selesai & Disetujui"
+                                  : "Pengerjaan Tugas Mandiri"}
+                              </h4>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                {task.status === "in_progress"
+                                  ? "Pekerjaan ini dikerjakan langsung tanpa tahapan checklist. Anda dapat melampirkan berkas bukti (opsional) atau langsung mengajukan review jika sudah selesai."
+                                  : task.status === "review"
+                                  ? "Tugas telah diajukan dan sedang menunggu pemeriksaan atasan/reviewer."
+                                  : task.status === "done"
+                                  ? "Seluruh pekerjaan telah diselesaikan dan disetujui resmi oleh atasan."
+                                  : "Tugas ini dapat langsung dikerjakan tanpa tahapan checklist, atau Anda dapat memecahnya menjadi beberapa tahapan di bawah."}
+                              </p>
+                            </div>
+
+                            {/* Tombol Aksi: Kerjakan Tugas ATAU Tambah Tahapan */}
+                            <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
+                              {/* 1. Opsi Kerjakan Tugas (Sesuai Status) */}
+                              {(task.status === "todo" || task.status === "unassigned") && (!task.assigned_to || isAssignee) && (
+                                <Button
+                                  type="button"
+                                  onClick={handleTakeTask}
+                                  disabled={isActionLoading}
+                                  className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl gap-1.5 cursor-pointer shadow-xs"
+                                >
+                                  <PlayIcon className="size-3.5 fill-current" />
+                                  <span>Mulai Kerjakan Tugas</span>
+                                </Button>
+                              )}
+
+                              {task.status === "in_progress" && canSubmitReview && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => setIsUploadOpen(true)}
+                                  className="h-8 px-3.5 text-xs font-semibold rounded-xl gap-1.5 cursor-pointer border-border/80 hover:bg-muted"
+                                >
+                                  <PaperclipIcon className="size-3.5 text-muted-foreground" />
+                                  <span>Unggah Bukti (Opsional)</span>
+                                </Button>
+                              )}
+
+                              {task.status === "review" && isAssignee && !canApprove && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={handleCancelReview}
+                                  disabled={isActionLoading}
+                                  className="h-8 px-3.5 text-xs font-semibold rounded-xl gap-1.5 cursor-pointer border-amber-300 text-amber-800 dark:border-amber-800 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20"
+                                >
+                                  <RotateCcwIcon className="size-3.5" />
+                                  <span>Tarik Pengajuan Review</span>
+                                </Button>
+                              )}
+
+                              {/* 2. Opsi Tambah Tahapan / Checklist */}
+                              {canSubmitReview && task.status !== "done" && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => setIsAddSubtaskExpanded(true)}
+                                  className="h-8 px-3.5 text-xs font-semibold rounded-xl gap-1.5 border-dashed border-border/90 hover:border-foreground/40 cursor-pointer"
+                                >
+                                  <PlusIcon className="size-3.5 text-red-600" />
+                                  <span>Tambah Tahapan / Subtask</span>
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
 
-                      {/* Add Subtask Form — for atasan / admin / non-staff */}
-                      {!isStaff && (
-                        <div className="pt-2">
-                          {!isAddSubtaskExpanded ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setIsAddSubtaskExpanded(true)}
-                              className="w-full h-8 text-xs font-bold border-dashed border-border hover:border-red-400 text-muted-foreground hover:text-foreground rounded-lg gap-1.5 cursor-pointer"
-                            >
-                              <PlusIcon className="size-3.5" />
-                              Tambah Tahapan (Subtask) Baru
-                            </Button>
-                          ) : (
-                            <form onSubmit={handleAddSubtask} className="p-3 rounded-xl border border-border bg-muted/20 space-y-2.5">
+                      {/* Add Subtask Form — Menggantikan empty state secara langsung */}
+                      {canSubmitReview && (
+                        <div>
+                          {isAddSubtaskExpanded ? (
+                            <form onSubmit={handleAddSubtask} className="p-3.5 rounded-xl border border-border bg-card shadow-xs space-y-3">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                                   <PlusIcon className="size-3.5 text-red-600" />
@@ -2388,7 +2948,7 @@ export function TaskDetailSheet({
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setIsAddSubtaskExpanded(false)}
-                                  className="h-6 px-1.5 text-xs text-muted-foreground cursor-pointer"
+                                  className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                                 >
                                   Batal
                                 </Button>
@@ -2403,7 +2963,8 @@ export function TaskDetailSheet({
                                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                                   placeholder="Contoh: Pengecekan Lapangan & Pengukuran Redaman ODP"
                                   required
-                                  className="h-8 rounded-lg text-xs bg-background"
+                                  autoFocus
+                                  className="h-8.5 rounded-lg text-xs bg-background"
                                 />
                               </div>
 
@@ -2415,26 +2976,54 @@ export function TaskDetailSheet({
                                   value={newSubtaskDesc}
                                   onChange={(e) => setNewSubtaskDesc(e.target.value)}
                                   placeholder="Tuliskan instruksi detail, standar operasional, atau bukti apa yang wajib dilampirkan pelaksana..."
-                                  className="text-xs rounded-lg min-h-[60px] bg-background"
+                                  className="text-xs rounded-lg min-h-[65px] bg-background"
                                 />
                               </div>
 
-                              <div className="flex justify-end gap-2 pt-1">
+                              <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setIsAddSubtaskExpanded(false)}
+                                  className="h-8 px-3 text-xs rounded-lg cursor-pointer"
+                                >
+                                  Batal
+                                </Button>
                                 <Button
                                   type="submit"
                                   size="sm"
                                   disabled={isAddingSubtask || !newSubtaskTitle.trim()}
-                                  className="h-7.5 px-3 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                                  className="h-8 px-3.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-xs gap-1"
                                 >
                                   {isAddingSubtask ? (
-                                    <><Loader2Icon className="size-3 animate-spin mr-1" /> Menyimpan...</>
+                                    <>
+                                      <Loader2Icon className="size-3 animate-spin mr-1" />
+                                      <span>Menyimpan...</span>
+                                    </>
                                   ) : (
-                                    <><PlusIcon className="size-3 mr-1" /> Tambahkan Tahap</>
+                                    <>
+                                      <PlusIcon className="size-3 mr-1" />
+                                      <span>Tambahkan Tahap</span>
+                                    </>
                                   )}
                                 </Button>
                               </div>
                             </form>
-                          )}
+                          ) : subtasks.length > 0 ? (
+                            <div className="pt-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsAddSubtaskExpanded(true)}
+                                className="w-full h-8 text-xs font-bold border-dashed border-border hover:border-red-400 text-muted-foreground hover:text-foreground rounded-lg gap-1.5 cursor-pointer"
+                              >
+                                <PlusIcon className="size-3.5 text-red-600" />
+                                <span>Tambah Tahapan Baru (Tahap {subtasks.length + 1})</span>
+                              </Button>
+                            </div>
+                          ) : null}
                         </div>
                       )}
                     </div>
@@ -2569,88 +3158,91 @@ export function TaskDetailSheet({
                   )}
 
                   {/* ─────────────────────────────────────────────────────────────
-                      TAB 3: LAMPIRAN (Bukti Pengerjaan Per-Tahapan Subtask)
+                      TAB 3: LAMPIRAN (Bukti Pengerjaan Tugas & Subtask)
                       ───────────────────────────────────────────────────────────── */}
                   {activeDetailTab === "attachments" && (
-                    <div className="space-y-4 pt-3">
-                      <div className="border-b border-border/50 pb-2">
-                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <PaperclipIcon className="size-3.5 text-blue-600" />
-                          Lampiran Bukti Pengerjaan
-                        </h4>
-                        <p className="text-[10px] text-muted-foreground">
-                          Seluruh berkas foto atau dokumen bukti pengerjaan dari setiap tahapan penugasan.
-                        </p>
-                      </div>
+                    <div className="space-y-4 pt-1">
+                      {/* 1. Berkas Lampiran Tugas Utama (Langsung pada Tugas) */}
+                      {(task.attachments || []).length > 0 && (
+                        <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5 min-w-0">
+                              <PaperclipIcon className="size-3.5 text-blue-600 shrink-0" />
+                              <span>Lampiran Tugas</span>
+                            </span>
+                            <span className="text-[10px] font-semibold text-muted-foreground shrink-0">
+                              {(task.attachments || []).length} berkas
+                            </span>
+                          </div>
 
-                      {/* Lampiran Berdasarkan Tahapan Subtask */}
-                      <div className="space-y-2.5">
-                        {subtasks.filter((st) => (st.attachments || []).length > 0).length > 0 ? (
-                          <div className="space-y-2.5">
-                            {subtasks
-                              .filter((st) => (st.attachments || []).length > 0)
-                              .map((st) => {
-                                const stepNumber =
-                                  st.sort_order && st.sort_order > 0
-                                    ? st.sort_order
-                                    : subtasks.findIndex((s) => s.id === st.id) + 1
-                                return (
-                                  <div key={st.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5 min-w-0">
-                                        <span className="size-5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[10px] flex items-center justify-center font-bold shrink-0">
-                                          {stepNumber}
-                                        </span>
-                                        <span className="truncate">Tahap {stepNumber}: {st.title}</span>
-                                      </span>
-                                      <span className="text-[10px] font-semibold text-muted-foreground shrink-0">
-                                        {(st.attachments || []).length} berkas
-                                      </span>
-                                    </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {(task.attachments || []).map((att) => (
+                              <AttachmentCard
+                                key={att.id}
+                                fileName={att.file_name}
+                                fileUrl={att.file_url}
+                                fileSizeBytes={att.file_size_bytes}
+                                onPreview={() => setPreviewAttachment({ url: att.file_url, name: att.file_name })}
+                                canDelete={canSubmitReview}
+                                onDelete={() => handleDeleteAttachment(att.id)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                                  <div className="space-y-1.5">
+                      {/* 2. Lampiran Berdasarkan Tahapan Subtask (Jika ada) */}
+                      {subtasks.filter((st) => (st.attachments || []).length > 0).length > 0 && (
+                        <div className="space-y-2.5">
+                          {subtasks
+                            .filter((st) => (st.attachments || []).length > 0)
+                            .map((st) => {
+                              const stepNumber =
+                                st.sort_order && st.sort_order > 0
+                                ? st.sort_order
+                                : subtasks.findIndex((s) => s.id === st.id) + 1
+                              return (
+                                <div key={st.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5 min-w-0">
+                                      <span className="size-5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[10px] flex items-center justify-center font-bold shrink-0">
+                                        {stepNumber}
+                                      </span>
+                                      <span className="truncate">Tahap {stepNumber}: {st.title}</span>
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-muted-foreground shrink-0">
+                                      {(st.attachments || []).length} berkas
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {(st.attachments || []).map((att) => (
-                                      <div
+                                      <AttachmentCard
                                         key={att.id}
-                                        className="p-2 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between text-xs group hover:border-blue-300 transition-colors"
-                                      >
-                                        <button
-                                          type="button"
-                                          onClick={() => setPreviewAttachment({ url: att.file_url, name: att.file_name })}
-                                          className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer hover:text-blue-600 transition-colors"
-                                        >
-                                          {att.file_name.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-                                            <ImageIcon className="size-3.5 text-emerald-600 shrink-0" />
-                                          ) : (
-                                            <FileTextIcon className="size-3.5 text-blue-600 shrink-0" />
-                                          )}
-                                          <span className="truncate font-medium text-foreground">
-                                            {att.file_name}
-                                          </span>
-                                          {att.file_size_bytes && (
-                                            <span className="text-[10px] text-muted-foreground shrink-0">
-                                              ({(att.file_size_bytes / 1024).toFixed(0)} KB)
-                                            </span>
-                                          )}
-                                          <ExternalLinkIcon className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                                        </button>
-                                      </div>
+                                        fileName={att.file_name}
+                                        fileUrl={att.file_url}
+                                        fileSizeBytes={att.file_size_bytes}
+                                        onPreview={() => setPreviewAttachment({ url: att.file_url, name: att.file_name })}
+                                        canDelete={false}
+                                      />
                                     ))}
                                   </div>
                                 </div>
                               )
                             })}
-                          </div>
-                        ) : (
-                          <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-6 rounded-lg border border-dashed text-center space-y-1">
-                            <PaperclipIcon className="size-6 mx-auto text-muted-foreground/40" />
-                            <p className="font-semibold text-foreground">Belum Ada Bukti Lampiran</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              Bukti pengerjaan dilampirkan langsung pada masing-masing tahapan di tab Tahapan.
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+
+                      {/* 3. Empty State: Hanya jika TIDAK ada lampiran sama sekali */}
+                      {totalAttachmentsCount === 0 && (
+                        <div className="text-[11px] text-muted-foreground italic bg-muted/20 p-6 rounded-lg border border-dashed text-center space-y-1">
+                          <PaperclipIcon className="size-6 mx-auto text-muted-foreground/40" />
+                          <p className="font-semibold text-foreground">Belum Ada Bukti Lampiran</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Belum ada foto atau dokumen bukti yang diunggah untuk penugasan ini.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2659,29 +3251,58 @@ export function TaskDetailSheet({
 
             {/* DIALOG: PREVIEW LAMPIRAN */}
             <Dialog open={!!previewAttachment} onOpenChange={(o) => { if (!o) setPreviewAttachment(null) }}>
-              <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-6xl p-4 font-sans">
-                <DialogHeader>
-                  <DialogTitle className="text-sm font-bold truncate pr-6">{previewAttachment?.name}</DialogTitle>
-                  <DialogDescription className="sr-only">Pratinjau lampiran</DialogDescription>
+              <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-5xl p-4 sm:p-5 font-sans flex flex-col gap-3">
+                <DialogHeader className="flex flex-row items-center justify-between gap-3 pb-3 border-b border-border/60 text-left">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <DialogTitle className="text-sm sm:text-base font-bold truncate text-foreground flex items-center gap-2">
+                      <FileTypeBadge fileName={previewAttachment?.name || ""} fileUrl={previewAttachment?.url} />
+                      <span className="truncate">{previewAttachment?.name}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                      Pratinjau berkas lampiran
+                    </DialogDescription>
+                  </div>
+                  {previewAttachment && (
+                    <div className="flex items-center gap-2 shrink-0 pr-8">
+                      <a
+                        href={previewAttachment.url}
+                        download={previewAttachment.name}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs transition-colors"
+                      >
+                        <DownloadIcon className="size-3.5" />
+                        <span>Unduh Berkas</span>
+                      </a>
+                    </div>
+                  )}
                 </DialogHeader>
                 {previewAttachment && (() => {
                   const isImg = /\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?.*)?$/i.test(previewAttachment.url) || /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(previewAttachment.name)
                   const isPdf = /\.pdf(\?.*)?$/i.test(previewAttachment.url) || /\.pdf$/i.test(previewAttachment.name)
                   const isOffice = /\.(docx?|xlsx?|pptx?)$/i.test(previewAttachment.name) && /^https?:/i.test(previewAttachment.url)
                   return (
-                    <div className="flex items-center justify-center rounded-lg bg-muted/30 overflow-auto max-h-[85vh]">
+                    <div className="flex items-center justify-center rounded-xl bg-muted/40 border border-border/50 overflow-auto max-h-[80vh] min-h-[300px]">
                       {isImg ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={previewAttachment.url} alt={previewAttachment.name} className="max-w-full max-h-[85vh] object-contain rounded-md" />
+                        <img src={previewAttachment.url} alt={previewAttachment.name} className="max-w-full max-h-[80vh] object-contain rounded-lg p-2" />
                       ) : isPdf ? (
-                        <iframe src={previewAttachment.url} title={previewAttachment.name} className="w-full h-[85vh] rounded-md" />
+                        <iframe src={previewAttachment.url} title={previewAttachment.name} className="w-full h-[80vh] rounded-lg" />
                       ) : isOffice ? (
-                        <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewAttachment.url)}`} title={previewAttachment.name} className="w-full h-[85vh] rounded-md" />
+                        <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewAttachment.url)}`} title={previewAttachment.name} className="w-full h-[80vh] rounded-lg" />
                       ) : (
                         <div className="p-8 text-center text-xs text-muted-foreground space-y-3">
-                          <FileTextIcon className="size-8 mx-auto text-muted-foreground/50" />
-                          <p>Pratinjau tidak tersedia untuk jenis berkas ini.</p>
-                          <a href={previewAttachment.url} download={previewAttachment.name} className="text-blue-600 font-semibold underline">Unduh berkas</a>
+                          <FileTextIcon className="size-10 mx-auto text-muted-foreground/50" />
+                          <p className="font-medium text-foreground">Pratinjau tidak tersedia langsung untuk tipe berkas ini.</p>
+                          <p className="text-[11px] text-muted-foreground">Silakan klik tombol unduh di atas untuk membuka berkas di perangkat Anda.</p>
+                          <a
+                            href={previewAttachment.url}
+                            download={previewAttachment.name}
+                            className="inline-flex items-center gap-1.5 text-primary font-semibold underline hover:text-primary/80"
+                          >
+                            <DownloadIcon className="size-3.5" />
+                            Unduh berkas secara langsung
+                          </a>
                         </div>
                       )}
                     </div>
@@ -2804,44 +3425,50 @@ export function TaskDetailSheet({
 
             {/* DIALOG 1: SUBMIT FOR REVIEW */}
             <Dialog open={isSubmitReviewOpen} onOpenChange={setIsSubmitReviewOpen}>
-              <DialogContent className="max-w-sm rounded-xl p-4 font-sans">
+              <DialogContent className="max-w-md rounded-xl p-5 font-sans">
                 <DialogHeader>
                   <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
                     <CheckCircle2Icon className="size-4 text-red-600" />
                     Ajukan Review ke Atasan
                   </DialogTitle>
                   <DialogDescription className="text-xs text-muted-foreground">
-                    Kirimkan penugasan ini untuk diperiksa dan disetujui atasan.
+                    Sertakan ringkasan hasil kerja untuk diperiksa dan disetujui atasan.
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-2.5 mt-2">
+                <div className="space-y-3 mt-2">
                   <div>
-                    <label className="text-[11px] font-bold text-muted-foreground">
-                      Catatan (Opsional)
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-foreground">
+                        Ringkasan Hasil Kerja <span className="text-red-600">* (Wajib)</span>
+                      </label>
+                      <span className={`text-[10px] font-mono ${submitNotes.trim().length >= 10 ? 'text-emerald-600 font-bold' : 'text-muted-foreground'}`}>
+                        {submitNotes.trim().length}/10 karakter min.
+                      </span>
+                    </div>
                     <Textarea
                       value={submitNotes}
                       onChange={(e) => setSubmitNotes(e.target.value)}
-                      placeholder="Contoh: Seluruh pekerjaan dan berkas telah selesai."
-                      className="mt-1 text-xs min-h-[60px] rounded-lg"
+                      placeholder="Jelaskan ringkas apa saja yang telah dikerjakan, kendala, atau hal penting yang perlu dicek atasan..."
+                      className="text-xs min-h-[90px] rounded-lg"
+                      required
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t">
                     <Button
                       variant="outline"
                       onClick={() => setIsSubmitReviewOpen(false)}
-                      className="h-7.5 text-xs rounded-lg"
+                      className="h-8 text-xs rounded-lg cursor-pointer"
                     >
                       Batal
                     </Button>
                     <Button
                       onClick={handleSubmitForReview}
-                      disabled={isActionLoading}
-                      className="h-7.5 px-3 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                      disabled={isActionLoading || submitNotes.trim().length < 10}
+                      className="h-8 px-4 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-xs cursor-pointer"
                     >
-                      {isActionLoading ? "Mengirim..." : "Kirim"}
+                      {isActionLoading ? "Mengajukan..." : "Kirim Pengajuan Review"}
                     </Button>
                   </div>
                 </div>
@@ -2951,31 +3578,6 @@ export function TaskDetailSheet({
 
                   <div>
                     <label className="text-[11px] font-bold text-muted-foreground block mb-1">
-                      Jenis Lampiran
-                    </label>
-                    <Select
-                      value={uploadType}
-                      onValueChange={(val) => setUploadType((val as any) || "evidence")}
-                    >
-                      <SelectTrigger className="w-full h-8.5 rounded-lg border-border bg-background px-2 text-xs font-medium">
-                        <span className="truncate">
-                          {uploadType === "evidence"
-                            ? "Foto Bukti / Hasil Pengerjaan"
-                            : uploadType === "document"
-                            ? "Dokumen Laporan / Proposal (PDF)"
-                            : "Kwitansi / Nota Biaya SPJ"}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent className="w-full">
-                        <SelectItem value="evidence">Foto Bukti / Hasil Pengerjaan</SelectItem>
-                        <SelectItem value="document">Dokumen Laporan / Proposal (PDF)</SelectItem>
-                        <SelectItem value="receipt_nota">Kwitansi / Nota Biaya SPJ</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">
                       Nama File / Keterangan *
                     </label>
                     <Input
@@ -2986,21 +3588,6 @@ export function TaskDetailSheet({
                       className="h-8 rounded-lg text-xs"
                     />
                   </div>
-
-                  {uploadType === "receipt_nota" && (
-                    <div>
-                      <label className="text-[11px] font-bold text-muted-foreground block mb-1">
-                        Nominal Kwitansi (Rp)
-                      </label>
-                      <Input
-                        type="number"
-                        value={uploadAmount}
-                        onChange={(e) => setUploadAmount(e.target.value)}
-                        placeholder="Contoh: 150000"
-                        className="h-8 rounded-lg text-xs"
-                      />
-                    </div>
-                  )}
 
                   <div className="flex items-center justify-end gap-2 pt-2 border-t">
                     <Button
@@ -3056,6 +3643,7 @@ export function TaskDetailSheet({
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         )}
       </SheetContent>

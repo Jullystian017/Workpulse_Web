@@ -550,7 +550,39 @@ export function DataTable({
 
   const handleQuickStatus = async (taskId: string, newStatus: TaskStatus) => {
     try {
-      const ok = await updateTaskStatus(taskId, newStatus)
+      const targetTask = tasks.find((t) => t.id === taskId)
+      const currentUser = getActiveUserFromStorage()
+
+      // Validasi wajib bukti dan kelengkapan subtask sebelum review atau done
+      if ((newStatus === "review" || newStatus === "done") && currentUser?.role !== "admin") {
+        if (newStatus === "review") {
+          toast.info("Gunakan tombol 'Ajukan Review' di dalam detail tugas!", {
+            description: "Pelaksana wajib mengisi Ringkasan Hasil Kerja (minimal 10 karakter) sebelum mengajukan review ke atasan.",
+          })
+          return
+        }
+
+        const uncompletedSubtasks = (targetTask?.subtasks || []).filter((st) => !st.is_completed)
+        if (uncompletedSubtasks.length > 0) {
+          toast.error("Seluruh tahapan subtask belum selesai!", {
+            description: `Masih ada ${uncompletedSubtasks.length} tahapan subtask yang belum dicentang. Buka detail tugas untuk menyelesaikannya.`,
+          })
+          return
+        }
+
+        const totalEvidence =
+          (targetTask?.attachments || []).length +
+          (targetTask?.subtasks || []).reduce((acc, st) => acc + (st.attachments || []).length, 0)
+
+        if (totalEvidence === 0) {
+          toast.error("Wajib mengunggah bukti pengerjaan!", {
+            description: "Buka detail tugas dan lampirkan minimal 1 bukti foto/dokumen sebelum mengubah status.",
+          })
+          return
+        }
+      }
+
+      const ok = await updateTaskStatus(taskId, newStatus, currentUser?.id)
       if (ok) {
         toast.success(`Status tugas berhasil diubah ke ${statusMeta[newStatus]?.label}!`)
         if (onRefresh) onRefresh()

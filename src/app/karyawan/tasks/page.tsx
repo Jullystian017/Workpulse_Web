@@ -48,6 +48,8 @@ import {
   approveTask,
   returnTaskForRevision,
   submitTaskForReview,
+  withdrawTaskSubmission,
+  addComment,
 } from "@/lib/api"
 import { Task, Channel, User, TaskStatus } from "@/types/database"
 import { useRealtimeTasks } from "@/hooks/use-realtime"
@@ -788,7 +790,7 @@ function KaryawanTasksContent() {
                 onSelectTask={handleOpenDetail}
                 onOpenDelegate={handleOpenDelegate}
                 onOpenCreate={handleOpenCreate}
-                onUpdateStatus={async (taskId, status) => {
+                onUpdateStatus={async (taskId, status, notes) => {
                   const nowIso = new Date().toISOString()
                   // 1. Instant optimistic update on tasks list
                   setTasks((prev) =>
@@ -800,6 +802,7 @@ function KaryawanTasksContent() {
                             assigned_to: status === "in_progress" && !t.assigned_to && currentUser ? currentUser.id : t.assigned_to,
                             assignee: status === "in_progress" && !t.assigned_to && currentUser ? currentUser : t.assignee,
                             completed_at: status === "done" ? nowIso : t.completed_at,
+                            review_notes: notes !== undefined ? notes : t.review_notes,
                           }
                         : t
                     )
@@ -813,6 +816,7 @@ function KaryawanTasksContent() {
                             assigned_to: status === "in_progress" && !t.assigned_to && currentUser ? currentUser.id : t.assigned_to,
                             assignee: status === "in_progress" && !t.assigned_to && currentUser ? currentUser : t.assignee,
                             completed_at: status === "done" ? nowIso : t.completed_at,
+                            review_notes: notes !== undefined ? notes : t.review_notes,
                           }
                         : t
                     )
@@ -826,6 +830,7 @@ function KaryawanTasksContent() {
                           assigned_to: status === "in_progress" && !prev.assigned_to && currentUser ? currentUser.id : prev.assigned_to,
                           assignee: status === "in_progress" && !prev.assigned_to && currentUser ? currentUser : prev.assignee,
                           completed_at: status === "done" ? nowIso : prev.completed_at,
+                          review_notes: notes !== undefined ? notes : prev.review_notes,
                         }
                       : prev
                   )
@@ -836,13 +841,18 @@ function KaryawanTasksContent() {
                   if (status === "done" && prevStatus === "review" && currentUser) {
                     await approveTask(taskId, currentUser.id)
                   } else if (status === "in_progress" && prevStatus === "review" && currentUser) {
-                    await returnTaskForRevision(
-                      taskId,
-                      currentUser.id,
-                      "Dikembalikan oleh atasan melalui Kanban Board untuk evaluasi/revisi."
-                    )
+                    const isAssignee = movingTask && getTaskAssigneeIds(movingTask).includes(currentUser.id)
+                    if (isAssignee) {
+                      await withdrawTaskSubmission(taskId, currentUser.id)
+                    } else {
+                      await returnTaskForRevision(
+                        taskId,
+                        currentUser.id,
+                        "Dikembalikan oleh atasan melalui Kanban Board untuk evaluasi/revisi."
+                      )
+                    }
                   } else if (status === "review" && currentUser) {
-                    await submitTaskForReview(taskId, currentUser.id, "Diajukan melalui Kanban Board.")
+                    await submitTaskForReview(taskId, currentUser.id, notes || movingTask?.review_notes || "Tugas siap direview.")
                   } else if (status === "in_progress" && movingTask && !movingTask.assigned_to && currentUser) {
                     await claimTask(taskId, currentUser.id)
                   } else {
